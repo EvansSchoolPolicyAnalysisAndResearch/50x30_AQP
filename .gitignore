@@ -1,0 +1,17 @@
+.Rproj.user
+.Rdata
+.Rhistory
+/agquery/.Rproj.user
+/agquery/.Rhistory
+/agquery/.RData
+/agquery/.Ruserdata
+/Dev
+/agquery/Data/nga_w1_household_variables.dta
+/agquery/Data/nga_w2_household_variables.dta
+/agquery/Data/nga_w3_household_variables.dta
+/agquery/Data/nga_w4_household_variables.dta
+/agquery/Data/tza_w1_household_variables.dta
+/agquery/Data/tza_w2_household_variables.dta
+/agquery/Data/tza_w3_household_variables.dta
+/agquery/Data/tza_w4_household_variables.dta
+/agquery/Data/tza_w5_household_variables.dta
