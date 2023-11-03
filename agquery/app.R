@@ -61,14 +61,16 @@ ui <- fluidPage(
   hr(),
   fluidRow(column(4, selectInput("indicsIn", "Select Indicator", choices=indics))),
   fluidRow(column(4, uiOutput("corrChk")),
-  column(4, radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Zone","State","LGA","EA","Household"), choiceValues=c("zone", "state", "lga", "ea", "hhid"))),
-  column(3, uiOutput("groupsChk")),
-  column(1, actionButton("submit", "Go"))
+           column(4, radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Zone","State","LGA","EA","Household"), choiceValues=c("zone", "state", "lga", "ea", "hhid")),
+                  checkboxInput('yChk', 'Omit 0s from Indicator'),
+                  checkboxInput('xChk', 'Omit 0s from Correlate(s)')),
+           column(3, uiOutput("groupsChk")),
+           column(1, actionButton("submit", "Go"))
   )
 )
 
 server <- function(input, output, session) {
-
+  
   
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
@@ -79,10 +81,10 @@ server <- function(input, output, session) {
   
   observeEvent(input$indicsIn, {
     corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
-    corrnames <- indicator_list$prettyName[indicator_list$shortName %in% corrvals]
-    output$corrChk <- renderUI(checkboxGroupInput("corrsIn", "Correlates", choiceNames=corrnames, choiceValues=corrvals))
+    corrs_in <- indicator_list[indicator_list$shortName %in% corrvals,]
+    output$corrChk <- renderUI(checkboxGroupInput("corrsIn", "Correlates", choiceNames=corrs_in$prettyName, choiceValues=corrs_in$shortName))
   })
-
+  
   observeEvent(input$submit, {
     adm_level_in <- input$disAgg_admin
     aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
@@ -94,35 +96,35 @@ server <- function(input, output, session) {
     for(currVar in varslist) {
       var_unit <- subset(indicator_list, shortName %in% currVar)$units[[1]] #Should only be 1 list item
       var_continuous <- max(c("count","ratio", "boolean") %in% var_unit)==0
-        if(var_continuous==T) { 
-            l_wins_threshold <- (indicator_list$wins_limit[[which(indicator_list$shortName %in% currVar)]])/100
-            u_wins_threshold <- 1-l_wins_threshold
-    
-          if(!is.numeric(l_wins_threshold)) { #I.e., spreadsheet cell was empty or boxes were somehow made blank
-            l_wins_threshold <- 0
-          }
-          if(!is.numeric(u_wins_threshold)){
-            u_wins_threshold <- 1
-          }
-          
-          #Use zeros in the spreadsheet for vars that you don't want to winsorize
-          lim <- quantile(tempdata[[currVar]],probs=c(l_wins_threshold, u_wins_threshold), na.rm=T) #Note to address NAs here, introduced by indicator_weight being NA.
-          tempdata[[currVar]][tempdata[[currVar]] < lim[1]] <- lim[1] # HS: I don't get this line ALT: This selects every observation in the variable column that's smaller than the lower winsorization threshold and sets it to the lower winsorization threshold.
-          tempdata[[currVar]][tempdata[[currVar]] > lim[2]] <- lim[2] # HS: I don't get this line ALT: As above, but for the upper winsorization threshold. There's probably a better way to notate this using dplyr
-        }
-    }
+      if(var_continuous==T) { 
+        l_wins_threshold <- (indicator_list$wins_limit[[which(indicator_list$shortName %in% currVar)]])/100
+        u_wins_threshold <- 1-l_wins_threshold
         
-        ###### CALCULATING SUMMARY STATISTICS ###########
-        if(length(aggs_list)>0){
-          #ALT: Temporary fix til we correct farm size in the compilation code
-          if (any(aggs_list %in% "farmsize")) {
-            tempdata$farmsize <- sapply(tempdata$farmsize, switch, 
-                                        "0 ha"=0, 
-                                        ">0 - 2 ha"=1,
-                                        "2 - 4 ha"=2,
-                                        ">4 ha"=3)
-          }
+        if(!is.numeric(l_wins_threshold)) { #I.e., spreadsheet cell was empty or boxes were somehow made blank
+          l_wins_threshold <- 0
         }
+        if(!is.numeric(u_wins_threshold)){
+          u_wins_threshold <- 1
+        }
+        
+        #Use zeros in the spreadsheet for vars that you don't want to winsorize
+        lim <- quantile(tempdata[[currVar]],probs=c(l_wins_threshold, u_wins_threshold), na.rm=T) #Note to address NAs here, introduced by indicator_weight being NA.
+        tempdata[[currVar]][tempdata[[currVar]] < lim[1]] <- lim[1] # HS: I don't get this line ALT: This selects every observation in the variable column that's smaller than the lower winsorization threshold and sets it to the lower winsorization threshold.
+        tempdata[[currVar]][tempdata[[currVar]] > lim[2]] <- lim[2] # HS: I don't get this line ALT: As above, but for the upper winsorization threshold. There's probably a better way to notate this using dplyr
+      }
+    }
+    
+    ###### CALCULATING SUMMARY STATISTICS ###########
+    if(length(aggs_list)>0){
+      #ALT: Temporary fix til we correct farm size in the compilation code
+      if (any(aggs_list %in% "farmsize")) {
+        tempdata$farmsize <- sapply(tempdata$farmsize, switch, 
+                                    "0 ha"=0, 
+                                    ">0 - 2 ha"=1,
+                                    "2 - 4 ha"=2,
+                                    ">4 ha"=3)
+      }
+    }
     
     if(adm_level_in!="hhid"){
       tempdata <- tempdata %>% pivot_longer(., varslist) %>% 
@@ -131,23 +133,69 @@ server <- function(input, output, session) {
         pivot_wider()
     }
     
-    if(length(aggs_list==0)){
-      aggs_list <- ""
-    }
-    layout <- rbind(c(1,1,2),
-                    c(1,1,2),
-                    c(3,3,NA))
+    
+    layout <- rbind(c(1,1,2,2),
+                    c(1,1,2,2),
+                    c(3,3,3,3),
+                    c(3,3,3,3))
+    
+    #outTable <- 
+
     output$chartOut <- renderUI({
       varCharts <- lapply(1:length(xvars), function(x){
-        plot3 <- ggplot(tempdata, aes_string(x=xvars[[x]], group=aggs_list, fill=aggs_list))+geom_density(alpha=0.4)+labs(x=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]])
-        plot2 <- ggplot(tempdata, aes_string(x=yvars[[1]], group=aggs_list, fill=aggs_list))+geom_density(alpha=0.4)+labs(x="")+coord_flip()+theme(axis.text.y=element_blank())
-        plot1 <- ggplot(tempdata, aes_string(x=xvars[[x]], y=yvars[[1]], group=aggs_list, color=aggs_list))+ #only one yvar for now
-              geom_point()+
-          theme_minimal(base_size=14)+
-          stat_smooth(method="lm")+
-          labs(x="", y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]])+
-          theme(axis.text.x=element_blank())
-        chartLayout <- arrangeGrob(plot1, plot2,plot3, layout_matrix=layout)
+        tempdata_out <- tempdata
+        if(input$xChk){
+          tempdata_out <- tempdata_out[tempdata_out[[xvars[[x]]]]!=0]
+        }
+        
+        if(input$yChk){
+          tempdata_out <- tempdata[tempdata_out[[yvars[[1]]]]!=0]
+        }
+        
+        
+        if(max(tempdata_out[[xvars[[x]]]]) - min(tempdata[[xvars[[x]]]]) > 10000){
+          tempdata[[xvars[[x]]]] <- log(tempdata[[xvars[[x]]]]+1)
+        }
+        if(max(tempdata[[yvars[[1]]]]) - min(tempdata[[yvars[[1]]]]) > 10000){
+          tempdata[[yvars[[1]]]] <- log(tempdata[[yvars[[1]]]]+1)
+        }
+        if(length(aggs_list)==0){
+          
+          plot2 <- ggplot(tempdata, aes_string(x=xvars[[x]]))+
+            geom_histogram(aes(y=..density..))+
+            labs(x="", y="")+
+            geom_density(fill=NA)+
+            ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
+          plot1 <- ggplot(tempdata, aes_string(x=yvars[[1]]))+
+            geom_histogram(aes(y=..density..))+
+            labs(x="", y="")+
+            geom_density(fill=NA)+
+            ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
+          plot3 <- ggplot(tempdata, aes_string(x=xvars[[x]], y=yvars[[1]], group=aggs_list, color=aggs_list))+ #only one yvar for now
+            geom_point()+
+            theme_minimal(base_size=14)+
+            stat_smooth(method="lm")+
+            labs(x="", y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]])+
+            theme(axis.text.x=element_blank())
+        } else {
+          plot2 <- ggplot(tempdata, aes_string(x=xvars[[x]], group=aggs_list, fill=aggs_list))+
+            geom_histogram(aes(y=..density..))+
+            geom_density(fill=NA)+
+            labs(x="", y="")+
+            ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
+          plot1 <- ggplot(tempdata, aes_string(x=yvars[[1]], group=aggs_list, fill=aggs_list))+
+            geom_histogram(aes(y=..density..))+
+            geom_density(fill=NA)+
+            labs(x="", y="")+
+            ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
+          plot3 <- ggplot(tempdata, aes_string(x=xvars[[x]], y=yvars[[1]], group=aggs_list, color=aggs_list))+ #only one yvar for now
+            geom_point()+
+            theme_minimal(base_size=14)+
+            stat_smooth(method="lm")+
+            labs(x="", y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]])+
+            theme(axis.text.x=element_blank())
+        }
+        #chartLayout <- arrangeGrob(plot1, plot2,plot3, layout_matrix=layout)
         #chartLayout <- arrangeGrob(grobs=c(ggplotly(plot1),plot2,plot3), layout_matrix=layout)
         
         res <- eval(parse_expr(sprintf("with(tempdata, cor.test(%s, %s))", xvars[[x]], yvars[[1]])))
@@ -163,18 +211,24 @@ server <- function(input, output, session) {
         } else if(res$p.value <= 0.01) {
           adj="<font color='#44ce1b'>very high</font>"
         }
-        tabPanel(title=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], renderPlot(grid.arrange(chartLayout)),  HTML(sprintf("There is %s%% (%s%% - %s%%) correlation between %s and %s. There is %s confidence in this result.", 
-                                                                                                                  round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1), 
-                                                                                                      indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], indicator_list$prettyName[indicator_list$shortName==yvars[[1]]], adj)))
-        })
+       
+        tabPanel(title=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], 
+                 fluidRow(column(6, renderPlot(plot1), column(6, renderPlot(plot2)))),
+                 #fluidRow(renderTable(outTable)),
+                  fluidRow(renderPlotly(ggplotly(plot3))),
+                          fluidRow(HTML(sprintf("There is %s%% (%s%% - %s%%) correlation between <font color='#3562ab'><b>%s</b></font> and <font color='#3562ab'><b>%s</b></font>. There is %s confidence in this result.", 
+                                                round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
+                                                indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], indicator_list$prettyName[indicator_list$shortName==yvars[[1]]], adj)))
+                 )
+        
+      })
       do.call(tabsetPanel, varCharts) %>% return()
     })  
     
   })
   
-
+  
   
 }
 
 shinyApp(ui = ui, server = server)
-  
