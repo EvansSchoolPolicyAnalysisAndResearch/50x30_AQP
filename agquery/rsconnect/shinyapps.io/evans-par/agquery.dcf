@@ -1,0 +1,13 @@
+name: agquery
+title: agquery
+username: evans-par
+account: evans-par
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10377852
+bundleId: 7876037
+url: https://evans-par.shinyapps.io/agquery/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|.Rprofile|app2.R
