@@ -58,6 +58,7 @@ adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 
 ui <- fluidPage(
   uiOutput("chartOut"),
+  DTOutput("regResult"),
   hr(),
   fluidRow(column(4, selectInput("indicsIn", "Select Indicator", choices=indics))),
   fluidRow(column(4, uiOutput("corrChk")),
@@ -114,7 +115,6 @@ server <- function(input, output, session) {
       }
     }
     
-    ###### CALCULATING SUMMARY STATISTICS ###########
     if(length(aggs_list)>0){
       #ALT: Temporary fix til we correct farm size in the compilation code
       if (any(aggs_list %in% "farmsize")) {
@@ -140,16 +140,31 @@ server <- function(input, output, session) {
                     c(3,3,3,3))
     
     #outTable <- 
+    
+    regform <- paste(yvars, "~",paste(xvars, collapse="+"))
+    if(length("aggs_list")>0) {
+      regform <- paste(regform, "+", paste(aggs_list, collapse="+"))
+    } 
+    regres <- lm(formula(regform), data=tempdata)
+    regresOut <- data.frame(summary(regres)$coefficients)
+    regresOut$Names <- row.names(regresOut)
+    regresOut <- regresOut %>% relocate(Names, .before = everything()) %>% 
+      select(Names, Estimate, `Std..Error`, Pr...t..) %>% 
+      rename(`Cond. Coefficient` = Estimate, SE = `Std..Error`, `P Value` = Pr...t..) %>% 
+      mutate(`Cond. Coefficient` = signif(`Cond. Coefficient`, 3), SE = signif(SE, 3), `P Value` = signif(`P Value`, 2), 
+             Effect = ifelse(`P Value` <= 0.01, "Highly Significant", 
+                             ifelse(`P Value` <= 0.05, "Significant", ifelse(`P Value` <= 0.2, "Weakly Associated", "Not Significant"))))
+    output$regResult <- renderDataTable(datatable(regresOut) %>% formatStyle('Effect', color=styleEqual(c("Highly Significant", "Significant", "Weakly Associated", "Not Significant"), c('#44ce1b', '#bbdb44', '#f2a134', '#e51f1f'))))         
 
     output$chartOut <- renderUI({
       varCharts <- lapply(1:length(xvars), function(x){
         tempdata_out <- tempdata
         if(input$xChk){
-          tempdata_out <- tempdata_out[tempdata_out[[xvars[[x]]]]!=0]
+          tempdata_out <- tempdata_out[tempdata_out[[xvars[[x]]]]!=0,]
         }
         
         if(input$yChk){
-          tempdata_out <- tempdata[tempdata_out[[yvars[[1]]]]!=0]
+          tempdata_out <- tempdata_out[tempdata_out[[yvars[[1]]]]!=0,]
         }
         
         
@@ -161,13 +176,13 @@ server <- function(input, output, session) {
         }
         if(length(aggs_list)==0){
           
-          plot2 <- ggplot(tempdata, aes_string(x=xvars[[x]]))+
-            geom_histogram(aes(y=..density..))+
+          plot2 <- ggplot(tempdata, ensym(x=xvars[[x]]))+
+            geom_histogram(aes(y=after_stat(density)))+
             labs(x="", y="")+
             geom_density(fill=NA)+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
-          plot1 <- ggplot(tempdata, aes_string(x=yvars[[1]]))+
-            geom_histogram(aes(y=..density..))+
+          plot1 <- ggplot(tempdata, ensym(x=yvars[[1]]))+
+            geom_histogram(aes(y=after_stat(density)))+
             labs(x="", y="")+
             geom_density(fill=NA)+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
@@ -211,7 +226,9 @@ server <- function(input, output, session) {
         } else if(res$p.value <= 0.01) {
           adj="<font color='#44ce1b'>very high</font>"
         }
+      
        
+        
         tabPanel(title=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], 
                  fluidRow(column(6, renderPlot(plot1), column(6, renderPlot(plot2)))),
                  #fluidRow(renderTable(outTable)),
@@ -223,6 +240,8 @@ server <- function(input, output, session) {
         
       })
       do.call(tabsetPanel, varCharts) %>% return()
+      
+       
     })  
     
   })
