@@ -64,7 +64,8 @@ ui <- fluidPage(
   fluidRow(column(4, uiOutput("corrChk")),
            column(4, radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Zone","State","LGA","EA","Household"), choiceValues=c("zone", "state", "lga", "ea", "hhid")),
                   checkboxInput('yChk', 'Omit 0s from Indicator'),
-                  checkboxInput('xChk', 'Omit 0s from Correlate(s)')),
+                  #checkboxInput('xChk', 'Omit 0s from Correlate(s)')
+                  ),
            column(3, uiOutput("groupsChk")),
            column(1, actionButton("submit", "Go"))
   )
@@ -76,7 +77,7 @@ server <- function(input, output, session) {
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
       groupnames <- groups_list[which(groups_list$level %in% group_cats[[x]]),]
-      checkboxGroupInput(group_cats[[x]], label=HTML(group_labs[[x]]), choiceNames=groupnames$shortName, choiceValues=groupnames$varName)
+      radioButtons(group_cats[[x]], label=HTML(group_labs[[x]]), choiceNames=c("None",groupnames$shortName), choiceValues=c("",groupnames$varName))
     })
   })
   
@@ -93,7 +94,14 @@ server <- function(input, output, session) {
     yvars = input$indicsIn
     adm_level <- input$disAgg_admin
     varslist <- c(xvars, yvars)
+    if(aggs_list!=""){
     tempdata <- data %>% select(all_of(c(adm_level_in, xvars, yvars, "weight", aggs_list))) %>% na.omit()
+    } else {
+      tempdata <- data %>% select(all_of(c(adm_level_in, xvars, yvars, "weight"))) %>% na.omit()
+    }
+    if(input$yChk){
+      tempdata <- tempdata[tempdata[[yvars]]!=0,]
+    }
     for(currVar in varslist) {
       var_unit <- subset(indicator_list, shortName %in% currVar)$units[[1]] #Should only be 1 list item
       var_continuous <- max(c("count","ratio", "boolean") %in% var_unit)==0
@@ -115,8 +123,6 @@ server <- function(input, output, session) {
       }
     }
     
-    if(length(aggs_list)>0){
-      #ALT: Temporary fix til we correct farm size in the compilation code
       if (any(aggs_list %in% "farmsize")) {
         tempdata$farmsize <- sapply(tempdata$farmsize, switch, 
                                     "0 ha"=0, 
@@ -124,11 +130,13 @@ server <- function(input, output, session) {
                                     "2 - 4 ha"=2,
                                     ">4 ha"=3)
       }
-    }
+    
     
     if(adm_level_in!="hhid"){
+      groupbyvars <- c(aggs_list, adm_level_in, 'name')
+      groupbyvars <- groupbyvars[nzchar(groupbyvars)]
       tempdata <- tempdata %>% pivot_longer(., varslist) %>% 
-        group_by(across(all_of(c(aggs_list, adm_level_in, 'name')))) %>% 
+        group_by(across(all_of(groupbyvars))) %>% 
         summarize(value=weighted.mean(value, weight)) %>%
         pivot_wider()
     }
@@ -142,7 +150,7 @@ server <- function(input, output, session) {
     #outTable <- 
     
     regform <- paste(yvars, "~",paste(xvars, collapse="+"))
-    if(length("aggs_list")>0) {
+    if(aggs_list!="") {
       regform <- paste(regform, "+", paste(aggs_list, collapse="+"))
     } 
     regres <- lm(formula(regform), data=tempdata)
@@ -159,56 +167,59 @@ server <- function(input, output, session) {
     output$chartOut <- renderUI({
       varCharts <- lapply(1:length(xvars), function(x){
         tempdata_out <- tempdata
-        if(input$xChk){
-          tempdata_out <- tempdata_out[tempdata_out[[xvars[[x]]]]!=0,]
-        }
+        #if(input$xChk){
+        #  tempdata_out <- tempdata_out[tempdata_out[[xvars[[x]]]]!=0,]
+        #}
         
-        if(input$yChk){
-          tempdata_out <- tempdata_out[tempdata_out[[yvars[[1]]]]!=0,]
-        }
+        #if(input$yChk){
+        #  tempdata_out <- tempdata_out[tempdata_out[[yvars[[1]]]]!=0,]
+        #}
         
         
-        if(max(tempdata_out[[xvars[[x]]]]) - min(tempdata[[xvars[[x]]]]) > 10000){
-          tempdata[[xvars[[x]]]] <- log(tempdata[[xvars[[x]]]]+1)
-        }
-        if(max(tempdata[[yvars[[1]]]]) - min(tempdata[[yvars[[1]]]]) > 10000){
-          tempdata[[yvars[[1]]]] <- log(tempdata[[yvars[[1]]]]+1)
-        }
-        if(length(aggs_list)==0){
-          
-          plot2 <- ggplot(tempdata, ensym(x=xvars[[x]]))+
+        #if(max(tempdata_out[[xvars[[x]]]]) - min(tempdata[[xvars[[x]]]]) > 10000){
+        #  tempdata[[xvars[[x]]]] <- log(tempdata[[xvars[[x]]]]+1)
+        #}
+        #if(max(tempdata[[yvars[[1]]]]) - min(tempdata[[yvars[[1]]]]) > 10000){
+        #  tempdata[[yvars[[1]]]] <- log(tempdata[[yvars[[1]]]]+1)
+        #}
+        if(aggs_list==""){
+          plot2 <- ggplot(tempdata, aes(x=!!sym(xvars[[x]])))+
             geom_histogram(aes(y=after_stat(density)))+
             labs(x="", y="")+
             geom_density(fill=NA)+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
-          plot1 <- ggplot(tempdata, ensym(x=yvars[[1]]))+
+          plot1 <- ggplot(tempdata, aes(x=!!sym(yvars)))+
             geom_histogram(aes(y=after_stat(density)))+
             labs(x="", y="")+
             geom_density(fill=NA)+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
-          plot3 <- ggplot(tempdata, aes_string(x=xvars[[x]], y=yvars[[1]], group=aggs_list, color=aggs_list))+ #only one yvar for now
+          plot3 <- ggplot(tempdata, aes(x=!!sym(xvars[[x]]), y=!!sym(yvars)))+ #only one yvar for now
             geom_point()+
             theme_minimal(base_size=14)+
             stat_smooth(method="lm")+
             labs(x="", y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]])+
-            theme(axis.text.x=element_blank())
+            theme()
         } else {
+          aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
+          flevels = groups_list[which(groups_list$varName==aggs_list),]$Levels %>% str_split(., ",") %>% unlist()
+          flabels = groups_list[which(groups_list$varName==aggs_list),]$Labels %>% str_split(., ",") %>% unlist()
+          tempdata[[aggs_list]] <- factor(tempdata[[aggs_list]], levels=flevels, labels=flabels)
           plot2 <- ggplot(tempdata, aes_string(x=xvars[[x]], group=aggs_list, fill=aggs_list))+
-            geom_histogram(aes(y=..density..))+
+            geom_histogram(aes(y=after_stat(density)))+
             geom_density(fill=NA)+
-            labs(x="", y="")+
+            labs(x="", y="", fill=aggs_lab)+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
           plot1 <- ggplot(tempdata, aes_string(x=yvars[[1]], group=aggs_list, fill=aggs_list))+
-            geom_histogram(aes(y=..density..))+
+            geom_histogram(aes(y=after_stat(density)))+
             geom_density(fill=NA)+
-            labs(x="", y="")+
+            labs(x="", y="", fill=aggs_lab)+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
-          plot3 <- ggplot(tempdata, aes_string(x=xvars[[x]], y=yvars[[1]], group=aggs_list, color=aggs_list))+ #only one yvar for now
+          plot3 <- ggplot(tempdata, aes(x=!!sym(xvars[[x]]), y=!!sym(yvars[[1]]), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
             geom_point()+
             theme_minimal(base_size=14)+
             stat_smooth(method="lm")+
-            labs(x="", y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]])+
-            theme(axis.text.x=element_blank())
+            labs(x="", y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]], color=aggs_lab)+
+            theme()
         }
         #chartLayout <- arrangeGrob(plot1, plot2,plot3, layout_matrix=layout)
         #chartLayout <- arrangeGrob(grobs=c(ggplotly(plot1),plot2,plot3), layout_matrix=layout)
@@ -230,7 +241,7 @@ server <- function(input, output, session) {
        
         
         tabPanel(title=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], 
-                 fluidRow(column(6, renderPlot(plot1), column(6, renderPlot(plot2)))),
+                 fluidRow(column(6, renderPlot(plot1)), column(6, renderPlot(plot2))),
                  #fluidRow(renderTable(outTable)),
                   fluidRow(renderPlotly(ggplotly(plot3))),
                           fluidRow(HTML(sprintf("There is %s%% (%s%% - %s%%) correlation between <font color='#3562ab'><b>%s</b></font> and <font color='#3562ab'><b>%s</b></font>. There is %s confidence in this result.", 
