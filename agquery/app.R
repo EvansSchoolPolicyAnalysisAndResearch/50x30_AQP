@@ -21,6 +21,7 @@ library(purrr)
 library(rintrojs)
 library(corrplot)
 library(plotly)
+library(bslib)
 #install.packages("spatstat")
 # renv::deactivate()
 
@@ -56,23 +57,30 @@ filters_list <- readxl::read_xlsx(paste0(root_dir, "Update/filterset.xlsx"))
 adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 
 
-ui <- fluidPage(
-  uiOutput("chartOut"),
-  DTOutput("regResult"),
-  hr(),
-  fluidRow(column(4, selectInput("indicsIn", "Select Indicator", choices=indics))),
-  fluidRow(column(4, uiOutput("corrChk")),
-           column(4, radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Zone","State","LGA","EA","Household"), choiceValues=c("zone", "state", "lga", "ea", "hhid")),
-                  checkboxInput('yChk', 'Omit 0s from Indicator'),
-                  #checkboxInput('xChk', 'Omit 0s from Correlate(s)')
+ui <- fluidPage(theme=bs_theme(), 
+                titlePanel("50x30 Cambodia Data Explorer"),
+                sidebarLayout(
+                  sidebarPanel(width=3,
+                    selectInput("indicsIn", "Select Indicator", choices=indics),
+                    radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Zone","State","LGA","EA","Household"), choiceValues=c("zone", "state", "lga", "ea", "hhid")),
+                    uiOutput("groupsChk")
                   ),
-           column(3, uiOutput("groupsChk")),
-           column(1, actionButton("submit", "Go"))
+                  mainPanel(width=9,
+                    fluidRow(column(4, uiOutput("corrChk")),
+                             column(4, checkboxInput('yChk', 'Omit 0s from Indicator'),
+                                    #checkboxInput('xChk', 'Omit 0s from Correlate(s)')
+                             ),
+                             column(3, uiOutput("corrInfo")),
+                             column(1, actionButton("submit", "Go"))),
+  hr(),
+  uiOutput("chartOut")
+  #DTOutput("regResult")
   )
+)
 )
 
 server <- function(input, output, session) {
-  
+  bs_themer()
   
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
