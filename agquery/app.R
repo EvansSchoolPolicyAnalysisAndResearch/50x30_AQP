@@ -34,7 +34,7 @@ theme_set(theme_cowplot()) #Graphing theme.
 #root_dir <- paste0(getwd(), "/")
 root_dir <- ""
 
-data <- read.dta13("Data/nga_w4_hh_vars.dta")
+#data <- read.dta13("Data/khm_w1_hh_vars.dta")
 corr_list <- readxl::read_xlsx(paste0(root_dir, "Update/corr_list.xlsx"))
 
 #Update INDICATOR list to change which indicators are available
@@ -57,18 +57,21 @@ filters_list <- readxl::read_xlsx(paste0(root_dir, "Update/filterset.xlsx"))
 adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 
 
-ui <- fluidPage(theme=bs_theme(), 
+ui <- fluidPage(#theme=bs_theme(), 
                 titlePanel("50x30 Cambodia Data Explorer"),
                 sidebarLayout(
                   sidebarPanel(width=3,
                     selectInput("indicsIn", "Select Indicator", choices=indics),
-                    radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Zone","State","LGA","EA","Household"), choiceValues=c("zone", "state", "lga", "ea", "hhid")),
+                    uiOutput("indicDesc"),
+                    radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
                     uiOutput("groupsChk")
                   ),
                   mainPanel(width=9,
                     fluidRow(column(4, uiOutput("corrChk")),
                              column(4, checkboxInput('yChk', 'Omit 0s from Indicator'),
                                     #checkboxInput('xChk', 'Omit 0s from Correlate(s)')
+                                    popify(bsButton("ttip1",label="",icon=icon("question"),style = "inverse", size = "extra-small", block=F), "Using Winsorization","Winsorization controls extreme values by setting all values greater than the 99th percentile to the value of the 99th percentile. In previous verisions of AgQuery, this option was the default.", trigger="hover",placement="right", options = list(container = "body"))
+                                    
                              ),
                              column(3, uiOutput("corrInfo")),
                              column(1, actionButton("submit", "Go"))),
@@ -80,7 +83,7 @@ ui <- fluidPage(theme=bs_theme(),
 )
 
 server <- function(input, output, session) {
-  bs_themer()
+  #bs_themer()
   
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
@@ -92,7 +95,14 @@ server <- function(input, output, session) {
   observeEvent(input$indicsIn, {
     corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
     corrs_in <- indicator_list[indicator_list$shortName %in% corrvals,]
-    output$corrChk <- renderUI(checkboxGroupInput("corrsIn", "Correlates", choiceNames=corrs_in$prettyName, choiceValues=corrs_in$shortName))
+    corrs_items <- lapply(corrs_in$prettyName, FUN=function(x){
+      ttip <- popify(bsButton(paste0("ttip_", corrs_in$shortName[which(corrs_in$prettyName==x)]), label="",icon=icon("question"),style = "inverse", size = "extra-small", block=F), "",
+                     corr_list$reason[which(corrs_in$prettyName==x)], trigger="hover",placement="right", options = list(container = "body"))
+      return(c(x, ttip))
+    })
+    output$corrChk <- renderUI(checkboxGroupInput("corrsIn", "Correlates", choiceNames=corrs_items, choiceValues=corrs_in$shortName))
+
+    output$indicDesc <- renderUI(HTML(sprintf("<b>Survey Question: </b> %s <br> %s <br><br>", indicator_list$survey_question[indicator_list$shortName==input$indicsIn], indicator_list$ques_text[indicator_list$shortName==input$indicsIn])))
   })
   
   observeEvent(input$submit, {
