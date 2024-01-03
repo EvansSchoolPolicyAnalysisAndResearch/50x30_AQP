@@ -61,30 +61,34 @@ khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 
 ui <- fluidPage(#theme=bs_theme(), 
                 titlePanel("50x30 Cambodia Data Explorer"),
-                sidebarLayout(
-                  sidebarPanel(width=3,
-                    selectInput("indicsIn", "Select Indicator", choices=indics),
+                column(4,
+                  wellPanel(selectInput("indicsIn", "Select Indicator", choices=indics),
                     uiOutput("indicDesc"),
                     radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
-                    uiOutput("groupsChk")
+                    #uiOutput("groupsChk")
                   ),
-                  mainPanel(width=9,
-                    fluidRow(column(4, uiOutput("corrChk")),
-                             column(4, checkboxInput('yChk', 'Omit 0s from Indicator'),
+                  uiOutput('indicHeader'),
+                  plotOutput('indicatorHist'),
+                  plotOutput('indicatorMap')),
+                  column(4, fluidRow(uiOutput("groupsChk")), 
+                            fluidRow(uiOutput("corrChk"))
+                         ),
+                  column(4, 
+                                    #checkboxInput('yChk', 'Omit 0s from Indicator'),
                                     #checkboxInput('xChk', 'Omit 0s from Correlate(s)')
                                     #popify(bsButton("ttip1",label="",icon=icon("question"),style = "inverse", size = "extra-small", block=F), "Using Winsorization","Winsorization controls extreme values by setting all values greater than the 99th percentile to the value of the 99th percentile. In previous verisions of AgQuery, this option was the default.", trigger="hover",placement="right", options = list(container = "body"))
                                     
                              ),
-                             column(3, uiOutput("corrInfo")),
-                             column(1, actionButton("submit", "Go"))),
+                             #column(3, uiOutput("corrInfo")),
+                             column(1, actionButton("submit", "Go")),
   hr(),
   uiOutput("chartOut")
   #fluidRow(column, 4, uiOutput("yvarOut"),
   #         column, 8, uiOutput("xvarOut"))
   #DTOutput("regResult")
-  )
 )
-)
+
+
 
 server <- function(input, output, session) {
   #bs_themer()
@@ -105,9 +109,84 @@ server <- function(input, output, session) {
       return(c(x, ttip))
     })
     output$corrChk <- renderUI(checkboxGroupInput("corrsIn", "Correlates", choiceNames=corrs_items, choiceValues=corrs_in$shortName))
-
-    output$indicDesc <- renderUI(HTML(sprintf("<table border='1'><tr><td><b>Survey Question: </b> %s </td></tr> <tr><td>%s </td></tr></table><br><br>", indicator_list$survey_question[indicator_list$shortName==input$indicsIn], indicator_list$ques_text[indicator_list$shortName==input$indicsIn])))
+    output$indicDesc <- renderUI(HTML(sprintf("<p align='center'><table style='border:2px outset; border-color:#e0dbc8'><tr><td style='border:2px outset; border-color:#e0dbc8; padding:15px'><b>Survey Question: </b> %s </td style='border:2px outset; border-color:#e0dbc8; padding:15px'></tr> <tr><td style='border:2px outset; border-color:#e0dbc8; padding:15px'>%s </td></tr></table><br><br></p>", 
+                                              indicator_list$survey_question[indicator_list$shortName==input$indicsIn], indicator_list$ques_text[indicator_list$shortName==input$indicsIn])))
+    
+    
+    plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
+      geom_histogram(fill="red", alpha=0.4)+
+      labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
+      geom_density(aes(y=after_stat(count)), fill=NA)
+      #ggtitle(paste("Histogram of ", indicator_list$prettyName[indicator_list$shortName==input$indicsIn]))
+    plot5 <- ggplot(getData()$mapdata, aes_string(fill=input$indicsIn))+
+      geom_sf()+
+      theme_map()+
+      #ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==input$indicsIn]), " by Province")) + 
+      labs(fill="")
+    output$indicatorHist <- renderPlot(plot1)
+    output$indicatorMap <- renderPlot(plot5)
+    output$indicHeader <- renderUI(HTML(sprintf("<h3>Data Preview - %s</h3>", input$indicsIn)))
+    })
+  
+  
+  observeEvent(input$disAgg_admin, {
+    plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
+      geom_histogram(fill="red", alpha=0.4)+
+      labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
+      geom_density(aes(y=after_stat(count)), fill=NA)
+    output$indicatorHist <- renderPlot(plot1)
   })
+  
+  getData <- function(){
+    currVar <-  input$indicsIn
+    adm_level_in <- input$disAgg_admin
+    if(adm_level_in!="province"){
+      tempdata <- data %>% select(all_of(c(adm_level_in, "province", input$indicsIn, "weight"))) %>% na.omit()
+    } else {
+      tempdata <- data %>% select(all_of(c(adm_level_in,  input$indicsIn, "weight"))) %>% na.omit()
+    }
+    var_unit <- subset(indicator_list, shortName %in% currVar)$units[[1]] #Should only be 1 list item
+    var_continuous <- max(c("count","ratio", "boolean") %in% var_unit)==0
+    if(var_continuous==T) { 
+      l_wins_threshold <- (indicator_list$wins_limit[[which(indicator_list$shortName %in% currVar)]])/100
+      u_wins_threshold <- 1-l_wins_threshold
+      
+      if(!is.numeric(l_wins_threshold)) { #I.e., spreadsheet cell was empty or boxes were somehow made blank
+        l_wins_threshold <- 0
+      }
+      if(!is.numeric(u_wins_threshold)){
+        u_wins_threshold <- 1
+      }
+      
+      #Use zeros in the spreadsheet for vars that you don't want to winsorize
+      lim <- quantile(tempdata[[currVar]],probs=c(l_wins_threshold, u_wins_threshold), na.rm=T)
+      tempdata[[currVar]][tempdata[[currVar]] < lim[1]] <- lim[1] 
+      tempdata[[currVar]][tempdata[[currVar]] > lim[2]] <- lim[2] 
+    }
+    
+    #This could get simplified if we end up not going past the hhid/province model (or made more complex once we introduce multiple waves. )
+    if(adm_level_in=="province"){
+      tempdata <- tempdata %>% 
+        group_by(!!sym(adm_level_in)) %>% 
+        summarize(value=weighted.mean(!!sym(currVar), weight))
+      names(tempdata)[names(tempdata)=="value"] <- currVar #Working around the fact that dplyr doesn't like to assign values to symbols
+      mapdata <- tempdata
+      mapdata$province_num <- as.numeric(mapdata$province)
+      xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
+    } else {
+      mapdata <- tempdata %>% 
+        group_by(province) %>% 
+        summarize(value=weighted.mean(!!sym(currVar), weight))
+      names(mapdata)[names(mapdata)=="value"] <- currVar
+      mapdata$province_num <- as.numeric(mapdata$province)
+      xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
+    }
+    
+    return(list(tempdata=tempdata, mapdata=xShp))
+  }
+  
+
+  
   
   observeEvent(input$submit, {
     adm_level_in <- input$disAgg_admin
@@ -174,12 +253,12 @@ server <- function(input, output, session) {
       mapdata <- outdata
     }
     
-    layout <- rbind(c(1,1,2,2),
-                    c(1,1,2,2),
-                    c(4,4,5,5),
-                    c(4,4,5,5),
-                    c(3,3,3,3),
-                    c(3,3,3,3))
+    #layout <- rbind(c(1,1,2,2),
+    #                c(1,1,2,2),
+    #                c(4,4,5,5),
+    #                c(4,4,5,5),
+    #                c(3,3,3,3),
+    #                c(3,3,3,3))
     
     #outTable <- 
     
@@ -222,11 +301,12 @@ server <- function(input, output, session) {
             labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars[[x]]], y="")+
             geom_density(fill=NA)+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
-          plot1 <- ggplot(outdata, aes(x=!!sym(yvars)))+
-            geom_histogram(aes(y=after_stat(density)), fill="red", alpha=0.4)+
-            labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars[[1]]], y="Relative Number of Observations")+
-            geom_density(fill=NA)+
-            ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
+          #plot1 relocated up to new section.
+          #plot1 <- ggplot(outdata, aes(x=!!sym(yvars)))+
+          #  geom_histogram(aes(y=after_stat(density)), fill="red", alpha=0.4)+
+          #  labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars[[1]]], y="Relative Number of Observations")+
+          #  geom_density(fill=NA)+
+          #  ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
           plot3 <- ggplot(outdata, aes(x=!!sym(xvars[[x]]), y=!!sym(yvars)))+ #only one yvar for now
             geom_point()+
             theme_minimal(base_size=14)+
@@ -258,7 +338,7 @@ server <- function(input, output, session) {
         mapdata$province_num <- as.numeric(mapdata$province)
         xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
         plot4 <- ggplot(xShp, aes_string(fill=xvars[[x]]))+geom_sf()+theme_map()+ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]), " by Province")) + labs(fill="")
-        plot5 <- ggplot(xShp, aes_string(fill=yvars[[1]]))+geom_sf()+theme_map()+ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]), " by Province")) + labs(fill="")
+        #plot5 <- ggplot(xShp, aes_string(fill=yvars[[1]]))+geom_sf()+theme_map()+ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]), " by Province")) + labs(fill="")
         #chartLayout <- arrangeGrob(plot1, plot2,plot3, layout_matrix=layout)
         #chartLayout <- arrangeGrob(grobs=c(ggplotly(plot1),plot2,plot3), layout_matrix=layout)
         
