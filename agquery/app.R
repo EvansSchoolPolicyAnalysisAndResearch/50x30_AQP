@@ -61,28 +61,32 @@ khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 
 ui <- fluidPage(#theme=bs_theme(), 
                 titlePanel("50x30 Cambodia Data Explorer"),
-                column(4,
+                fluidRow(column(4,
                   wellPanel(selectInput("indicsIn", "Select Indicator", choices=indics),
                     uiOutput("indicDesc"),
                     radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
                     #uiOutput("groupsChk")
                   ),
-                  uiOutput('indicHeader'),
-                  plotOutput('indicatorHist'),
-                  plotOutput('indicatorMap')),
+                  ),
                   column(4, fluidRow(uiOutput("groupsChk")), 
                             fluidRow(uiOutput("corrChk"))
                          ),
                   column(4, 
-                                    #checkboxInput('yChk', 'Omit 0s from Indicator'),
+                                    checkboxInput('yChk', 'Omit 0s from Indicator'),
+
                                     #checkboxInput('xChk', 'Omit 0s from Correlate(s)')
                                     #popify(bsButton("ttip1",label="",icon=icon("question"),style = "inverse", size = "extra-small", block=F), "Using Winsorization","Winsorization controls extreme values by setting all values greater than the 99th percentile to the value of the 99th percentile. In previous verisions of AgQuery, this option was the default.", trigger="hover",placement="right", options = list(container = "body"))
                                     
                              ),
                              #column(3, uiOutput("corrInfo")),
-                             column(1, actionButton("submit", "Go")),
+                             column(1, actionButton("submit", "Go"))
+                  ),
   hr(),
-  uiOutput("chartOut")
+  fluidRow(column(4, uiOutput('indicHeader'),
+                  plotOutput('indicatorHist'),
+                  plotOutput('indicatorMap')),
+           column(8, uiOutput("chartOut"))
+  )
   #fluidRow(column, 4, uiOutput("yvarOut"),
   #         column, 8, uiOutput("xvarOut"))
   #DTOutput("regResult")
@@ -130,10 +134,19 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$disAgg_admin, {
+    aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
+    if(length(aggs_list)==0){
     plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
       geom_histogram(fill="red", alpha=0.4)+
       labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
       geom_density(aes(y=after_stat(count)), fill=NA)
+
+    } else {
+      plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
+        geom_histogram(fill=!!sym(aggs_list), position="dodge", alpha=0.4)+
+        labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
+        geom_density(aes(y=after_stat(count), group=!!sym(aggs_list)), fill=NA)
+    }
     output$indicatorHist <- renderPlot(plot1)
   })
   
@@ -231,10 +244,10 @@ server <- function(input, output, session) {
     
     
     if(adm_level_in!="hhid"){
-      groupbyvars <- c(aggs_list, adm_level_in, 'name')
-      groupbyvars <- groupbyvars[nzchar(groupbyvars)]
+      pivotbyvars <- c(aggs_list, adm_level_in, 'name')
+      pivotbyvars <- pivotbyvars[nzchar(pivotbyvars)]
       outdata <- tempdata %>% pivot_longer(., varslist) %>% 
-        group_by(across(all_of(groupbyvars))) %>% 
+        group_by(across(all_of(pivotbyvars))) %>% 
         summarize(value=weighted.mean(value, weight)) %>%
         pivot_wider()
     } else {
@@ -242,11 +255,15 @@ server <- function(input, output, session) {
     }
     
     if(adm_level_in != "province") {
-      groupbyvars <- c('province', 'name')
-      mapdata <- data  %>% select(all_of(c('province', xvars, yvars, "weight", aggs_list))) %>% 
+      pivotbyvars <- c(aggs_list, 'province', 'name')
+      pivotbyvars <- pivotbyvars[nzchar(pivotbyvars)]
+      
+      groupbyvars <- c('province', xvars, yvars, "weight", aggs_list)
+      groupbyvars <- groupbyvars[nzchar(groupbyvars)]
+      mapdata <- data  %>% select(all_of(groupbyvars)) %>% 
         na.omit() %>% 
         pivot_longer(., varslist) %>% 
-        group_by(across(all_of(groupbyvars))) %>% 
+        group_by(across(all_of(pivotbyvars))) %>% 
         summarize(value=weighted.mean(value, weight)) %>%
         pivot_wider()
     } else {
@@ -295,11 +312,14 @@ server <- function(input, output, session) {
         #if(max(tempdata[[yvars[[1]]]]) - min(tempdata[[yvars[[1]]]]) > 10000){
         #  tempdata[[yvars[[1]]]] <- log(tempdata[[yvars[[1]]]]+1)
         #}
+        xlab = indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]
+        ylab = indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]
         if(aggs_list==""){
           plot2 <- ggplot(outdata, aes(x=!!sym(xvars[[x]])))+
             geom_histogram(aes(y=after_stat(density)), fill="red", alpha=0.4)+
             labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars[[x]]], y="")+
             geom_density(fill=NA)+
+
             ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
           #plot1 relocated up to new section.
           #plot1 <- ggplot(outdata, aes(x=!!sym(yvars)))+
@@ -311,7 +331,7 @@ server <- function(input, output, session) {
             geom_point()+
             theme_minimal(base_size=14)+
             stat_smooth(method="lm")+
-            labs(x=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]])
+            labs(x=xlab, y=ylab)
         } else {
           aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
           if(!is.factor(outdata[[aggs_list]])){
@@ -323,12 +343,12 @@ server <- function(input, output, session) {
             geom_histogram(aes(y=after_stat(density)), alpha=0.4)+
             geom_density(fill=NA)+scale_color_discrete(guide='none')+
             labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars[[x]]], y="", fill=aggs_lab)+
-            ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]))
+            ggtitle(paste("Density plot of", xlab))
           plot1 <- ggplot(outdata, aes_string(x=yvars[[1]], group=aggs_list, fill=aggs_list, color=aggs_list))+
-            geom_histogram(aes(y=after_stat(density)), alpha=0.4)+
+            geom_histogram(aes(y=after_stat(density)), position="dodge", alpha=0.4)+
             geom_density(fill=NA)+scale_color_discrete(guide='none')+
             labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars[[1]]], y="Relative Number of Observations", fill=aggs_lab)+
-            ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
+            ggtitle(paste("Density plot of", ylab))
           plot3 <- ggplot(outdata, aes(x=!!sym(xvars[[x]]), y=!!sym(yvars[[1]]), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
             geom_point()+
             theme_minimal(base_size=14)+
@@ -337,8 +357,17 @@ server <- function(input, output, session) {
         }
         mapdata$province_num <- as.numeric(mapdata$province)
         xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
-        plot4 <- ggplot(xShp, aes_string(fill=xvars[[x]]))+geom_sf()+theme_map()+ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]), " by Province")) + labs(fill="")
-        #plot5 <- ggplot(xShp, aes_string(fill=yvars[[1]]))+geom_sf()+theme_map()+ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]), " by Province")) + labs(fill="")
+
+        plot4 <- ggplot(xShp, aes_string(fill=xvars[[x]]))+
+          geom_sf()+
+          theme_map()+
+          ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==xvars[[x]]]), " by Province")) + 
+          labs(fill="")
+        plot5 <- ggplot(xShp, aes_string(fill=yvars[[1]]))+
+          geom_sf()+
+          theme_map()+
+          ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]), " by Province"))+
+          labs(fill="")
         #chartLayout <- arrangeGrob(plot1, plot2,plot3, layout_matrix=layout)
         #chartLayout <- arrangeGrob(grobs=c(ggplotly(plot1),plot2,plot3), layout_matrix=layout)
         
@@ -358,14 +387,19 @@ server <- function(input, output, session) {
       
        
         
-        tabPanel(title=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], 
-                 fluidRow(column(6, renderPlot(plot1)), column(6, renderPlot(plot2))),
-                 fluidRow(column(6, renderPlot(plot5)), column(6, renderPlot(plot4))),
+        tabPanel(title=xlab, 
+                 #fluidRow(column(6, renderPlot(plot1)), column(6, renderPlot(plot2))),
+                 fluidRow(column(6, renderPlot(plot2))
+                          ), 
+                 fluidRow(column(6, renderPlot(plot4))
+                          ),
                  #fluidRow(renderTable(outTable)),
-                  fluidRow(renderPlotly(ggplotly(plot3))),
+                  fluidRow(renderPlotly(ggplotly(plot3))
+                           ),
                           fluidRow(HTML(sprintf("There is %s%% (%s%% - %s%%) correlation between <font color='#3562ab'><b>%s</b></font> and <font color='#3562ab'><b>%s</b></font>. There is %s confidence in this result.", 
                                                 round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
-                                                indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], indicator_list$prettyName[indicator_list$shortName==yvars[[1]]], adj)))
+                                                xlab, ylab, adj))
+                                   )
                  )
         
       })
