@@ -43,6 +43,7 @@ indicator_cats <- unique(indicator_list$indicatorCategory)
 indicators_sub <- indicator_list[indicator_list$shortName %in% unique(corr_list$indicatorSN),]
 indics <- indicators_sub$shortName
 names(indics) <- indicators_sub$prettyName
+names <- indicators_sub$prettyName
 
 #Update GROUP LIST to modify the grouping variables.
 groups_list <- readxl::read_xlsx(paste0(root_dir, "Update/grouping_vars.xlsx"))
@@ -62,32 +63,38 @@ khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 ui <- fluidPage(theme=bs_theme(base_font=font_google("Nunito Sans"),
                                header_font=font_google("Josefin Sans")), 
                 titlePanel("50x30 Cambodia Data Explorer"),
-                wellPanel(
-                  fluidRow(
+                fluidRow(
                   column(4,
-                  selectInput("indicsIn", "Select Indicator", choices=indics),
+                  wellPanel(
+                    selectInput("indicsIn", HTML("<b>Select Indicator</b>"), choices=indics),
                     uiOutput("indicDesc"),
-                  checkboxInput('yChk', 'Omit 0s from Indicator'),
-                    radioButtons("disAgg_admin", "Administrative Level", choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
+                    checkboxInput('yChk', 'Omit 0s from Indicator'),
+                    radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
+                    fluidRow(uiOutput("groupsChk")),
                     #uiOutput("groupsChk")
-                  ),
-                  column(4, fluidRow(uiOutput("groupsChk")), 
-                            fluidRow(uiOutput("corrChk")),
-                         ),
-                  column(3,         #uiOutput("corrInfo")
+                  )),
+                  column(1),
+                  column(3, wellPanel(
+                    fluidRow(HTML("<b>Select Correlates</b>"),
+                      uiOutput("corrChk"))
+                         )
+                    ),
+                  column(3, wellPanel(         #uiOutput("corrInfo")
                                     HTML("Information on correlate variables can go here?")
                                     #checkboxInput('xChk', 'Omit 0s from Correlate(s)')
                                     #popify(bsButton("ttip1",label="",icon=icon("question"),style = "inverse", size = "extra-small", block=F), "Using Winsorization","Winsorization controls extreme values by setting all values greater than the 99th percentile to the value of the 99th percentile. In previous verisions of AgQuery, this option was the default.", trigger="hover",placement="right", options = list(container = "body"))
                                     
-                             ),
+                             )
+                         ),
                              #column(3, uiOutput("corrInfo")),
-                  column(1, actionButton("submit", HTML("Compare<br>Correlates"), style="color: #f0ead6; background-color:#4169e1; font-size:18px"))
-                )),
+                  column(1, actionButton("submit", HTML("Compare<br>Correlates<br>(Refresh)"), style="color: #f0ead6; background-color:#4169e1; font-size:18px"))
+                ),
   hr(),
   fluidRow(column(4, uiOutput('indicHeader'),
                   plotOutput('indicatorHist'),
                   plotOutput('indicatorMap')),
-           column(8, uiOutput("chartOut"))
+           column(1),
+           column(7, uiOutput("chartOut"))
   )
   #fluidRow(column, 4, uiOutput("yvarOut"),
   #         column, 8, uiOutput("xvarOut"))
@@ -102,7 +109,7 @@ server <- function(input, output, session) {
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
       groupnames <- groups_list[which(groups_list$level %in% group_cats[[x]]),]
-      radioButtons(group_cats[[x]], label=HTML(group_labs[[x]]), choiceNames=c("None",groupnames$shortName), choiceValues=c("",groupnames$varName))
+      radioButtons(group_cats[[x]], label=HTML("<b>Select Disaggregates</b>"), choiceNames=c("None",groupnames$shortName), choiceValues=c("",groupnames$varName))
     })
   })
   
@@ -114,7 +121,7 @@ server <- function(input, output, session) {
                      corr_list$reason[which(corrs_in$prettyName==x)],placement="right", options = list(container = "body"))
       return(c(x, ttip))
     })
-    output$corrChk <- renderUI(checkboxGroupInput("corrsIn", "Correlates", choiceNames=corrs_items, choiceValues=corrs_in$shortName))
+    output$corrChk <- renderUI(checkboxGroupInput("corrsIn", "", choiceNames=corrs_items, choiceValues=corrs_in$shortName))
     output$indicDesc <- renderUI(HTML(sprintf("<p align='center'><table style='background-color:white; border:2px outset; border-color:#e0dbc8'><tr><td style='border:2px outset; border-color:#e0dbc8; padding:15px'><b>Survey Question: </b> %s </td style='border:2px outset; border-color:#e0dbc8; padding:15px'></tr> <tr><td style='border:2px outset; border-color:#e0dbc8; padding:15px'>%s </td></tr></table><br><br></p>", 
                                               indicator_list$survey_question[indicator_list$shortName==input$indicsIn], indicator_list$ques_text[indicator_list$shortName==input$indicsIn])))
     
@@ -125,22 +132,25 @@ server <- function(input, output, session) {
       plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
         geom_histogram(fill="red", alpha=0.4)+
         labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
-        geom_density(aes(y=after_stat(count)), fill=NA)
+        geom_density(aes(y=after_stat(count)), fill=NA)+
+        ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==input$indicsIn])) ##XXX
       
     } else {
       plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
         geom_histogram(aes(fill=!!sym(aggs_list)), alpha=0.4)+
         labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
-        geom_density(aes(y=after_stat(count), group=!!sym(aggs_list), color=!!sym(aggs_list)), fill=NA)
+        geom_density(aes(y=after_stat(count), group=!!sym(aggs_list), color=!!sym(aggs_list)), fill=NA)+
+        ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==input$indicsIn]))##XXX
     }
     plot5 <- ggplot(getData()$mapdata, aes_string(fill=input$indicsIn))+
       geom_sf()+
       theme_map()+
-      #ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==input$indicsIn]), " by Province")) + 
+      ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==input$indicsIn]), " by Province")) + ##XXX
       labs(fill="")
     output$indicatorHist <- renderPlot(plot1)
     output$indicatorMap <- renderPlot(plot5)
-    output$indicHeader <- renderUI(HTML(sprintf("<h3>Data Preview - %s</h3>", input$indicsIn)))
+    output$indicHeader <- renderUI(HTML(sprintf("<h3>Data Preview: %s</h3>", input$indicsIn)))
+    output$chartOut <- NULL
     })
   
   
@@ -151,13 +161,15 @@ server <- function(input, output, session) {
     plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
       geom_histogram(fill="red", alpha=0.4)+
       labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
-      geom_density(aes(y=after_stat(count)), fill=NA)
+      geom_density(aes(y=after_stat(count)), fill=NA)+
+      ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==input$indicsIn])) ##XXX
 
     } else {
       plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
         geom_histogram(aes(fill=!!sym(aggs_list)), alpha=0.4)+
         labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
-        geom_density(aes(y=after_stat(count), group=!!sym(aggs_list), color=!!sym(aggs_list)), fill=NA)
+        geom_density(aes(y=after_stat(count), group=!!sym(aggs_list), color=!!sym(aggs_list)), fill=NA)+
+        ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==input$indicsIn])) ##XXX
     }
     output$indicatorHist <- renderPlot(plot1)
   })
@@ -169,13 +181,15 @@ server <- function(input, output, session) {
       plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
         geom_histogram(fill="red", alpha=0.4)+
         labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
-        geom_density(aes(y=after_stat(count)), fill=NA)
+        geom_density(aes(y=after_stat(count)), fill=NA)+
+        ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==input$indicsIn])) ##XXX
       
     } else {
       plot1 <- ggplot(getData()$tempdata, aes(x=!!sym(input$indicsIn)))+
         geom_histogram(aes(fill=!!sym(aggs_list)), alpha=0.4)+
         labs(x=indicator_list$`Long Name`[indicator_list$shortName==input$indicsIn], y="Number of Observations")+
-        geom_density(aes(y=after_stat(count), group=!!sym(aggs_list), color=!!sym(aggs_list)), fill=NA)
+        geom_density(aes(y=after_stat(count), group=!!sym(aggs_list), color=!!sym(aggs_list)), fill=NA)+
+        ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==input$indicsIn])) ##XXX
     }
     output$indicatorHist <- renderPlot(plot1)
   }) #Hard coding this even though it's affected by the spreadsheet. Might want to adjust how the spreadsheet gets handled in the future.
