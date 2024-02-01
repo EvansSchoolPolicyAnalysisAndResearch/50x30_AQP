@@ -90,7 +90,7 @@ ui <- fluidPage(theme=bs_theme(base_font=font_google("Nunito Sans"),
                   column(1, actionButton("submit", HTML("Compare<br>Correlates<br>(Refresh)"), style="color: #f0ead6; background-color:#4169e1; font-size:18px"))
                 ),
   hr(),
-  fluidRow(column(4, uiOutput('indicHeader'),
+  fluidRow(column(4,uiOutput('indicHeader'),
                   plotOutput('indicatorHist'),
                   plotOutput('indicatorMap')),
            column(1),
@@ -149,8 +149,18 @@ server <- function(input, output, session) {
       labs(fill="")
     output$indicatorHist <- renderPlot(plot1)
     output$indicatorMap <- renderPlot(plot5)
-    output$indicHeader <- renderUI(HTML(sprintf("<h3>Data Preview: %s</h3>", input$indicsIn)))
+    output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
+                                                , indicator_list$prettyName[indicator_list$shortName==input$indicsIn])))
+    #tabPanel(title="CCCCCC", 
+    #         fluidRow(column(8, renderPlot(plot1))),
+    #         fluidRow(column(8, renderPlot(plot5)))
+    #)
+    
+    
     output$chartOut <- NULL
+    
+    
+    
     })
   
   
@@ -264,9 +274,11 @@ server <- function(input, output, session) {
     yvars = input$indicsIn
     adm_level <- input$disAgg_admin
     varslist <- c(xvars, yvars)
-    if(aggs_list!=""){
+    if (length(input$corrsIn) == 0) {
+      showNotification("No correlates were selected", type = "warning")
+      return()  
+    } else if(aggs_list!=""){ 
       tempdata <- data %>% select(all_of(c(adm_level_in, xvars, yvars, "weight", aggs_list))) %>% na.omit()
-
     } else {
      tempdata <- data %>% select(all_of(c(adm_level_in, xvars, yvars, "weight"))) %>% na.omit()
     }
@@ -297,7 +309,6 @@ server <- function(input, output, session) {
       if (any(aggs_list %in% "livestock_area")) {
         tempdata$livestock_area <- cut(tempdata$livestock_area, c(-1, 0, 0.01, 0.05, 0.1, max(tempdata$livestock_area)* 1.1), c("0 ha", "<=0.01 ha", ">0.01 - 0.05 ha", ">0.05 - 0.1 ha", ">0.1 - 0.25 ha"))
       }
-    
     
     if(adm_level_in!="hhid"){
       pivotbyvars <- c(aggs_list, adm_level_in, 'name')
@@ -385,9 +396,11 @@ server <- function(input, output, session) {
           #  ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==yvars[[1]]]))
           plot3 <- ggplot(outdata, aes(x=!!sym(xvars[[x]]), y=!!sym(yvars)))+ #only one yvar for now
             geom_point()+
-            theme_minimal(base_size=14)+
+            theme_minimal() +
+            theme(plot.title = element_text(size = 12, family = "Arial", face="bold"), axis.title = element_text(size = 10, family = "Arial"))+
             stat_smooth(method="lm")+
-            labs(x=xlab, y=ylab)
+            labs(x=xlab, y=ylab)+
+            ggtitle(paste0("Scatterplot of ",str_to_title(ylab), "\n",  "and ", str_to_title(xlab )))      
         } else {
           aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
           if(!is.factor(outdata[[aggs_list]])){
@@ -407,9 +420,11 @@ server <- function(input, output, session) {
             ggtitle(paste("Density plot of", ylab))
           plot3 <- ggplot(outdata, aes(x=!!sym(xvars[[x]]), y=!!sym(yvars[[1]]), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
             geom_point()+
-            theme_minimal(base_size=14)+
+            theme_minimal() +
+            theme(plot.title = element_text(size = 12, family = "Arial", face="bold"), axis.title = element_text(size = 10, family = "Arial"))+
             stat_smooth(method="lm")+
-            labs(x=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]], color=aggs_lab)
+            labs(x=indicator_list$prettyName[indicator_list$shortName==xvars[[x]]], y=indicator_list$prettyName[indicator_list$shortName==yvars[[1]]], color=aggs_lab)+
+            ggtitle(paste0("Scatterplot of",str_to_title(ylab), "\n",  "and ", str_to_title(xlab )))      
         }
         mapdata$province_num <- as.numeric(mapdata$province)
         xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
@@ -452,10 +467,11 @@ server <- function(input, output, session) {
                  #fluidRow(renderTable(outTable)),
                   fluidRow(column(9, renderPlotly(ggplotly(plot3))
                            ),
-                          column(3, HTML(sprintf("<br><br>There is %s%% (%s%% - %s%%) correlation between <font color='#3562ab'><b>%s</b></font> and <font color='#3562ab'><b>%s</b></font>. There is %s confidence in this result.", 
-                                                round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
-                                                xlab, ylab, adj))
-                                   )
+                           column(3, HTML(sprintf(
+                             "<div style='font-family: Arial;'><br><br>There is %s%% (%s%% - %s%%) correlation between <font color='#3562ab'><b>%s</b></font> and <font color='#3562ab'><b>%s</b></font>. There is %s confidence in this result.</div>", 
+                             round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
+                             xlab, ylab, adj
+                           )))
                  )
         )
         
@@ -464,7 +480,6 @@ server <- function(input, output, session) {
       
        
     })  
-    
   })
   
   
