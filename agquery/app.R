@@ -60,13 +60,13 @@ adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 
 
-ui <- fluidPage(theme=shinytheme("cosmo"),#, base_font=font_google("Nunito Sans"),
+ui <- fluidPage(theme=bs_theme(preset="superhero"),#, base_font=font_google("Nunito Sans"),
                                #header_font=font_google("Josefin Sans")), 
                 titlePanel("50x30 Cambodia Data Explorer"),
-                sidebarPanel(style="background-color:#c7c8c9",
-                    fluidRow(column(10, pickerInput("indicsIn", HTML("<b>Select Indicator</b>"), choices=indics, options=list(style="btn-primary"))), column(2, uiOutput("ttip"))),
-                    uiOutput("corrChk"),
+                sidebarPanel(
+                    fluidRow(column(8, pickerInput("indicsIn", HTML("<b>Select Indicator</b>"), choices=indics, options=list(style="btn-primary"))), column(4, uiOutput("ttip"))),
                     uiOutput("indicDesc"),
+                    uiOutput("corrChk"),
                     checkboxInput('yChk', 'Omit 0s from Indicator'),
                     
                     
@@ -76,14 +76,14 @@ ui <- fluidPage(theme=shinytheme("cosmo"),#, base_font=font_google("Nunito Sans"
                       
                     #actionButton("submit", HTML("Compare<br>Correlates<br>(Refresh)"), style="color: #f0ead6; background-color:#4169e1; font-size:18px")
                          ),
-                mainPanel(
+                mainPanel(style="background-color:#ffffff",
                   
                   
   fluidRow(column(6, uiOutput('indicHeader')) ,column(6, uiOutput('corrHeader'))),
   fluidRow(column(6, plotOutput('indicatorHist')), column(6, plotOutput('corrHist'))),
   fluidRow(column(6, plotOutput('indicatorMap')), column(6, plotOutput('corrMap'))),
-  fluidRow(column(6, plotOutput('indicatorHist')), column(6, plotOutput('corrHist'))),
-  fluidRow(plotOutput('scatterPlot'))
+  fluidRow(plotOutput('scatterPlot')),
+  fluidRow(uiOutput('plotInterp'))
   )
   #fluidRow(column, 4, uiOutput("yvarOut"),
   #         column, 8, uiOutput("xvarOut"))
@@ -94,7 +94,7 @@ ui <- fluidPage(theme=shinytheme("cosmo"),#, base_font=font_google("Nunito Sans"
 
 
 server <- function(input, output, session) {
-  #bs_themer()
+  bs_themer()
   
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
@@ -103,28 +103,44 @@ server <- function(input, output, session) {
     })
   })
   
+  #output$corrChk <- renderUI({
+  #  corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
+  #  corrs_in <- indicator_list[indicator_list$shortName %in% corrvals,]
+  #  corrs_items <- indicator_list$prettyName[indicator_list$shortName %in% corrvals,]
+  #  corrs_in <- as.list(corrs_in)
+  #  names(corrs_in) <- corrs_items
+  #  output$corrChk <- renderUI(selectizeInput("corrsIn", HTML("<b>Choose Correlate</b>"), choices=corrs_in))
+  #})
+  
   observeEvent(input$indicsIn, {
-    updatePlots()
+    corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
+    corrs_in <- indicator_list[indicator_list$shortName %in% corrvals,]
+    corrs_list <- as.list(corrs_in$shortName)
+    names(corrs_list) <- corrs_in$prettyName
+    output$corrChk <- renderUI(selectizeInput("corrsIn", HTML("<b>Choose Correlate</b>"), choices=corrs_list))
     output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
                                                 , indicator_list$prettyName[indicator_list$shortName==input$indicsIn])))
-    output$ttip <- renderUI(popify(bsButton("ttipSurvey", label=HTML("Source<br>question"),style = "inverse", size = "medium", block=F),
+    output$ttip <- renderUI(popify(bsButton("ttipSurvey", label=HTML("Source<br>question"), size = "medium", block=F),
                                                 indicator_list$survey_question[indicator_list$shortName==input$indicsIn], indicator_list$ques_text[indicator_list$shortName==input$indicsIn],
                                    placement="right", options = list(container = "body")))
-    
+
     })
   
+  observeEvent(input$indicsIn, {
+    #updatePlots()
+  })
   
   observeEvent(input$disAgg_admin, {
     updatePlots()
-  })
+  }, ignoreInit=T)
   
   observeEvent(input$Household, { #Hard coding input$Household even though the name affected by the spreadsheet. Might want to adjust how the spreadsheet gets handled in the future.
     updatePlots()
-  })
+  }, ignoreInit=T)
   
-  observeEvent(input$corrChk, {
+  observeEvent(input$corrsIn, {
     updatePlots()
-  })
+  }, ignoreInit=T)
   
   getData <- function(){
     adm_level_in <- input$disAgg_admin
@@ -200,7 +216,7 @@ server <- function(input, output, session) {
       mapdata$province_num <- as.numeric(mapdata$province)
       xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
     
-    return(list(tempdata=tempdata_out, mapdata=xShp))
+    return(list(tempdata=outdata, mapdata=xShp))
   }
   
 
@@ -208,7 +224,7 @@ server <- function(input, output, session) {
     aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
     aggs_list <- aggs_list[aggs_list!=""]
     mapdata <- getData()$mapdata
-    tempdata <- getData()$tempdata
+    outdata <- getData()$tempdata #Note to go back and fix the naming here.
     xvars = input$corrsIn
     yvars = input$indicsIn
     adm_level <- input$disAgg_admin
@@ -216,11 +232,11 @@ server <- function(input, output, session) {
     
     xlab = indicator_list$prettyName[indicator_list$shortName==xvars]
     ylab = indicator_list$prettyName[indicator_list$shortName==yvars]
-    if(aggs_list==""){
+    if(length(aggs_list)==0){
       indicatorHist <- ggplot(outdata, aes_string(x=yvars))+
         geom_histogram(fill="red", alpha=0.4)+
-        geom_density(fill=NA)+scale_color_discrete(guide='none')+
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Relative Number of Observations", fill=aggs_lab)+
+        #geom_density(fill=NA)+scale_color_discrete(guide='none')+
+        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Relative Number of Observations")+
         ggtitle(paste("Density plot of", ylab))
       corrHist <- ggplot(outdata, aes(x=!!sym(xvars)))+
         geom_histogram(fill="red", alpha=0.4)+
@@ -241,17 +257,17 @@ server <- function(input, output, session) {
         flabels = groups_list[which(groups_list$varName==aggs_list),]$Labels %>% str_split(., ",") %>% unlist()
         outdata[[aggs_list]] <- factor(outdata[[aggs_list]], levels=flevels, labels=flabels)
       }
-      plot2 <- ggplot(outdata, aes_string(x=xvars, group=aggs_list, fill=aggs_list, color=aggs_list))+
+      corrHist <- ggplot(outdata, aes_string(x=xvars, group=aggs_list, fill=aggs_list))+
         geom_histogram(aes(y=after_stat(density)), alpha=0.4)+
-        geom_density(fill=NA)+scale_color_discrete(guide='none')+
+        #geom_density(fill=NA)+scale_color_discrete(guide='none')+
         labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars], y="", fill=aggs_lab)+
         ggtitle(paste("Density plot of", xlab))
-      indicatorHist <- ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list, color=aggs_list))+
+      indicatorHist <- ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list))+
         geom_histogram(aes(y=after_stat(density)), position="dodge", alpha=0.4)+
-        geom_density(fill=NA)+scale_color_discrete(guide='none')+
+        #geom_density(fill=NA)+scale_color_discrete(guide='none')+
         labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Relative Number of Observations", fill=aggs_lab)+
         ggtitle(paste("Density plot of", ylab))
-      plot3 <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
+      scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
         geom_point()+
         theme_minimal() +
         theme(plot.title = element_text(size = 12, family = "Arial", face="bold"), axis.title = element_text(size = 10, family = "Arial"))+
@@ -260,12 +276,12 @@ server <- function(input, output, session) {
         ggtitle(paste0("Scatterplot of",str_to_title(ylab), "\n",  "and ", str_to_title(xlab )))      
     }
     
-    indicatorMap <- ggplot(mapdata, aes_string(fill=xvars))+
+    corrMap <- ggplot(mapdata, aes_string(fill=xvars))+
       geom_sf()+
       theme_map()+
       ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==xvars]), " by Province")) + 
       labs(fill="")
-    plot5 <- ggplot(xShp, aes_string(fill=yvars))+
+    indicatorMap <- ggplot(mapdata, aes_string(fill=yvars))+
       geom_sf()+
       theme_map()+
       ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==yvars]), " by Province"))+
@@ -287,8 +303,20 @@ server <- function(input, output, session) {
       adj="<font color='#44ce1b'>very high</font>"
     }
     
+    res_out <- sprintf("<div style='font-family: Arial;'><br><br>There is %s%% (%s%% - %s%%) correlation between <font color='#3562ab'><b>%s</b></font> and <font color='#3562ab'><b>%s</b></font>. There is %s confidence in this result.</div>", 
+    round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
+    xlab, ylab, adj
+    )
+    
+    
+
+    
     output$indicatorHist <- renderPlot(indicatorHist)
     output$indicatorMap <- renderPlot(indicatorMap)
+    output$corrHist <- renderPlot(corrHist)
+    output$corrMap <- renderPlot(corrMap)
+    output$scatterPlot <- renderPlot(scatterPlot)
+    output$plotInterp <- renderUI(HTML(res_out))
   }
   
   
