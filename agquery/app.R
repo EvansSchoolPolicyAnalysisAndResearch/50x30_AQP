@@ -22,14 +22,18 @@ library(rintrojs)
 library(corrplot)
 library(plotly)
 library(bslib)
-#install.packages("spatstat")
-# renv::deactivate()
+library(thematic)
+library(ragg)
+library(viridis)
+
+thematic_shiny(
+  font = "auto",
+  sequential = colorRampPalette(colors = c("white", "#440154FF"))(12),
+  qualitative = c("#440154FF",  "#21908CFF", "#3B528BFF", "#5DC863FF", "#FDE725FF")
+  )
+options(shiny.useragg = TRUE)
 
 import::from(spatstat.geom, weighted.median)
-
-theme_set(theme_cowplot()) #Graphing theme. 
-
-`%!in%` <- Negate(`%in%`) #I.e., return all unmatched from expression x %in% y; why this is not a core function of R is a real humdinger.
 
 #root_dir <- paste0(getwd(), "/")
 root_dir <- ""
@@ -60,25 +64,21 @@ adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 
 
-ui <- navbarPage("50x30 Cambodia Data Explorer", #, base_font=font_google("Nunito Sans"),
-                               #header_font=font_google("Josefin Sans")), 
+ui <- navbarPage(title="50x30 Cambodia Data Explorer", theme = bslib::bs_theme(
+  bg = "white", fg = "#3B528BFF", primary = "#440154FF",
+  base_font = bslib::font_google("Open Sans")), 
                 tabPanel("Introduction"),
                 tabPanel("Instructions"),
                 tabPanel("Data",
                   sidebarLayout(
                 sidebarPanel(
-                    fluidRow(column(8, pickerInput("indicsIn", HTML("<b>Select Indicator</b>"), choices=indics, options=list(style="btn-primary"))), column(4, uiOutput("ttip"))),
+                    fluidRow(column(8, pickerInput("indicsIn", HTML("<b>Select Indicator</b>"), choices=indics, options=list(style="btn-secondary"))), column(4, uiOutput("ttip"))),
                     uiOutput("indicDesc"),
                     uiOutput("corrChk"),
                     checkboxInput('yChk', 'Omit 0s from Indicator'),
-                    
-                    
                     radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
-                    uiOutput("groupsChk"),
-                    #uiOutput("groupsChk")
-                      
-                    #actionButton("submit", HTML("Compare<br>Correlates<br>(Refresh)"), style="color: #f0ead6; background-color:#4169e1; font-size:18px")
-                         ),
+                    uiOutput("groupsChk")
+                        ),
                 mainPanel(
   fluidRow(column(6, uiOutput('indicHeader')) ,column(6, uiOutput('corrHeader'))),
   fluidRow(column(6, plotOutput('indicatorHist')), column(6, plotOutput('corrHist'))),
@@ -86,30 +86,16 @@ ui <- navbarPage("50x30 Cambodia Data Explorer", #, base_font=font_google("Nunit
   fluidRow(plotOutput('scatterPlot')),
   fluidRow(uiOutput('plotInterp'))
   )
-  #fluidRow(column, 4, uiOutput("yvarOut"),
-  #         column, 8, uiOutput("xvarOut"))
-  #DTOutput("regResult")
 )))
-
-
 
 
 server <- function(input, output, session) {
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
       groupnames <- groups_list[which(groups_list$level %in% group_cats[[x]]),]
-      radioButtons(group_cats[[x]], label=HTML("<b>Select Disaggregates</b>"), choiceNames=c("None",groupnames$shortName), choiceValues=c("",groupnames$varName))
+      radioButtons(group_cats[[x]], label=HTML("<b>Select Grouping Variable</b>"), choiceNames=c("None",groupnames$shortName), choiceValues=c("",groupnames$varName))
     })
   })
-  
-  #output$corrChk <- renderUI({
-  #  corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
-  #  corrs_in <- indicator_list[indicator_list$shortName %in% corrvals,]
-  #  corrs_items <- indicator_list$prettyName[indicator_list$shortName %in% corrvals,]
-  #  corrs_in <- as.list(corrs_in)
-  #  names(corrs_in) <- corrs_items
-  #  output$corrChk <- renderUI(selectizeInput("corrsIn", HTML("<b>Choose Correlate</b>"), choices=corrs_in))
-  #})
   
   observeEvent(input$indicsIn, {
     corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
@@ -213,6 +199,7 @@ server <- function(input, output, session) {
   }
   
 
+
   updatePlots <- function(maps=T){
     aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
     aggs_list <- aggs_list[aggs_list!=""]
@@ -222,27 +209,29 @@ server <- function(input, output, session) {
     yvars = input$indicsIn
     adm_level <- input$disAgg_admin
     varslist <- c(xvars, yvars)
-    
+    bins <- ifelse(adm_level=="province", 6, 30)
+   
     xlab = indicator_list$prettyName[indicator_list$shortName==xvars]
     ylab = indicator_list$prettyName[indicator_list$shortName==yvars]
     if(length(aggs_list)==0){
       indicatorHist <- ggplot(outdata, aes_string(x=yvars))+
-        geom_histogram(fill="red", alpha=0.4)+
-        #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Relative Number of Observations")+
-        ggtitle(paste("Density plot of", ylab))
-      corrHist <- ggplot(outdata, aes(x=!!sym(xvars)))+
-        geom_histogram(fill="red", alpha=0.4)+
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars], y="")+
-        #geom_density(fill=NA)+
-        ggtitle(paste("Density plot of", indicator_list$prettyName[indicator_list$shortName==xvars]))
-      scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars)))+ #only one yvar for now
-        geom_point()+
-        theme_minimal() +
-        theme(plot.title = element_text(size = 12, family = "Arial", face="bold"), axis.title = element_text(size = 10, family = "Arial"))+
-        stat_smooth(method="lm")+
-        labs(x=xlab, y=ylab)+
-        ggtitle(paste0("Scatterplot of ",str_to_title(ylab), "\n",  "and ", str_to_title(xlab )))      
+        geom_histogram(bins = bins) +
+        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Number of Observations")+
+        ggtitle(paste("Histogram of", ylab)) +
+        theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+      corrHist <- ggplot(outdata, aes(x = !!sym(xvars))) +
+        geom_histogram(bins = bins) +
+        labs(x = indicator_list$`Long Name`[indicator_list$shortName == xvars], y = "Number of Observations") +
+        ggtitle(paste("Histogram of", indicator_list$prettyName[indicator_list$shortName == xvars])) +
+        theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+        
+      scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
+        geom_point() +
+        stat_smooth(method="lm") +
+        labs(x=xlab, y=ylab) +
+        ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
+        theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+        
     } else {
       aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
       if(!is.factor(outdata[[aggs_list]])){
@@ -251,36 +240,38 @@ server <- function(input, output, session) {
         outdata[[aggs_list]] <- factor(outdata[[aggs_list]], levels=flevels, labels=flabels)
       }
       corrHist <- ggplot(outdata, aes_string(x=xvars, group=aggs_list, fill=aggs_list))+
-        geom_histogram(aes(y=after_stat(density)), alpha=0.4)+
+        geom_histogram(bins = bins)+
         #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars], y="", fill=aggs_lab)+
-        ggtitle(paste("Density plot of", xlab))
+        labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars], y="Number of Observations", fill=aggs_lab)+
+        ggtitle(paste("Histogram of", xlab))  +
+        theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+              
       indicatorHist <- ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list))+
-        geom_histogram(aes(y=after_stat(density)), position="dodge", alpha=0.4)+
+        geom_histogram(bins = bins)+
         #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Relative Number of Observations", fill=aggs_lab)+
-        ggtitle(paste("Density plot of", ylab))
+        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Number of Observations", fill=aggs_lab)+
+        ggtitle(paste("Histogram of", ylab)) +
+        theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+      
       scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
         geom_point()+
-        theme_minimal() +
-        theme(plot.title = element_text(size = 12, family = "Arial", face="bold"), axis.title = element_text(size = 10, family = "Arial"), panel.background=element_blank(), panel.grid=element_blank())+
         stat_smooth(method="lm")+
         labs(x=indicator_list$prettyName[indicator_list$shortName==xvars], y=indicator_list$prettyName[indicator_list$shortName==yvars], color=aggs_lab)+
-        ggtitle(paste0("Scatterplot of",str_to_title(ylab), "\n",  "and ", str_to_title(xlab )))      
+        ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
+        theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+      
     }
     if(maps==T){
-    corrMap <- ggplot(mapdata, aes_string(fill=xvars))+
-      geom_sf()+
-      theme_map()+
-      ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==xvars]), " by Province")) + 
-      labs(fill="")
-    indicatorMap <- ggplot(mapdata, aes_string(fill=yvars))+
-      geom_sf()+
-      theme_map()+
-      ggtitle(paste0("Map of ", str_to_title(indicator_list$prettyName[indicator_list$shortName==yvars]), " by Province"))+
-      labs(fill="")
-    #chartLayout <- arrangeGrob(plot1, plot2,plot3, layout_matrix=layout)
-    #chartLayout <- arrangeGrob(grobs=c(ggplotly(plot1),plot2,plot3), layout_matrix=layout)
+    corrMap <- ggplot(mapdata, aes_string(fill = xvars)) +
+      geom_sf() +
+      ggtitle(paste("Map of", str_to_title(indicator_list$prettyName[indicator_list$shortName == xvars]), "by Province")) +
+      labs(fill = "") + 
+      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+    indicatorMap <- ggplot(mapdata, aes_string(fill = yvars)) +
+      geom_sf() +
+      ggtitle(paste("Map of", str_to_title(indicator_list$prettyName[indicator_list$shortName == yvars]), "by Province")) +
+      labs(fill = "") +
+      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
     }
     res <- eval(parse_expr(sprintf("with(outdata, cor.test(%s, %s))", xvars, yvars)))
     
@@ -296,7 +287,7 @@ server <- function(input, output, session) {
       adj="<font color='#44ce1b'>very high</font>"
     }
     
-    res_out <- sprintf("<div style='font-family: Arial;'><br><br>There is %s%% (%s%% - %s%%) correlation between <font color='#3562ab'><b>%s</b></font> and <font color='#3562ab'><b>%s</b></font>. There is %s confidence in this result.</div>", 
+    res_out <- sprintf("<div style='font-family: 'Open Sans';'><br><br>There is %s%% (%s%% - %s%%) correlation between <font color='#0a2167'><b>%s</b></font> and <font color='#0a2167'><b>%s</b></font>. There is %s confidence in this result.</div>", 
     round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
     xlab, ylab, adj
     )
