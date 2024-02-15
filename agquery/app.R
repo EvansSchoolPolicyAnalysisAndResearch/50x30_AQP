@@ -238,9 +238,27 @@ server <- function(input, output, session) {
     adm_level <- input$disAgg_admin
     varslist <- c(xvars, yvars)
     bins <- ifelse(adm_level=="province", 6, 30)
+    
    
     xlab = indicator_list$prettyName[indicator_list$shortName==xvars]
+    #if(length(xlab)>20){ 
+    #xlab <- str_split(xlab, " ")[[1]]
+    #wordcount <- length(xlab) + 2
+    #pos <- floor(wordcount/2)
+    #xlab <- paste0(paste(xlab[1:pos], collapse=" "), "\n", paste(xlab[(pos+1):length(xlab)], collapse=" "))
+    #}
+    
+    
     ylab = indicator_list$prettyName[indicator_list$shortName==yvars]
+    # ylab <- str_split(ylab, " ")[[1]]
+    # wordcount <- length(ylab) + 2
+    # pos <- floor(wordcount/2)
+    # ylab <- paste0(paste(ylab[1:pos], collapse=" "), "\n", paste(ylab[(pos+1):length(ylab)], collapse=" "))
+    
+    # For the Scatter Plot
+    xlab_scatt = indicator_list$prettyName[indicator_list$shortName==xvars]
+    ylab_scatt = indicator_list$prettyName[indicator_list$shortName==yvars]
+    
     if(length(aggs_list)==0){
       indicatorHist <- ggplot(outdata, aes_string(x=yvars))+
         geom_histogram(bins = bins) +
@@ -250,14 +268,14 @@ server <- function(input, output, session) {
       corrHist <- ggplot(outdata, aes(x = !!sym(xvars))) +
         geom_histogram(bins = bins) +
         labs(x = indicator_list$`Long Name`[indicator_list$shortName == xvars], y = "Number of Observations") +
-        ggtitle(paste("Histogram of", indicator_list$prettyName[indicator_list$shortName == xvars])) +
+        ggtitle(paste("Histogram of", xlab)) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
         
       scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
         geom_point() +
         stat_smooth(method="lm") +
         labs(x=xlab, y=ylab) +
-        ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
+        ggtitle(paste("Scatter Plot of", ylab_scatt, "and", "\n", xlab_scatt)) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
         
     } else {
@@ -285,20 +303,20 @@ server <- function(input, output, session) {
         geom_point()+
         stat_smooth(method="lm")+
         labs(x=indicator_list$prettyName[indicator_list$shortName==xvars], y=indicator_list$prettyName[indicator_list$shortName==yvars], color=aggs_lab)+
-        ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
+        ggtitle(paste("Scatterplot of", ylab_scatt, "and", "\n", xlab_scatt)) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
       
     }
     
     corrMap <- ggplot(mapdata, aes_string(fill = xvars)) +
       geom_sf() +
-      ggtitle(paste("Map of", str_to_title(indicator_list$prettyName[indicator_list$shortName == xvars]), "by Province")) +
+      ggtitle(paste("Map of", xlab, "by Province")) +
       labs(fill = "") + 
       theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
     
     indicatorMap <- ggplot(mapdata, aes_string(fill = yvars)) +
       geom_sf() +
-      ggtitle(paste("Map of", str_to_title(indicator_list$prettyName[indicator_list$shortName == yvars]), "by Province")) +
+      ggtitle(paste("Map of", ylab, "by Province")) +
       labs(fill = "") +
       theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
     #chartLayout <- arrangeGrob(plot1, plot2,plot3, layout_matrix=layout)
