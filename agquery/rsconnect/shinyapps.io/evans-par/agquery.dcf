@@ -5,9 +5,9 @@ account: evans-par
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 10377852
-bundleId: 8197543
+bundleId: 8260739
 url: https://evans-par.shinyapps.io/agquery/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .RData|.Rprofile|app2.R|renv.lock
+ignoredFiles: .RData|.Rprofile|About_50x30_D1.html|About_50x30_D1_files/colorschememapping.xml|About_50x30_D1_files/filelist.xml|About_50x30_D1_files/themedata.thmx|app2.R|Data/khm_w1_poultry_old.dta|Instructions_50x30_D1.html|renv.lock
