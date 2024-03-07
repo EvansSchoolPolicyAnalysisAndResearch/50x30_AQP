@@ -2,7 +2,7 @@ options(shiny.error=browser) #For debugging
 library(shiny)
 library(shinyBS)
 library(tidyr)
-library(shinythemes)
+#library(shinythemes)
 library(tools)
 library(ggplot2)
 library(dplyr)
@@ -46,8 +46,8 @@ indicator_list <- readxl::read_xlsx(paste0(root_dir,"Update/indicators.xlsx"))
 indicator_cats <- unique(indicator_list$indicatorCategory)
 indicators_sub <- indicator_list[indicator_list$shortName %in% unique(corr_list$indicatorSN),]
 indics <- indicators_sub$shortName
-names(indics) <- indicators_sub$prettyName
-names <- indicators_sub$prettyName
+names(indics) <- indicators_sub$labelName
+names <- indicators_sub$labelName
 
 #Update GROUP LIST to modify the grouping variables.
 groups_list <- readxl::read_xlsx(paste0(root_dir, "Update/grouping_vars.xlsx"))
@@ -64,15 +64,48 @@ adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 
 
-ui <- navbarPage(title="50x30 Cambodia Data Explorer", theme = bslib::bs_theme(
-  bg = "white", fg = "#3B528BFF", primary = "#440154FF",
+ui <- navbarPage(title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bslib::bs_theme(version="3",
+  bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
   base_font = bslib::font_google("Open Sans")), 
-                tabPanel("Introduction"),
+                tabPanel("Introduction", column(2),column(8,
+                         HTML('<span class="c4">Purpose</span></p>
+<p class="c5"><span class="c6 c0">
+The 50x30 Cambodia Data Explorer is a way to view and compare information from the Cambodia 50x2030 agricultural surveys. 
+This app helps analysts measure progress on these policy priorities:
+</span></p>
+<ol class="c11 lst-kix_79m69k2eyule-0 start" start="1"><li class="c5 c7 li-bullet-0"><span class="c6 c0">
+Increasing the consumption and production of domestic poultry</span></li>
+<li class="c5 c7 li-bullet-0"><span class="c6 c0">Reducing the import of beef through the stimulation of domestic production</span></li></ol>'),
+                         img(src='logic-model.png', width=750),
+                         HTML('<p class="c3"><span class="c0 c6">The 50x2030 agricultural survey provides several indicators that can 
+be used to assess progress. For example, poultry holdings by household can be compared to vaccination rates, landholding size, 
+and number of chickens slaughtered or sold to better understand impacts to domestic supply. 
+A full list of influential variables and literature references can be downloaded by clicking the "Download Indicators" button below. Research linking the indicators that we use with related outcomes is available using the "Download Policy Pathways" button.</span></p> 
+                 '),
+                         fluidRow(column(2), column(10, downloadButton('downloadIndics',
+                                        label='Download Indicators',
+                                        icon=icon('file-excel')),
+                                  downloadButton('downloadPathways',
+                                                 label='Download Policy Pathways',
+                                                 icon=icon('file-excel'))
+                         )),
+                         HTML('<p class="c3"><span class="c6 c0"></span></p><p class="c5"><span class="c6 c0">
+The Stata code used to process the data is publicly available at: 
+</span></p><p class="c5"><span class="c0 c8">[ENTER PUBLIC ACCESS GITHUB REPOSITORY HERE]</span></p><p class="c3"><span class="c4"></span></p>
+<p class="c5"><span class="c0">The raw data for this project can be located at </span><span class="c0 c12">
+<a class="c1" href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a></span>
+<span class="c0">.</span></p>
+<p class="c3"><span class="c0 c6">Our processed data can be downloaded using the button below.</span></p>'),
+                         downloadButton('downloadRaw',
+                                        label="Download Raw Data",
+                                        icon=icon('file-csv'))
+                )
+                ),
                 tabPanel("Instructions"),
                 tabPanel("Data",
                   sidebarLayout(
-                sidebarPanel(
-                    fluidRow(column(8, pickerInput("indicsIn", HTML("<b>Select Indicator</b>"), choices=indics, options=list(style="btn-secondary"))), column(4, uiOutput("ttip"))),
+                sidebarPanel(style="background-color: #ededed; border-color: #9c9c9c;",
+                    fluidRow(column(8, pickerInput("indicsIn", HTML("<b>Select Indicator</b>"), choices=indics, options=list(style="btn-info"))), column(4, uiOutput("ttip"))),
                     uiOutput("indicDesc"),
                     uiOutput("corrChk"),
                     checkboxInput('yChk', 'Omit 0s from Indicator'),
@@ -93,7 +126,7 @@ server <- function(input, output, session) {
   output$groupsChk <- renderUI({
     groupCheck <- lapply(1:length(group_cats), function(x){
       groupnames <- groups_list[which(groups_list$level %in% group_cats[[x]]),]
-      radioButtons(group_cats[[x]], label=HTML("<b>Select Grouping Variable</b>"), choiceNames=c("None",groupnames$shortName), choiceValues=c("",groupnames$varName))
+      radioButtons(group_cats[[x]], label=HTML("<b>Select Grouping Variable</b>"), choiceNames=c("None",groupnames$label), choiceValues=c("",groupnames$varName))
     })
   })
   
@@ -101,12 +134,12 @@ server <- function(input, output, session) {
     corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
     corrs_in <- indicator_list[indicator_list$shortName %in% corrvals,]
     corrs_list <- as.list(corrs_in$shortName)
-    names(corrs_list) <- corrs_in$prettyName
-    output$corrChk <- renderUI(selectizeInput("corrsIn", HTML("<b>Choose Correlate</b>"), choices=corrs_list))
+    names(corrs_list) <- corrs_in$labelName
+    output$corrChk <- renderUI(pickerInput("corrsIn", HTML("<b>Choose Correlate</b>"), choices=corrs_list, options=list(style="btn-info")))
     output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
-                                                , indicator_list$prettyName[indicator_list$shortName==input$indicsIn])))
+                                                , indicator_list$labelName[indicator_list$shortName==input$indicsIn])))
     output$corrHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
-                                                , indicator_list$prettyName[indicator_list$shortName==input$corrsIn])))
+                                                , indicator_list$labelName[indicator_list$shortName==input$corrsIn])))
     output$ttip <- renderUI(popify(bsButton("ttipSurvey", label=HTML("Source<br>question"), size = "medium", block=F),
                                                 indicator_list$survey_question[indicator_list$shortName==input$indicsIn], indicator_list$ques_text[indicator_list$shortName==input$indicsIn],
                                    placement="right", options = list(container = "body")))
@@ -211,25 +244,25 @@ server <- function(input, output, session) {
     varslist <- c(xvars, yvars)
     bins <- ifelse(adm_level=="province", 6, 30)
    
-    xlab = indicator_list$prettyName[indicator_list$shortName==xvars]
-    ylab = indicator_list$prettyName[indicator_list$shortName==yvars]
+    xlab = indicator_list$labelName[indicator_list$shortName==xvars]
+    ylab = indicator_list$labelName[indicator_list$shortName==yvars]
     if(length(aggs_list)==0){
       indicatorHist <- ggplot(outdata, aes_string(x=yvars))+
         geom_histogram(bins = bins) +
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Number of Observations")+
-        ggtitle(paste("Histogram of", ylab)) +
+        labs(x=indicator_list$longName[indicator_list$shortName==yvars], y="Number of Observations")+
+        ggtitle(str_to_title(paste("Histogram of", ylab))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
       corrHist <- ggplot(outdata, aes(x = !!sym(xvars))) +
         geom_histogram(bins = bins) +
-        labs(x = indicator_list$`Long Name`[indicator_list$shortName == xvars], y = "Number of Observations") +
-        ggtitle(paste("Histogram of", indicator_list$prettyName[indicator_list$shortName == xvars])) +
+        labs(x = indicator_list$longName[indicator_list$shortName == xvars], y = "Number of Observations") +
+        ggtitle(str_to_title(paste("Histogram of", indicator_list$labelName[indicator_list$shortName == xvars]))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
         
       scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
         geom_point() +
         stat_smooth(method="lm") +
         labs(x=xlab, y=ylab) +
-        ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
+        ggtitle(str_to_title(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab )))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
         
     } else {
@@ -242,21 +275,21 @@ server <- function(input, output, session) {
       corrHist <- ggplot(outdata, aes_string(x=xvars, group=aggs_list, fill=aggs_list))+
         geom_histogram(bins = bins)+
         #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==xvars], y="Number of Observations", fill=aggs_lab)+
-        ggtitle(paste("Histogram of", xlab))  +
+        labs(x=indicator_list$longName[indicator_list$shortName==xvars], y="Number of Observations", fill=aggs_lab)+
+        ggtitle(str_to_title(paste("Histogram of", xlab)))  +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
               
       indicatorHist <- ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list))+
         geom_histogram(bins = bins)+
         #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-        labs(x=indicator_list$`Long Name`[indicator_list$shortName==yvars], y="Number of Observations", fill=aggs_lab)+
-        ggtitle(paste("Histogram of", ylab)) +
+        labs(x=indicator_list$longName[indicator_list$shortName==yvars], y="Number of Observations", fill=aggs_lab)+
+        ggtitle(str_to_title(paste("Histogram of", ylab))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
       
       scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
         geom_point()+
         stat_smooth(method="lm")+
-        labs(x=indicator_list$prettyName[indicator_list$shortName==xvars], y=indicator_list$prettyName[indicator_list$shortName==yvars], color=aggs_lab)+
+        labs(x=indicator_list$labelName[indicator_list$shortName==xvars], y=indicator_list$labelName[indicator_list$shortName==yvars], color=aggs_lab)+
         ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
       
@@ -264,12 +297,12 @@ server <- function(input, output, session) {
     if(maps==T){
     corrMap <- ggplot(mapdata, aes_string(fill = xvars)) +
       geom_sf() +
-      ggtitle(paste("Map of", str_to_title(indicator_list$prettyName[indicator_list$shortName == xvars]), "by Province")) +
+      ggtitle(str_to_title(paste("Map of", indicator_list$labelName[indicator_list$shortName == xvars], "by Province"))) +
       labs(fill = "") + 
       theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
     indicatorMap <- ggplot(mapdata, aes_string(fill = yvars)) +
       geom_sf() +
-      ggtitle(paste("Map of", str_to_title(indicator_list$prettyName[indicator_list$shortName == yvars]), "by Province")) +
+      ggtitle(str_to_title(paste("Map of", indicator_list$labelName[indicator_list$shortName == yvars], "by Province"))) +
       labs(fill = "") +
       theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
     }
