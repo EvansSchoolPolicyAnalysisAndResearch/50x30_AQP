@@ -63,32 +63,31 @@ adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 
+policy_path <- read.csv(paste0(root_dir,"Update/Policy_Pathways.csv"), header = TRUE)
+pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
+pathways <- pathways[-c(10:13)]
 
 ui <- navbarPage(title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bslib::bs_theme(version="3",
   bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
   base_font = bslib::font_google("Open Sans")), 
                 tabPanel("Introduction", column(2),column(8,
-                         HTML('<span class="c4">Purpose</span></p>
-<p class="c5"><span class="c6 c0">
-The 50x30 Cambodia Data Explorer is a way to view and compare information from the Cambodia 50x2030 agricultural surveys. 
-This app helps analysts measure progress on these policy priorities:
-</span></p>
-<ol class="c11 lst-kix_79m69k2eyule-0 start" start="1"><li class="c5 c7 li-bullet-0"><span class="c6 c0">
-Increasing the consumption and production of domestic poultry</span></li>
-<li class="c5 c7 li-bullet-0"><span class="c6 c0">Reducing the import of beef through the stimulation of domestic production</span></li></ol>'),
+                        wellPanel(
+                        "The 50x30 Cambodia Data Explorer is a tool to inform policy-making in conjunction with other resources. Reviewing academic and grey literature for policy pathways can generate ideas for effective policies and programs that can help shift key indicators of agricultural development. Utilizing other tools and data from additional sources (e.g. FAO) can provide additional context for policy-making."
+                        ),
                          img(src='logic-model.png', width=750),
-                         HTML('<p class="c3"><span class="c0 c6">The 50x2030 agricultural survey provides several indicators that can 
-be used to assess progress. For example, poultry holdings by household can be compared to vaccination rates, landholding size, 
-and number of chickens slaughtered or sold to better understand impacts to domestic supply. 
-A full list of influential variables and literature references can be downloaded by clicking the "Download Indicators" button below. Research linking the indicators that we use with related outcomes is available using the "Download Policy Pathways" button.</span></p> 
+                         HTML('<p class="c3"><span class="c0 c6">The 50x30 agricultural survey contains household-level information that is potentially valuable 
+                         to policy-makers. Each indicator contains data on the agricultural practices of sampled Cambodian households. Click the "Download Indicators" 
+                         button below to view the names of indicators present in this tool. Click the "Download Policy Pathways" button to view a preliminary review of
+                         literature that may be relevant for using this tool for policy-making.</span></p> 
                  '),
-                         fluidRow(column(2), column(10, downloadButton('downloadIndics',
-                                        label='Download Indicators',
-                                        icon=icon('file-excel')),
-                                  downloadButton('downloadPathways',
-                                                 label='Download Policy Pathways',
-                                                 icon=icon('file-excel'))
+                         fluidRow(column(2), column(10, downloadButton('downloadExcel',
+                                                                       label='Download Indicators',
+                                                                       icon=icon('file-excel')),
+                                                        downloadButton('downloadPathways',
+                                                  label='Download Policy Pathways',
+                                                 icon=icon('file-csv'))
                          )),
+                         wellPanel("[empty space, revisit] ", style = "background: white"),
                          HTML('<p class="c3"><span class="c6 c0"></span></p><p class="c5"><span class="c6 c0">
 The Stata code used to process the data is publicly available at: 
 </span></p><p class="c5"><span class="c0 c8">[ENTER PUBLIC ACCESS GITHUB REPOSITORY HERE]</span></p><p class="c3"><span class="c4"></span></p>
@@ -97,8 +96,11 @@ The Stata code used to process the data is publicly available at:
 <span class="c0">.</span></p>
 <p class="c3"><span class="c0 c6">Our processed data can be downloaded using the button below.</span></p>'),
                          downloadButton('downloadRaw',
-                                        label="Download Raw Data",
-                                        icon=icon('file-csv'))
+                                        label="Download Processed Data",
+                                        icon=icon('file-csv')),
+                         HTML('<p class="c3"><span class="c6 c0"></span></p><p class="c5"><span class="c6 c0">
+See Policy Pathways below: </span></p>'),
+                         fluidRow(column(12, dataTableOutput("path_table")))
                 )
                 ),
                 tabPanel("Instructions"),
@@ -231,8 +233,34 @@ server <- function(input, output, session) {
     return(list(tempdata=outdata, mapdata=xShp))
   }
   
+  output$downloadExcel <- downloadHandler(
+    filename = "CAS_indicators_demo.xlsx",
+    content = function(file) {
+      write.xlsx(indicator_list,file)
+    })
 
-
+  output$downloadPathways <- downloadHandler(
+    filename = "Policy_Pathways.csv",
+    content = function(file) {
+      write.csv(policy_path,file,row.names = FALSE)
+    })
+  
+  output$downloadRaw <- downloadHandler(
+    filename = "processed_data.csv",
+    content = function(file) {
+      write.csv(data,file,row.names = FALSE)
+    })
+  
+  output$path_table <- renderDataTable(pathways,
+                                       options = list(scrollX = TRUE,
+                                                      pageLength = 2,
+                                                      lengthMenu = c(2, 5, 10),
+                                                      searching = FALSE,
+                                                      autoWidth = TRUE,
+                                                      columnDefs = list(list(width = '200px', targets = "_all"))),
+                                       rownames = FALSE,
+                                       )
+  
   updatePlots <- function(maps=T){
     aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
     aggs_list <- aggs_list[aggs_list!=""]
@@ -334,8 +362,6 @@ server <- function(input, output, session) {
     output$corrMap <- renderPlot(corrMap)
     }
   }
-  
-  
   
 }
 
