@@ -66,6 +66,7 @@ khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 policy_path <- read.csv(paste0(root_dir,"Update/Policy_Pathways.csv"), header = TRUE)
 pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
 pathways <- pathways[-c(10:13)]
+colnames(pathways)[8] <- "Related Indicator(s)"
 
 ui <- navbarPage(title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bslib::bs_theme(version="3",
   bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
@@ -74,33 +75,35 @@ ui <- navbarPage(title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bsli
                         wellPanel(
                         "The 50x30 Cambodia Data Explorer is a tool to inform policy-making in conjunction with other resources. Reviewing academic and grey literature for policy pathways can generate ideas for effective policies and programs that can help shift key indicators of agricultural development. Utilizing other tools and data from additional sources (e.g. FAO) can provide additional context for policy-making."
                         ),
-                         img(src='logic-model.png', width=750),
-                         HTML('<p class="c3"><span class="c0 c6">The 50x30 agricultural survey contains household-level information that is potentially valuable 
-                         to policy-makers. Each indicator contains data on the agricultural practices of sampled Cambodian households. Click the "Download Indicators" 
-                         button below to view the names of indicators present in this tool. Click the "Download Policy Pathways" button to view a preliminary review of
-                         literature that may be relevant for using this tool for policy-making.</span></p> 
+                        img(src='logic-model.png', width=750),
+                        hr(),
+                        HTML('<p class="c3"><span class="c0 c6">The 50x30 agricultural survey contains household-level information that is potentially valuable 
+                        to policy-makers. Each indicator contains data on the agricultural practices of sampled Cambodian households. Click the "Download Indicators" 
+                        button below to view the names of indicators present in this tool. Click the "Download Policy Pathways" button to view a preliminary review of
+                        literature that may be relevant for using this tool for policy-making.</span></p> 
                  '),
-                         fluidRow(column(2), column(10, downloadButton('downloadExcel',
+                        fluidRow(column(2), column(10, downloadButton('downloadExcel',
                                                                        label='Download Indicators',
                                                                        icon=icon('file-excel')),
                                                         downloadButton('downloadPathways',
                                                   label='Download Policy Pathways',
                                                  icon=icon('file-csv'))
-                         )),
-                         wellPanel("[empty space, revisit] ", style = "background: white"),
-                         HTML('<p class="c3"><span class="c6 c0"></span></p><p class="c5"><span class="c6 c0">
-The Stata code used to process the data is publicly available at: 
-</span></p><p class="c5"><span class="c0 c8">[ENTER PUBLIC ACCESS GITHUB REPOSITORY HERE]</span></p><p class="c3"><span class="c4"></span></p>
-<p class="c5"><span class="c0">The raw data for this project can be located at </span><span class="c0 c12">
+                        )),
+                        br(),
+                        br(),
+                        HTML('<p class="c3"><span class="c6 c0"></span></p><p class="c5"><span class="c6 c0">
+The raw data for this project can be located at </span><span class="c0 c12">
 <a class="c1" href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a></span>
 <span class="c0">.</span></p>
 <p class="c3"><span class="c0 c6">Our processed data can be downloaded using the button below.</span></p>'),
-                         downloadButton('downloadRaw',
+                        downloadButton('downloadRaw',
                                         label="Download Processed Data",
                                         icon=icon('file-csv')),
-                         HTML('<p class="c3"><span class="c6 c0"></span></p><p class="c5"><span class="c6 c0">
+                        hr(),
+                        HTML('<p class="c3"><span class="c6 c0"></span></p><p class="c5"><span class="c6 c0">
 See Policy Pathways below: </span></p>'),
-                         fluidRow(column(12, dataTableOutput("path_table")))
+                        fluidRow(column(12, dataTableOutput("path_table"))),
+                        br()
                 )
                 ),
                 tabPanel("Instructions"),
