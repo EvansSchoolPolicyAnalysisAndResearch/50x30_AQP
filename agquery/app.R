@@ -190,6 +190,8 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$policiesBox1, {
+    test <- F
+    if(test==T) { 
     updateSelectInput(session, "policiesBox2", selected=input$policiesBox1)
     
     #Panel call for reference
@@ -206,7 +208,7 @@ server <- function(input, output, session) {
     data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), input$policiesBox1)]) #Might need to store this as a global later. 
     names(data_files) <- "file.name"
     data_files$year <- str_extract(data_files$file.name, "[0-9]{4}")
-    if(input$trendChooser='prevSurv') {
+    if(input$trendChooser=='prevSurv') {
       data_files <- data_files[(data_files$year==max(data_files$year[data_files$year!=max(data_files$year)]) | data_files$year=max(data_files$year))] #get highest and second highest values
     } 
     
@@ -216,17 +218,26 @@ server <- function(input, output, session) {
     #Get variables from the 
     #xvars_list <- ... #Still need to create this file from the policy pathways 
     data_out <- getData(data_files$file.name, data_files$year, xvars_list)$blah #Need to decide on format, rn assuming year and varname is a column & double check and see what blah should be
+    data_table <- as.data.frame(xvars_list) 
+    names(data_table) <- "shortName"
+    data_table <- merge(data_table, indicators_list %>% select(shortName, longName), by="shortName")
+    data_table$Trend <- ""
     for(var in xvars_list){
-      sub_data <- data %>% filter(var.name==var)
-      if()
+      sub_data <- data %>% filter(var.name==var) #check to see how this is organized. 
+      if(length(unique(subdata$year))<2){
+        data_table$Trend[data_table$shortName==var] <- "N/A" 
+      } else if(length(unique(subdata$year==2))) {
+        #data_table$Trend <-sub_data
+      }
+        
     }
-    
+    }
   })
   
-  observeEvent(input$policiesBox2){
+  observeEvent(input$policiesBox2, {
     updateSelectInput(session, "policiesBox1", selected=input$policiesBox2)
     
-  }
+  })
   
   observeEvent(input$submitBtn, {
     updatePlots(maps=T)
@@ -439,7 +450,7 @@ server <- function(input, output, session) {
                                                       searching = FALSE,
                                                       autoWidth = TRUE,
                                                       columnDefs = list(list(width = '200px', targets = "_all"))),
-                                       rownames = FALSE,
+                                       rownames = FALSE
                                        )
   
   updatePlots <- function(maps=T){
