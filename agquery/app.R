@@ -26,6 +26,7 @@ library(thematic)
 library(ragg)
 library(viridis)
 library(heatmaply)
+library(shinyjs)
 
 thematic_shiny(
   font = "auto",
@@ -62,6 +63,7 @@ adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
 
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"))
 
+#TODO: Why do we have two of these?
 policy_path <- read.csv(paste0(root_dir,"Update/Policy_Pathways.csv"), header = TRUE)
 pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
 
@@ -69,7 +71,36 @@ pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
 pathways <- pathways[-c(10:13)]
 colnames(pathways)[8] <- "Related Indicator(s)"
 
-ui <- navbarPage(title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bslib::bs_theme(version="3",
+#TODO - probably best to have all of these as CSV. Either way, we need consistency
+policy_link <- read.csv("Update/Policy_Link.csv") 
+pathway_link <- policy_link %>% select(Goal.Id, Pathway, Pathway.Id) %>% distinct()
+
+
+ui <- navbarPage(header=tags$head(
+  #     
+  #    
+  singleton(HTML(
+    '
+    <script type="text/javascript">
+    $(document).ready(function() {
+    
+    // disable start_proc button after a click
+    Shiny.addCustomMessageHandler("disableButton", function(message) {
+    $(".shiny-input-select").attr("disabled","true");
+    $(".btn-default").attr("disabled", "true");
+    });
+    
+    // Enable start_proc button when computation is finished
+    Shiny.addCustomMessageHandler("enableButton", function(message) {
+    $(".shiny-input-select").removeAttr("disabled");
+    $(".btn-default").removeAttr("disabled");
+    });
+})
+    </script>
+    '
+  ))
+),
+  title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bslib::bs_theme(version="3",
   bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
   base_font = bslib::font_google("Open Sans")), 
                 tabPanel("Introduction", column(1),column(10,
@@ -92,17 +123,20 @@ ui <- navbarPage(title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bsli
                          fluidRow(dataTableOutput("path_table"))),
                 tabPanel("Instructions",
                          includeHTML('www/Instructions_50x30_D2.html')),
-                tabPanel("Trends Explorer",
+                tabPanel("Trends Explorer", shinyjs::useShinyjs(),
                          fluidRow(column(4, selectInput('policiesBox1', "Policy Priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))),
                          fluidRow(column(4, uiOutput('pathwaysBox'))),
                          fluidRow(column(2, uiOutput('msgText')), column(4,
-                                  conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend'))),
-                                  conditionalPanel(condition="input.policiesBox1!='None'", uiOutput("trendVarChoose"))
+                                  conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend')))
+                                  ),
+                                  column(6, conditionalPanel(condition="input.policiesBox1!='None'", uiOutput("trendVarChoose"))
                          )),
                          fluidRow(column(6, dataTableOutput('trendsTable')),
-                         column(6,uiOutput('currMap'),
-                         uiOutput('trendMap'))
-                         )),
+                         column(6,
+                                plotOutput('currMap'),
+                                plotOutput('trendMap'))
+                         ),
+                         fluidRow(column(12, uiOutput("droppedVars")))),
                 tabPanel("Data Explorer",
                 fluidRow(column(12, selectInput('policiesBox2', "Policy Priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))), #radioButtons('policySelect', 'Policy Goal', choices=unique(indicator_list$policy_priority)))),
                 fluidRow(column(12, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year)))),
@@ -207,22 +241,34 @@ server <- function(input, output, session) {
   updateBoxes <- function(indics){
     output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Indicator</b>"), choices=indics, size=length(indics), selectize=F)) 
     output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select Correlate</b>'), choices=indics, size=length(indics), selectize=F))
-    output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=indics))
   }
   
+  
   observeEvent(input$policiesBox1, {
-    test <- T
+    if(!input$policiesBox1=="None"){
+      pathway_sub <- pathway_link %>% filter(Goal.Id==input$policiesBox1)
+      pathway_list <- as.list(c(0, pathway_sub$Pathway.Id)) 
+      names(pathway_list) <- c("All", pathway_sub$Pathway)
+      output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Pathway", choices=pathway_list)) 
+    }
+  
+    })
+  
+  observeEvent(input$pathwaysIn, {
+    if(input$policiesBox1=="None"){
+      output$msgText <- renderUI(HTML("<h4>Select a policy priority above to get started</h4>"))
+    } else {
     
     #updateSelectInput(session, "policiesBox2", selected=input$policiesBox1)
-    if(input$policiesBox1=="None") {
-      indics_out <- indicator_list
-    } else {
-      indics_out <- indicator_list %>% filter(indicatorCategory==input$policiesBox1)
+    if(input$pathwaysIn==0) {
+      indics_out <- policy_link %>% filter(Goal.Id==input$policiesBox1) %>% select(Variable) %>% distinct() %>% unlist()
+    } else { 
+      indics_out <- policy_link %>% filter(Pathway.Id==input$pathwaysIn) %>% select(Variable) %>% distinct() %>% unlist()
     }
-    indics <- indics_out$shortName
-    names(indics) <- indics_out$labelName
+    indics <- as.list(indics_out)
+    names(indics) <- indicator_list$labelName[which(indicator_list$shortName %in% indics)]
     updateBoxes(indics) #Might need to global this
-    if(test==T) { 
+    
     #Panel call for reference
     #tabPanel("Trends Explorer",
     #         selectInput('policiesBox1', "Policy Pathway", choices=str_to_title(unique(indicator_list$indicatorCategory))),
@@ -233,10 +279,11 @@ server <- function(input, output, session) {
     #         uiOutput('currMap'),
     #         uiOutput('trendMap')
     #),
-    if(input$policiesBox1=="None"){
-      output$msgText <- renderUI(HTML("<h4>Select a policy priority above to get started</h4>"))
-    } else {
-    data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), str_to_lower(input$policiesBox1))]) #Might need to store this as a global later. 
+    
+    
+    #data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), str_to_lower(input$policiesBox1))]) #Might need to store this as a global later. 
+    data_files_select <- indicator_list[which(indicator_list$shortName %in% indics_out),] %>% select(file) %>% distinct() %>% unlist() #TODO: Clean this up
+    data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
     names(data_files) <- "file.name"
     data_files$year <- str_extract(data_files$file.name, "[0-9]{4}") #Might be unnecessary 
     #This gets tricky for variables that are only collected every three years in each of the rotating modules. 
@@ -245,14 +292,12 @@ server <- function(input, output, session) {
     #} 
     
     #Get variables from the  
-    #xvars_list <- ... #Still need to create this file from the policy pathways 
-    xvars_list <- indicator_list$shortName #TEMPORARY: UPDATE WHEN CLAIRE SENDS PATHWAY VARIABLES
-    data_out <- getData(data_files$file.name, data_files$year, xvars_list)$tempdata 
-    data_table <- as.data.frame(xvars_list) 
-    names(data_table) <- "shortName"
+    data_out <- getData(data_files$file.name, data_files$year, indics_out)$tempdata 
+    indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
+    data_table <- data.frame(shortName=indics_out) #TODO: Simplify
     data_table <- merge(data_table, indicator_list %>% select(shortName, labelName), by="shortName")
     data_table$Trend <- "" 
-    for(var in xvars_list){ #TO DO: ADD WEIGHTING
+    for(var in indics_out){ #TO DO: ADD WEIGHTING
       sub_data <- data_out %>% select(all_of(c(var, "year"))) %>% na.omit()
       if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
         next
@@ -262,7 +307,16 @@ server <- function(input, output, session) {
       } else if(length(unique(sub_data$year>=2))) {
         min_mean <- mean(sub_data[[var]][sub_data$year==min(sub_data$year)]) #TO DO: Eliminate redundancies around year tracking.
         max_mean <- mean(sub_data[[var]][sub_data$year==max(sub_data$year)])
-        diff=signif((max_mean-min_mean)/min_mean*100, 2)
+        if(min_mean==0){ 
+         if(max_mean > 0){
+           chg = "+Inf"
+         } else if(max_mean < 0) {
+           chg="-Inf"
+         } else {
+           chg="⮕ 0%"
+         }
+        } else {  
+          diff=signif((max_mean-min_mean)/min_mean*100, 2)
         
         if(diff>5){
           dir_arrow <- "⬆ "
@@ -273,18 +327,71 @@ server <- function(input, output, session) {
         }
         
         chg=paste0(dir_arrow, diff, "%")  
+        }
         data_table$Trend[data_table$shortName==var] <- chg
       } #Implement regression later?
         
       }
     }
     output$msgText <- renderUI(HTML("<h3>Related Variables</h3>"))
+    trendVarList <- as.list(c("0", data_table$shortName))
+    names(trendVarList) <- c("Select...", data_table$labelName)
     data_table <- data_table %>% select(Variable=labelName, Trend)
     output$trendsTable <- renderDataTable(data_table, options=list(paging=F, searching=F), rownames=F)
+    
+    output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
     #output$trendsTable <- renderDataTable(data_table)
     }
-    }
   })
+  
+  observeEvent(input$trendIn, {
+    if(input$trendIn!="0"){
+      showNotification("Processing, please wait")
+      #session$sendCustomMessage("disableButton", "start_proc")
+      shinyjs::disable('trendIn')
+      data_files_select <- indicator_list[which(indicator_list$shortName %in% input$trendIn),] %>% select(file) %>% distinct() %>% unlist() #TODO: Clean this up
+      data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
+      names(data_files) <- "file.name"
+      data_files$year <- str_extract(data_files$file.name, "[0-9]{4}")
+      
+      data_out <- getData(data_files$file.name, data_files$year, xvars=input$trendIn, adm_level="province")$tempdata
+      data_out$province_num <- as.numeric(data_out$province)
+      max_year <- max(data_out$year)
+      min_year <- min(data_out$year)
+      
+      df_min_year=data_out %>% filter(year==min_year)
+      df_max_year=data_out %>% filter(year==max_year)
+      diff <- df_max_year-df_min_year
+      diff$province_num <- df_max_year$province_num
+      
+      xShp_currMap <- merge(khm_shp, df_max_year, by.x="province", by.y="province_num")
+      xShp_trendMap <- merge(khm_shp, diff, by.x="province", by.y="province_num")
+      
+      currMap <- ggplot(xShp_currMap, aes_string(fill = input$trendIn)) +
+        geom_sf() +
+        ggtitle(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values")) +
+        labs(fill = "") +
+        #theme_map()
+        theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+      
+      trendMap <- ggplot(xShp_trendMap, aes_string(fill = input$trendIn)) +
+        geom_sf() +
+        ggtitle(paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, "-", max_year, " Difference")) +
+        labs(fill = "") +
+        #theme_map()
+      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+      
+      output$currMap <- renderPlot(currMap)
+      output$trendMap <- renderPlot(trendMap)
+      #session$sendCustomMessage("enableButton", "start_proc")
+      shinyjs::enable('trendIn')
+        }
+  })
+  
+  #Update the maps when a new variable is selected: we need two maps, one with the current variable and one with the difference.
+  #observeEvent(input$trendIn, {
+  #  mapdata <- getData() #TODO: There's probably a more efficient way to do this using reactive values.
+  #})
   
   updateTrendsTab <- function(){
     #Placeholder!
@@ -401,7 +508,7 @@ server <- function(input, output, session) {
                        showNotification(paste("File", file, "not found"), type="error")
                        break
                      }) #can simplify using full paths in list.files
-      varslist_short <- varslist[which(varslist %in% names(df))]
+      varslist_short <- names(df)[which(names(df) %in% varslist)]
       if(length(varslist_short)==0){
         showNotification(paste("No variables for policy priority", input$policyBox1, "were found in", str_extract(file, "2[0-9]{3}")))
       } else {
@@ -417,9 +524,20 @@ server <- function(input, output, session) {
         }
         
         for(currVar in varslist_short) {
+          #Error handling
+          if(!(currVar %in% indicator_list$shortName)){
+            varslist_short <- varslist_short[-which(varslist_short==currVar)]
+            if(!exists("dropped_vars")){
+              dropped_vars <- currVar
+            } else {
+              dropped_vars <- c(dropped_vars, currVar)
+            }
+            next
+          }
+          
           #Kludge: remove when we've fixed the csv export issue
           if(!is.numeric(df[[currVar]])){
-            df <- df %>% mutate_at(currvar, funs(recode(., 'None'='0', 'No'='0', 'Yes'='1')))
+            df <- df %>% mutate_at(currVar, funs(recode(., 'None'='0', 'No'='0', 'Yes'='1')))
             df[[currVar]] <- as.numeric(df[[currVar]])
           }
           ##End kludge
@@ -442,6 +560,10 @@ server <- function(input, output, session) {
             df[[currVar]][df[[currVar]] < lim[1]] <- lim[1] 
             df[[currVar]][df[[currVar]] > lim[2]] <- lim[2] 
           }
+        }
+        
+        if(exists("dropped_vars")){
+        output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet and were not processed:", paste(unique(dropped_vars), collapse=", ")))
         }
         
         if (any(aggs_list %in% "livestock_area")) {
@@ -472,8 +594,8 @@ server <- function(input, output, session) {
         }
         
         pivotbyvars <- c('province', 'name')
-        groupbyvars <- c('province', xvars, yvars, "weight", aggs_list)
-        groupbyvars <- groupbyvars[nzchar(groupbyvars)]
+        groupbyvars <- c('province', varslist_short, "weight", aggs_list)
+        #groupbyvars <- groupbyvars[nzchar(groupbyvars)]
         mapdata <- subsetdata  %>% select(all_of(groupbyvars)) %>% 
           na.omit() %>% 
           pivot_longer(., varslist_short) %>% 
@@ -525,7 +647,11 @@ server <- function(input, output, session) {
   updatePlots <- function(tab="data", maps=T){
     aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
     aggs_list <- aggs_list[aggs_list!=""]
-    all_data <- getData()
+    if(tab=="data"){
+      all_data <- getData()
+    } else if(tab=="trend"){
+      
+    }
     mapdata <- all_data$mapdata
     outdata <- all_data$tempdata #Note to go back and fix the naming here.
     xvars = input$corrsIn
