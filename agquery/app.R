@@ -148,11 +148,12 @@ ui <- navbarPage(header=tags$head(
                     hr(),
                     checkboxInput('yChk', 'Omit 0s from Indicator'),
                     radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
-                    uiOutput("groupsChk"),
-                    actionButton('submitBtn', "Compare Variables")))),
+                    #uiOutput("groupsChk"),
+                    radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_list$label), choiceValues=c("", groups_list$varName)),
+                    actionButton('submitBtn', "Compare Variables"))),
                 column(6, 
                 #plotOutput('corrPlot'),
-                plotlyOutput('heatMap')),
+                plotlyOutput('heatMap'))),
                 br(),
                 br(),
   fluidRow(column(6, uiOutput('indicHeader')) ,column(6, uiOutput('corrHeader'))),
@@ -204,7 +205,7 @@ server <- function(input, output, session) {
     #corrvals <- corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
     #corrs_in <- indicator_list[indicator_list$shortName %in% corrvals,]
     #corrs_list <- as.list(corrs_in$shortName)
-    #names(corrs_list) <- corrs_in$prettyName
+    #names(corrs_list) <- corrs_in$labelName
     #output$corrChk <- renderUI(pickerInput("corrsIn", HTML("<b>Choose Correlate</b>"), choices=corrs_list, options=list(style="btn-info"), size=(length(corrs_list)+1)))
 
     #output$ttip <- renderUI(popify(bsButton("ttipSurvey", label=HTML("Source<br>question"), size = "medium", block=F),
@@ -265,9 +266,10 @@ server <- function(input, output, session) {
     } else { 
       indics_out <- policy_link %>% filter(Pathway.Id==input$pathwaysIn) %>% select(Variable) %>% distinct() %>% unlist()
     }
-    indics <- as.list(indics_out)
-    names(indics) <- indicator_list$labelName[which(indicator_list$shortName %in% indics)]
-    updateBoxes(indics) #Might need to global this
+    #ALT: Moving this to policiesbox2
+    #indics <- as.list(indics_out)
+    #names(indics) <- indicator_list$labelName[which(indicator_list$shortName %in% indics)]
+    #updateBoxes(indics) #Might need to global this
     
     #Panel call for reference
     #tabPanel("Trends Explorer",
@@ -406,17 +408,25 @@ server <- function(input, output, session) {
 
   observeEvent(input$submitBtn, {
     updatePlots(maps=T)
+    
     output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
-                                                , indicator_list$prettyName[indicator_list$shortName==input$indicsIn])))
+                                                , indicator_list$labelName[indicator_list$shortName==input$indicsIn])))
     output$corrHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
-                                               , indicator_list$prettyName[indicator_list$shortName==input$corrsIn])))
+                                               , indicator_list$labelName[indicator_list$shortName==input$corrsIn])))
   })
   
   
   observeEvent(input$policiesBox2, {
     target_policy=tolower(input$policiesBox2)
     #group_vars 
+    ####
+
+    
     if(target_policy!="none"){
+      indics_out <- indicator_list %>% filter(indicatorCategory==input$policiesBox2)
+      indics <- as.list(indics_out$shortName)
+      names(indics) <- indics_out$labelName
+      updateBoxes(indics) #Might need to global this
     files_list <- indicator_list[which(tolower(indicator_list$indicatorCategory)==target_policy),] %>% select(file) %>% unique() #Using tolower here helps filter out differences in capitalization 
     survey_pref <- instrument_list$survey[instrument_list$year==input$yearBtn]
     for(file in files_list){
@@ -424,36 +434,45 @@ server <- function(input, output, session) {
       if(!exists("data_out")){
         data_out <- temp
       } else {
-        data_out <- append(merge(data_out, temp, by="hhid"))
+        data_out <- merge(data_out, temp, by="hhid")
       }
     } 
-    df <- df %>% mutate(indicatorCategroy=tolower(indicatorCategory)) %>% subset(indicatorCategory==target_policy, select=all_of(indicator_list$shortName)) %>% na.omit()
+    #data_out <- data_out %>% mutate(indicatorCategory=tolower(indicatorCategory)) %>% subset(indicatorCategory==target_policy, select=all_of(indicator_list$shortName)) %>% na.omit()
     
-    varnames <- colnames(df)
-    matched_indices <- match(varnames, indicator_list$shortName)
-    label_names <- indicator_list$labelName[matched_indices]
+    data_out <- data_out[,(names(data_out) %in% indicator_list$shortName)]
+    varnames <- data.frame(shortName=names(data_out))
+    varnames <- merge(varnames, indicator_list %>% select(shortName, labelName), by="shortName")
+    #label_names <- indicator_list$labelName[which(indicator_list$shortName %in% names(data_out))]
+    #ALT: Kludge, remove when fixed
+    for(currVar in names(data_out)){
+      if(!is.numeric(data_out[[currVar]])){
+      data_out <- data_out %>% mutate_at(currVar, funs(recode(., 'None'='0', 'No'='0', 'Yes'='1')))
+      data_out[[currVar]] <- as.numeric(data_out[[currVar]])
+      }
+    }
     #truncated_pretty_names <- substr(pretty_names, 1, 35)
     #print(pretty_names)
-    cor_matrix <- cor(df)
+    cor_matrix <- cor(data_out, use="pairwise.complete.obs")
     par(mar = c(5, 5, 4, 2) - 2)
     
     #corrPlot <- corrplot.mixed(cor_matrix, order = 'AOE')
     #output$corrPlot <- renderPlot(corrplot(cor_matrix, order = 'AOE',col=colorRampPalette(c("white","lightblue","red"))(100)))
     #print(corrPlot) 
-    
-    rownames(cor_matrix) <- label_names
-    colnames(cor_matrix) <- label_names
+    res <- match(rownames(cor_matrix), varnames$shortName)
+    rownames(cor_matrix) <- varnames$labelName[res]
+    res <- match(colnames(cor_matrix), varnames$shortName)
+    colnames(cor_matrix) <- varnames$labelName[res]
     #print(cor_matrix)
-    p_matrix <- matrix(nrow = ncol(df), ncol = ncol(df))
-    for(i in seq_len(ncol(df))) {
-      for(j in seq_len(ncol(df))) {
-        test_result <- cor.test(df[, i], df[, j], method = "pearson")
+    p_matrix <- matrix(nrow = ncol(data_out), ncol = ncol(data_out))
+    for(i in seq_len(ncol(data_out))) {
+      for(j in seq_len(ncol(data_out))) {
+        test_result <- cor.test(data_out[, i], data_out[, j], method = "pearson")
         p_matrix[i, j] <- test_result$p.value
       }
     }
     #print(p_matrix)
     p_matrix[upper.tri(p_matrix)] <- NA
-    hover_text <- matrix("", nrow = ncol(df), ncol = ncol(df))
+    hover_text <- matrix("", nrow = ncol(data_out), ncol = ncol(data_out))
     for(i in 1:nrow(p_matrix)) {
       for(j in 1:ncol(p_matrix)) {
         cor_value <- cor_matrix[i, j]
@@ -499,9 +518,11 @@ server <- function(input, output, session) {
   #  corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
   #})		
 	
-  getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call=NULL){
+  getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none"){
     varslist <- c(xvars, yvars)
     aggs_list <- c(aggs_list, "year")
+    out_flag <- F
+    exit <- F
     for(file in files){
       df <- tryCatch(read.csv(paste0("Data/", file)), 
                      error=function(e){
@@ -513,8 +534,13 @@ server <- function(input, output, session) {
         showNotification(paste("No variables for policy priority", input$policyBox1, "were found in", str_extract(file, "2[0-9]{3}")))
       } else {
         if(length(varslist_short) < length(varslist)){
+          if(out_flag==F){
           showNotification("Warning: Not all variables in the list provided were found in the data", type="warning")
+            out_flag==T
+          } 
         }
+        if(out_flag==T & source_call=="explorer") { 
+        } else {
         df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
           select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
         
@@ -576,6 +602,7 @@ server <- function(input, output, session) {
         } else { 
           subsetdata <- bind_rows(subsetdata, df)
         }
+        }
       }
     }
     
@@ -610,6 +637,7 @@ server <- function(input, output, session) {
       
     } else {
       showNotification("Error: Data not found", type="error")
+      return("")
     }
   }
     # Compute correlation p-values
@@ -645,15 +673,30 @@ server <- function(input, output, session) {
                                        )
   
   updatePlots <- function(tab="data", maps=T){
-    aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
-    aggs_list <- aggs_list[aggs_list!=""]
+    #Old way
+    #aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
+    #aggs_list <- aggs_list[aggs_list!=""]
+    
     if(tab=="data"){
-      all_data <- getData()
-    } else if(tab=="trend"){
-      
-    }
+      #getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call=NULL)
+      #Find better way to do this.
+      aggs_list = input$groupsChk
+      if(aggs_list==""){
+        aggs_list <- NULL
+      }
+      #messy error handling here
+      all_data <- getData(paste0("CAS_", input$yearBtn, "_", tolower(input$policiesBox2), ".csv"), xvars=input$indicsIn, yvars=input$corrsIn, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer")
+    } 
+    if(any(all_data!="")){
+    #else if(tab=="trend"){
+    #ALT - might be easier than what we do now with the maps in a separate area. Maybe build out later.
+    #}
     mapdata <- all_data$mapdata
     outdata <- all_data$tempdata #Note to go back and fix the naming here.
+    outdata <- na.omit(outdata)
+    if(nrow(outdata)==0){
+      showNotification("Error: No non-n/a observations in dataset", type="error") 
+      } else { 
     xvars = input$corrsIn
     yvars = input$indicsIn
     adm_level <- input$disAgg_admin
@@ -661,9 +704,10 @@ server <- function(input, output, session) {
     bins <- ifelse(adm_level=="province", 6, 30)
     #heatmapdata <- getData()$tempheatmapdata
     #outdata <- heatmapdata %>% select(all_of(c(xvars,yvars)))
-    xlab = indicator_list$prettyName[indicator_list$shortName==xvars]
-    ylab = indicator_list$prettyName[indicator_list$shortName==yvars]
-    if(length(aggs_list)==0){
+    xlab = indicator_list$labelName[indicator_list$shortName==xvars]
+    ylab = indicator_list$labelName[indicator_list$shortName==yvars]
+
+    if(input$groupsChk==""){
       indicatorHist <- ggplot(outdata, aes_string(x=yvars))+
         geom_histogram(bins = bins) +
         labs(x=xlab, y="Number of Observations")+
@@ -672,7 +716,7 @@ server <- function(input, output, session) {
       corrHist <- ggplot(outdata, aes(x = !!sym(xvars))) +
         geom_histogram(bins = bins) +
         labs(x = xlab, y = "Number of Observations") +
-        ggtitle(str_to_title(paste("Histogram of", indicator_list$prettyName[indicator_list$shortName == xvars]))) +
+        ggtitle(str_to_title(paste("Histogram of", indicator_list$labelName[indicator_list$shortName == xvars]))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
         
       scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
@@ -706,7 +750,7 @@ server <- function(input, output, session) {
       scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
         geom_point()+
         stat_smooth(method="lm")+
-        labs(x=indicator_list$prettyName[indicator_list$shortName==xvars], y=indicator_list$prettyName[indicator_list$shortName==yvars], color=aggs_lab)+
+        labs(x=indicator_list$labelName[indicator_list$shortName==xvars], y=indicator_list$labelName[indicator_list$shortName==yvars], color=aggs_lab)+
         ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
       
@@ -714,12 +758,12 @@ server <- function(input, output, session) {
     if(maps==T){
     corrMap <- ggplot(mapdata, aes_string(fill = xvars)) +
       geom_sf() +
-      ggtitle(str_to_title(paste("Map of", indicator_list$prettyName[indicator_list$shortName == xvars], "by Province"))) +
+      ggtitle(str_to_title(paste("Map of", indicator_list$labelName[indicator_list$shortName == xvars], "by Province"))) +
       labs(fill = "") + 
       theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
     indicatorMap <- ggplot(mapdata, aes_string(fill = yvars)) +
       geom_sf() +
-      ggtitle(str_to_title(paste("Map of", indicator_list$prettyName[indicator_list$shortName == yvars], "by Province"))) +
+      ggtitle(str_to_title(paste("Map of", indicator_list$labelName[indicator_list$shortName == yvars], "by Province"))) +
       labs(fill = "") +
       theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
     }
@@ -751,8 +795,9 @@ server <- function(input, output, session) {
     output$indicatorMap <- renderPlot(indicatorMap)
     output$corrMap <- renderPlot(corrMap)
     }
+    }
   }
-  
+  }
 }
 
 shinyApp(ui = ui, server = server)
