@@ -246,16 +246,23 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$policiesBox1, {
-    if(!input$policiesBox1=="None"){
+    if(input$policiesBox1!="None"){
+      inputChk <- is.null(input$pathwaysIn)
       pathway_sub <- pathway_link %>% filter(Goal.Id==input$policiesBox1)
       pathway_list <- as.list(c(0, pathway_sub$Pathway.Id)) 
       names(pathway_list) <- c("All", pathway_sub$Pathway)
-      output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Pathway", choices=pathway_list)) 
+      output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Pathway", choices=pathway_list))
+      
+      if(!inputChk){
+        updateTrends()
+      }
     }
   
     })
-  
   observeEvent(input$pathwaysIn, {
+    updateTrends()
+  }) 
+  updateTrends <- function(){
     if(input$policiesBox1=="None"){
       output$msgText <- renderUI(HTML("<h4>Select a policy priority above to get started</h4>"))
     } else {
@@ -344,7 +351,7 @@ server <- function(input, output, session) {
     output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
     #output$trendsTable <- renderDataTable(data_table)
     }
-  })
+  }
   
   observeEvent(input$trendIn, {
     if(input$trendIn!="0"){
@@ -356,7 +363,11 @@ server <- function(input, output, session) {
       names(data_files) <- "file.name"
       data_files$year <- str_extract(data_files$file.name, "[0-9]{4}")
       
-      data_out <- getData(data_files$file.name, data_files$year, xvars=input$trendIn, adm_level="province")$tempdata
+      data_out <- getData(data_files$file.name, data_files$year, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
+      
+      if(!any(data_out=="")){
+        data_out <- data_out$tempdata
+      
       data_out$province_num <- as.numeric(data_out$province)
       max_year <- max(data_out$year)
       min_year <- min(data_out$year)
@@ -385,9 +396,9 @@ server <- function(input, output, session) {
       
       output$currMap <- renderPlot(currMap)
       output$trendMap <- renderPlot(trendMap)
-      #session$sendCustomMessage("enableButton", "start_proc")
+      }
       shinyjs::enable('trendIn')
-        }
+      }
   })
   
   #Update the maps when a new variable is selected: we need two maps, one with the current variable and one with the difference.
@@ -409,10 +420,7 @@ server <- function(input, output, session) {
   observeEvent(input$submitBtn, {
     updatePlots(maps=T)
     
-    output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
-                                                , indicator_list$labelName[indicator_list$shortName==input$indicsIn])))
-    output$corrHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
-                                               , indicator_list$labelName[indicator_list$shortName==input$corrsIn])))
+   
   })
   
   
@@ -535,11 +543,11 @@ server <- function(input, output, session) {
       } else {
         if(length(varslist_short) < length(varslist)){
           if(out_flag==F){
-          showNotification("Warning: Not all variables in the list provided were found in the data", type="warning")
-            out_flag==T
+          #showNotification("Warning: Not all variables in the list provided were found in the data", type="warning")
+            #out_flag<-T
           } 
         }
-        if(out_flag==T & source_call=="explorer") { 
+        if(out_flag==T & (source_call=="explorer" | source_call=="trendmaps")) { 
         } else {
         df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
           select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
@@ -561,12 +569,11 @@ server <- function(input, output, session) {
             next
           }
           
-          #Kludge: remove when we've fixed the csv export issue
+          #Error handling: in case the data export still has the Stata labels (protects against bad exports; might be better to use dtas instead to avoid this entirely).
           if(!is.numeric(df[[currVar]])){
             df <- df %>% mutate_at(currVar, funs(recode(., 'None'='0', 'No'='0', 'Yes'='1')))
             df[[currVar]] <- as.numeric(df[[currVar]])
           }
-          ##End kludge
           
           var_unit <- subset(indicator_list, shortName %in% currVar)$units[[1]] #Should only be 1 list item
           var_continuous <- max(c("count","ratio", "boolean") %in% var_unit)==0
@@ -608,21 +615,29 @@ server <- function(input, output, session) {
     
     if(exists("subsetdata")){
       if(!nrow(subsetdata)==0){
-        
-        if(adm_level=="province"){
-          pivotbyvars <- c(aggs_list, adm_level, 'name')
-          pivotbyvars <- pivotbyvars[nzchar(pivotbyvars)]
-          outdata <- subsetdata %>% pivot_longer(., varslist) %>% 
-            group_by(across(all_of(pivotbyvars))) %>% 
-            summarize(value=weighted.mean(value, weight)) %>%
-            pivot_wider()
-        } else {
+        #Long term: Might need to find a different way to handle this.
+        if(adm_level!="hhid"){
+          outdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level))) %>% distinct()
+          for(currVar in varslist_short){
+            tempdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level, currVar, "weight"))) %>%
+              group_by(!!!syms(c(aggs_list, adm_level))) %>% 
+              na.omit() %>%
+              summarize(value=weighted.mean(!!sym(currVar), weight))
+            names(tempdata)[names(tempdata)=="value"] <- currVar
+            if(!exists('outdata')){
+              outdata <- tempdata
+            } else {
+              outdata <- merge(outdata, tempdata, by=c(aggs_list, adm_level))
+            }
+          } 
+          } else {
           outdata <- subsetdata
         }
         
         pivotbyvars <- c('province', 'name')
         groupbyvars <- c('province', varslist_short, "weight", aggs_list)
         #groupbyvars <- groupbyvars[nzchar(groupbyvars)]
+        if(source_call!="data"){ #Minor kludge because we're getting a pivot longer error here if there's variables missing.
         mapdata <- subsetdata  %>% select(all_of(groupbyvars)) %>% 
           na.omit() %>% 
           pivot_longer(., varslist_short) %>% 
@@ -633,6 +648,9 @@ server <- function(input, output, session) {
         mapdata$province_num <- as.numeric(mapdata$province)
         xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
         return(list(tempdata=outdata, mapdata=xShp))
+        } else {
+          return(list(tempdata=outdata))
+        }
       } 
       
     } else {
@@ -677,7 +695,7 @@ server <- function(input, output, session) {
     #aggs_list <- lapply(group_cats[group_cats!="Hidden"], function(x){input[[x]]}) %>% unlist()
     #aggs_list <- aggs_list[aggs_list!=""]
     
-    if(tab=="data"){
+    if(tab=="data"){ 
       #getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call=NULL)
       #Find better way to do this.
       aggs_list = input$groupsChk
@@ -699,6 +717,13 @@ server <- function(input, output, session) {
       } else { 
     xvars = input$corrsIn
     yvars = input$indicsIn
+    if(!all(c(xvars, yvars) %in% names(outdata))){
+      #Error notification here?
+    } else {
+      output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
+                                                  , indicator_list$labelName[indicator_list$shortName==input$indicsIn])))
+      output$corrHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
+                                                 , indicator_list$labelName[indicator_list$shortName==input$corrsIn])))
     adm_level <- input$disAgg_admin
     varslist <- c(xvars, yvars)
     bins <- ifelse(adm_level=="province", 6, 30)
@@ -794,6 +819,7 @@ server <- function(input, output, session) {
     if(maps==T){
     output$indicatorMap <- renderPlot(indicatorMap)
     output$corrMap <- renderPlot(corrMap)
+    }
     }
     }
   }
