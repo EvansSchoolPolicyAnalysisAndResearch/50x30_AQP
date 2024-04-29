@@ -120,9 +120,11 @@ ui <- navbarPage(header=tags$head(
                 tabPanel("Policy Pathways",
                          fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
                              <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
-                         fluidRow(dataTableOutput("path_table"))),
+                         fluidRow(dataTableOutput("path_table"))
+                         ),
                 tabPanel("Instructions",
-                         includeHTML('www/Instructions_50x30_D2.html')),
+                         includeHTML('www/Instructions_50x30_D2.html')
+                         ),
                 tabPanel("Trends Explorer", shinyjs::useShinyjs(),
                          fluidRow(column(4, selectInput('policiesBox1', "Policy Priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))),
                          fluidRow(column(4, uiOutput('pathwaysBox'))),
@@ -136,7 +138,8 @@ ui <- navbarPage(header=tags$head(
                                 plotOutput('currMap'),
                                 plotOutput('trendMap'))
                          ),
-                         fluidRow(column(12, uiOutput("droppedVars")))),
+                         fluidRow(column(12, uiOutput("droppedVars")))
+                         ),
                 tabPanel("Data Explorer",
                 fluidRow(column(12, selectInput('policiesBox2', "Policy Priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))), #radioButtons('policySelect', 'Policy Goal', choices=unique(indicator_list$policy_priority)))),
                 fluidRow(column(12, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year)))),
@@ -160,7 +163,8 @@ ui <- navbarPage(header=tags$head(
   fluidRow(column(6, plotOutput('indicatorHist')), column(6, plotOutput('corrHist'))),
   fluidRow(column(6, plotOutput('indicatorMap')), column(6, plotOutput('corrMap'))),
   fluidRow(plotOutput('scatterPlot')),
-  fluidRow(uiOutput('plotInterp')),
+  fluidRow(uiOutput('plotInterp'))
+  ),
   tabPanel("Downloads", column(4, fluidRow(downloadButton('downloadExcel',
                                                           label='Download Indicators',
                                                           icon=icon('file-excel'))),
@@ -168,16 +172,16 @@ ui <- navbarPage(header=tags$head(
                                br(),
                                fluidRow(downloadButton('downloadRaw',
                                                        label="Download Processed Data",
-                                                       icon=icon('file-csv'))))
-  ),
+                                                       icon=icon('file-csv'))),
   br(),
   br(),
   fluidRow(downloadButton('downloadPathways',
                           label='Download Policy Pathways',
-                          icon=icon('file-csv')))
+                          icon=icon('file-csv'))))
 
   )
 )
+
 
 
 server <- function(input, output, session) {
@@ -305,7 +309,12 @@ server <- function(input, output, session) {
     indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
     data_table <- data.frame(shortName=indics_out) #TODO: Simplify
     data_table <- merge(data_table, indicator_list %>% select(shortName, labelName), by="shortName")
-    data_table$Trend <- "" 
+    data_table[[paste0(min(data_out$year), " Mean")]] <- NA
+    data_table[[paste0(min(data_out$year), " N obs")]] <- NA
+    data_table[[paste0(max(data_out$year), " Mean")]] <- NA
+    data_table[[paste0(max(data_out$year), " N obs")]] <- NA
+    data_table$Trend <- ""
+    
     for(var in indics_out){ #TO DO: ADD WEIGHTING
       sub_data <- data_out %>% select(all_of(c(var, "year"))) %>% na.omit()
       if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
@@ -316,6 +325,8 @@ server <- function(input, output, session) {
       } else if(length(unique(sub_data$year>=2))) {
         min_mean <- mean(sub_data[[var]][sub_data$year==min(sub_data$year)]) #TO DO: Eliminate redundancies around year tracking.
         max_mean <- mean(sub_data[[var]][sub_data$year==max(sub_data$year)])
+        min_n <- sum(as.numeric(!is.na(sub_data[[var]][sub_data$year==min(sub_data$year)])))
+        max_n <- sum(as.numeric(!is.na(sub_data[[var]][sub_data$year==max(sub_data$year)])))
         if(min_mean==0){ 
          if(max_mean > 0){
            chg = "+Inf"
@@ -337,6 +348,10 @@ server <- function(input, output, session) {
         
         chg=paste0(dir_arrow, diff, "%")  
         }
+        data_table[[paste0(min(data_out$year), " Mean")]][data_table$shortName==var] <- signif(min_mean,4)
+        data_table[[paste0(max(data_out$year), " Mean")]][data_table$shortName==var] <- signif(max_mean,4)
+        data_table[[paste0(min(data_out$year), " N obs")]][data_table$shortName==var] <- min_n
+        data_table[[paste0(max(data_out$year), " N obs")]][data_table$shortName==var] <- max_n
         data_table$Trend[data_table$shortName==var] <- chg
       } #Implement regression later?
         
@@ -345,7 +360,7 @@ server <- function(input, output, session) {
     output$msgText <- renderUI(HTML("<h3>Related Variables</h3>"))
     trendVarList <- as.list(c("0", data_table$shortName))
     names(trendVarList) <- c("Select...", data_table$labelName)
-    data_table <- data_table %>% select(Variable=labelName, Trend)
+    data_table <- data_table %>% rename(Variable=labelName) %>% select(-shortName)
     output$trendsTable <- renderDataTable(data_table, options=list(paging=F, searching=F), rownames=F)
     
     output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
@@ -426,10 +441,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$policiesBox2, {
     target_policy=tolower(input$policiesBox2)
-    #group_vars 
-    ####
-
-    
     if(target_policy!="none"){
       indics_out <- indicator_list %>% filter(indicatorCategory==input$policiesBox2)
       indics <- as.list(indics_out$shortName)
@@ -438,26 +449,33 @@ server <- function(input, output, session) {
     files_list <- indicator_list[which(tolower(indicator_list$indicatorCategory)==target_policy),] %>% select(file) %>% unique() #Using tolower here helps filter out differences in capitalization 
     survey_pref <- instrument_list$survey[instrument_list$year==input$yearBtn]
     for(file in files_list){
-      temp <- read.csv(sprintf("Data/%s_%s_%s.csv", survey_pref, input$yearBtn, file))
+      infile <- list.files("Data", sprintf("%s_%s_%s", survey_pref, input$yearBtn, file), ignore.case=T, full.names=T) #this differs from the other file loading subroutine in getData - should probably make them consistent.
+      if(length(infile)!=0){
+      temp <- read.csv(infile)
       if(!exists("data_out")){
         data_out <- temp
       } else {
         data_out <- merge(data_out, temp, by="hhid")
       }
+      }
     } 
     #data_out <- data_out %>% mutate(indicatorCategory=tolower(indicatorCategory)) %>% subset(indicatorCategory==target_policy, select=all_of(indicator_list$shortName)) %>% na.omit()
-    
-    data_out <- data_out[,(names(data_out) %in% indicator_list$shortName)]
+    if(exists("data_out")){
+    data_out <- data_out[,(names(data_out) %in% indicator_list$shortName[which(tolower(indicator_list$indicatorCategory)==target_policy)])]
     varnames <- data.frame(shortName=names(data_out))
     varnames <- merge(varnames, indicator_list %>% select(shortName, labelName), by="shortName")
     #label_names <- indicator_list$labelName[which(indicator_list$shortName %in% names(data_out))]
-    #ALT: Kludge, remove when fixed
+    #ALT: Fix for bad input, specific to CAS variable coding (if someone exports labels instead of values); possible to remove if we return to dta input or with different data.
     for(currVar in names(data_out)){
+      if(all(is.na(data_out[[currVar]])) | all(data_out[[currVar]]==0)){
+        data_out <- data_out %>% select(!matches(currVar))
+        }
       if(!is.numeric(data_out[[currVar]])){
-      data_out <- data_out %>% mutate_at(currVar, funs(recode(., 'None'='0', 'No'='0', 'Yes'='1')))
+      data_out <- data_out %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
       data_out[[currVar]] <- as.numeric(data_out[[currVar]])
+        }
       }
-    }
+    
     #truncated_pretty_names <- substr(pretty_names, 1, 35)
     #print(pretty_names)
     cor_matrix <- cor(data_out, use="pairwise.complete.obs")
@@ -503,6 +521,7 @@ server <- function(input, output, session) {
     output$heatMap <- renderPlotly(heatMap)
     #output$corrPlot <- renderPlot(corrPlot)
     }
+    }
   })
   
   #observeEvent(input$yChk, {
@@ -526,7 +545,7 @@ server <- function(input, output, session) {
   #  corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
   #})		
 	
-  getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none"){
+  getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
     varslist <- c(xvars, yvars)
     aggs_list <- c(aggs_list, "year")
     out_flag <- F
@@ -541,25 +560,17 @@ server <- function(input, output, session) {
       if(length(varslist_short)==0){
         showNotification(paste("No variables for policy priority", input$policyBox1, "were found in", str_extract(file, "2[0-9]{3}")))
       } else {
-        if(length(varslist_short) < length(varslist)){
-          if(out_flag==F){
-          #showNotification("Warning: Not all variables in the list provided were found in the data", type="warning")
-            #out_flag<-T
-          } 
-        }
-        if(out_flag==T & (source_call=="explorer" | source_call=="trendmaps")) { 
-        } else {
         df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
           select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
         
         #TODO: Fix this w/r/t the trends page. 
-        if(input$yChk){
+        if(drop_0s){
           df <- df[df[[yvars]]!=0,]
         }
         
         for(currVar in varslist_short) {
           #Error handling
-          if(!(currVar %in% indicator_list$shortName)){
+          if(!(currVar %in% indicator_list$shortName) | all(is.na(df[[currVar]]))){
             varslist_short <- varslist_short[-which(varslist_short==currVar)]
             if(!exists("dropped_vars")){
               dropped_vars <- currVar
@@ -568,10 +579,15 @@ server <- function(input, output, session) {
             }
             next
           }
+        }
+        if(length(varslist_short)==0){ 
+        showNotification(paste("Error: Data file", file, "is empty or only contains variables not listed in indicators_list"), type="error")
+          } else {
+        for(currVar in varslist_short){
           
           #Error handling: in case the data export still has the Stata labels (protects against bad exports; might be better to use dtas instead to avoid this entirely).
           if(!is.numeric(df[[currVar]])){
-            df <- df %>% mutate_at(currVar, funs(recode(., 'None'='0', 'No'='0', 'Yes'='1')))
+            df <- df %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
             df[[currVar]] <- as.numeric(df[[currVar]])
           }
           
@@ -596,7 +612,7 @@ server <- function(input, output, session) {
         }
         
         if(exists("dropped_vars")){
-        output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet and were not processed:", paste(unique(dropped_vars), collapse=", ")))
+        output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
         }
         
         if (any(aggs_list %in% "livestock_area")) {
@@ -652,13 +668,13 @@ server <- function(input, output, session) {
           return(list(tempdata=outdata))
         }
       } 
-      
-    } else {
+    }
+     else {
       showNotification("Error: Data not found", type="error")
       return("")
     }
   }
-    # Compute correlation p-values
+
 										  
 
   
