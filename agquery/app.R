@@ -75,6 +75,7 @@ colnames(pathways)[8] <- "Related Indicator(s)"
 policy_link <- read.csv("Update/Policy_Link.csv") 
 pathway_link <- policy_link %>% select(Goal.Id, Pathway, Pathway.Id) %>% distinct()
 
+pathway_names <- unique(policy_path$Policy.Goals)
 
 ui <- navbarPage(header=tags$head(
   #     
@@ -103,20 +104,42 @@ ui <- navbarPage(header=tags$head(
   title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bslib::bs_theme(version="3",
   bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
   base_font = bslib::font_google("Open Sans")), 
-                tabPanel("Introduction", column(1),column(10,
-                        wellPanel(
-                        "The 50x30 Cambodia Data Explorer is a tool to inform policy-making in conjunction with other resources. Reviewing academic and grey literature for policy pathways can generate ideas for effective policies and programs that can help shift key indicators of agricultural development. Utilizing other tools and data from additional sources (e.g. FAO) can provide additional context for policy-making."
-                        ),
+                tabPanel("Introduction", column(1),column(10, #To do: move this to a separate file.
+                        wellPanel(HTML(
+                        "The 50x30 Cambodia Data explorer is a tool to rapidly summarize and visualize the Cambodian Agricultural Survey data. In conjunction with other forms of analysis, this app..."
+                        )),
                         img(src='logic-model.png', width='80%'),
                         hr(),
-                        fluidRow(column(8, HTML('<p>The 50x30 agricultural survey contains household-level information that is potentially valuable 
-                        to policy-makers. Each indicator contains data on the agricultural practices of sampled Cambodian households. Click the "Download Indicators" 
-                        button to the right to view the names of indicators present in this tool.</p><br>
-                        <p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>. The processed version of the data we use in this app can be downloaded by clicking the "Download Processed Data" button (right).</span></p>
-                        '))
+                        fluidRow(column(8, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer is a way to view and compare information from the Cambodian Agricultural Surveys to address the following policy priorities:',
+                                                      '<ul>',
+                                                      lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}),
+                                                      '</ul></p>',
+                                                                                                            '<h3>Using the Cambodia 50x30 App</h3> <p>The Cambodian Agricultural Survey contains information on household production of crops and livestock that can be used to understand trends in small-scale farmer contributions to national supply and the economic conditions small-scale producers face.',
+                                                      'Selecting a policy priority will allow you to narrow down the indicators to those considered most relevant.</p>',
+                                                      '<h3> Tabs </h3>',
+                                                      '<h4> Instructions </h4>',
+                                                      '<p>This tab provides step-by-step instructions, tips, and frequently asked questions (FAQs) about the data explorer.',
+                                                      '<h4>Policy Pathways</h4>',
+                                                      '<p>This tab overviews select academic and gray literature for policy pathways that can generate ideas for effective policies and programs that can help shift key indicators of agricultural development</p>',
+                                                      '<h4>Trends Explorer</h4>',
+                                                      '<p>This tab shows changes in variables between surveys and across provinces.</p>',
+                                                      '<h4>Data Explorer</h4>',
+                                                      '<p>This tab allows for direct comparisons of indicators and provides detailed graphs and summaries of correlations.</p>',
+                                                      '<h4>Downloads</h4>',
+                                                      '<p>This tab allows you to download the spreadsheets used to run the app and the processed survey data.</p>',
+                                                      '<br>',
+                                                      '<h3>Code and Data Availability</h3>',
+                                                      '<p> The Stata code used to process the data is publicly available at (Git Repository TBD). <br> The app source code and related files can be downloaded at (Git repository TBD)</p>',
+                                                      '<br>',
+                                                      '<h3>Inquire</h3>',
+                                                      '<p>This tool is maintained by <i>responsible party</i> who has <i>contact info</i>.</p>',
+                                                      '<br><br>',
+                        '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p>')
                         )
-                )
-                ),
+                        )
+                        )
+                        )
+                        ),
                 tabPanel("Policy Pathways",
                          fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
                              <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
