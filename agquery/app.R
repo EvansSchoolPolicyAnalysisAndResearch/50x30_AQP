@@ -77,31 +77,13 @@ pathway_link <- policy_link %>% select(Goal.Id, Pathway, Pathway.Id) %>% distinc
 
 pathway_names <- unique(policy_path$Policy.Goals)
 
-ui <- navbarPage(header=tags$head(
-  #     
-  #    
-  singleton(HTML(
-    '
-    <script type="text/javascript">
-    $(document).ready(function() {
-    
-    // disable start_proc button after a click
-    Shiny.addCustomMessageHandler("disableButton", function(message) {
-    $(".shiny-input-select").attr("disabled","true");
-    $(".btn-default").attr("disabled", "true");
-    });
-    
-    // Enable start_proc button when computation is finished
-    Shiny.addCustomMessageHandler("enableButton", function(message) {
-    $(".shiny-input-select").removeAttr("disabled");
-    $(".btn-default").removeAttr("disabled");
-    });
-})
-    </script>
-    '
-  ))
-),
-  title=HTML("<b>50x30 Cambodia Data Explorer</b>"), theme = bslib::bs_theme(version="3",
+ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
+                base_font = bslib::font_google("Open Sans"), 
+  fluidRow(column(3, align='center', HTML("<img src=moa_logo.png width='40%'></img>")),
+          column(2, HTML("<h2>CAS Survey Data Explorer</h2>")),
+                  column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>"))),
+      #img(src='moa_logo.png', width='10%'),
+  navbarPage(title="50x30 Cambodia Data Explorer", theme = bslib::bs_theme(version="3",
   bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
   base_font = bslib::font_google("Open Sans")), 
                 tabPanel("Introduction", column(1),column(10, #To do: move this to a separate file.
@@ -203,6 +185,7 @@ ui <- navbarPage(header=tags$head(
                           icon=icon('file-csv'))))
 
   )
+)
 )
 
 
