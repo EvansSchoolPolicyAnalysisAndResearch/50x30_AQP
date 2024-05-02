@@ -126,7 +126,7 @@ ui <- navbarPage(header=tags$head(
                          includeHTML('www/Instructions_50x30_D2.html')
                          ),
                 tabPanel("Trends Explorer", shinyjs::useShinyjs(),
-                         fluidRow(column(4, selectInput('policiesBox1', "Policy Priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))),
+                         fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))),
                          fluidRow(column(4, uiOutput('pathwaysBox'))),
                          fluidRow(column(2, uiOutput('msgText')), column(4,
                                   conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend')))
@@ -141,7 +141,8 @@ ui <- navbarPage(header=tags$head(
                          fluidRow(column(12, uiOutput("droppedVars")))
                          ),
                 tabPanel("Data Explorer",
-                fluidRow(column(12, selectInput('policiesBox2', "Policy Priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))), #radioButtons('policySelect', 'Policy Goal', choices=unique(indicator_list$policy_priority)))),
+                fluidRow(column(12, selectInput('policiesBox2', "Select the Policy Priority", choices=c("None", str_to_title(unique(indicator_list$indicatorCategory)))))), #radioButtons('policySelect', 'Policy Goal', choices=unique(indicator_list$policy_priority)))),
+                conditionalPanel(condition="input.policiesBox2!='None'",
                 fluidRow(column(12, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year)))),
                 fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
                     
@@ -164,6 +165,7 @@ ui <- navbarPage(header=tags$head(
   fluidRow(column(6, plotOutput('indicatorMap')), column(6, plotOutput('corrMap'))),
   fluidRow(plotOutput('scatterPlot')),
   fluidRow(uiOutput('plotInterp'))
+                )
   ),
   tabPanel("Downloads", column(4, fluidRow(downloadButton('downloadExcel',
                                                           label='Download Indicators',
@@ -222,7 +224,7 @@ server <- function(input, output, session) {
                                                ',
                                                #<tr><td style="border: 3px #ddd; border-style: groove; padding: 9px;">Mean: %s</td><tr>
                                                #<tr><td style="border: 3px #ddd: border-style: groove; padding: 9px;">Stdev: %s</td><tr>
-                                               indicator_list$survey_question[indicator_list$shortName==input$indicsIn], 
+                                               indicator_list[[paste0("survey_question_", input$yearBtn)]][indicator_list$shortName==input$indicsIn], 
                                                indicator_list$ques_text[indicator_list$shortName==input$indicsIn] 
                                                #round(weighted.mean(na.omit(data[[input$indicsIn]]), data[["weight"]][which(!is.na(data[[input$indicsIn]]))]), 2),
                                                #round(sd(na.omit(data[[input$indicsIn]])),2)
@@ -233,7 +235,7 @@ server <- function(input, output, session) {
     output$corrsDesc <- renderUI(HTML(sprintf('<table style="border: 3px #ddd; border-style: groove; padding: 9px;">
                                               <tr><td style="border: 3px #ddd; border-style: groove; padding: 9px;">%s</td></tr>
                                               <tr><td style="border: 3px #ddd; border-style: groove; padding: 9px;">%s</td></tr>', 
-                                              indicator_list$survey_question[indicator_list$shortName==input$corrsIn], 
+                                              indicator_list[[paste0("survey_question_", input$yearBtn)]][indicator_list$shortName==input$corrsIn], 
                                               indicator_list$ques_text[indicator_list$shortName==input$corrsIn])))
   })
   
@@ -255,7 +257,7 @@ server <- function(input, output, session) {
       pathway_sub <- pathway_link %>% filter(Goal.Id==input$policiesBox1)
       pathway_list <- as.list(c(0, pathway_sub$Pathway.Id)) 
       names(pathway_list) <- c("All", pathway_sub$Pathway)
-      output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Pathway", choices=pathway_list))
+      output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Choose a pathway (optional)", choices=pathway_list))
       
       if(!inputChk){
         updateTrends()
@@ -266,6 +268,7 @@ server <- function(input, output, session) {
   observeEvent(input$pathwaysIn, {
     updateTrends()
   }) 
+  
   updateTrends <- function(){
     if(input$policiesBox1=="None"){
       output$msgText <- renderUI(HTML("<h4>Select a policy priority above to get started</h4>"))
@@ -304,8 +307,10 @@ server <- function(input, output, session) {
     #  data_files <- data_files %>% filter(year==max(year) | year==max(data_files$year[data_files$year!=max(data_files$year)])) #get highest and second highest values
     #} 
     
-    #Get variables from the  
-    data_out <- getData(data_files$file.name, data_files$year, indics_out)$tempdata 
+    #Get variables from the 
+    data_out <- getData(data_files$file.name, data_files$year, indics_out)
+    if(!any(data_out=="")){
+    data_out <- data_out$tempdata
     indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
     data_table <- data.frame(shortName=indics_out) #TODO: Simplify
     data_table <- merge(data_table, indicator_list %>% select(shortName, labelName), by="shortName")
@@ -316,17 +321,20 @@ server <- function(input, output, session) {
     data_table$Trend <- ""
     
     for(var in indics_out){ #TO DO: ADD WEIGHTING
-      sub_data <- data_out %>% select(all_of(c(var, "year"))) %>% na.omit()
+      sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
       if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
         next
       } else {
-      if(length(unique(sub_data$year))<2){
-        data_table$Trend[data_table$shortName==var] <- "N/A" 
+        if(length(unique(sub_data$year))<2){
+        year <- unique(sub_data$year)
+        data_table[[paste0(year, " Mean")]][data_table$shortName==var] <- signif(inject(with(sub_data,weighted.mean(!!sym(var), weight))),4)
+        data_table[[paste0(year, " N obs")]][data_table$shortName==var] <- nrow(sub_data)
+        data_table$Trend[data_table$shortName==var] <- "N/A"
       } else if(length(unique(sub_data$year>=2))) {
-        min_mean <- mean(sub_data[[var]][sub_data$year==min(sub_data$year)]) #TO DO: Eliminate redundancies around year tracking.
-        max_mean <- mean(sub_data[[var]][sub_data$year==max(sub_data$year)])
-        min_n <- sum(as.numeric(!is.na(sub_data[[var]][sub_data$year==min(sub_data$year)])))
-        max_n <- sum(as.numeric(!is.na(sub_data[[var]][sub_data$year==max(sub_data$year)])))
+        min_mean <- inject(with(sub_data %>% filter(year==min(sub_data$year)), weighted.mean(!!sym(var), weight)))
+        max_mean <- inject(with(sub_data %>% filter(year==max(sub_data$year)), weighted.mean(!!sym(var), weight)))
+        min_n <- nrow(sub_data %>% filter(year==min(sub_data$year)))
+        max_n <- nrow(sub_data %>% filter(year==max(sub_data$year)))
         if(min_mean==0){ 
          if(max_mean > 0){
            chg = "+Inf"
@@ -366,6 +374,7 @@ server <- function(input, output, session) {
     output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
     #output$trendsTable <- renderDataTable(data_table)
     }
+    }
   }
   
   observeEvent(input$trendIn, {
@@ -392,8 +401,8 @@ server <- function(input, output, session) {
       diff <- df_max_year-df_min_year
       diff$province_num <- df_max_year$province_num
       
-      xShp_currMap <- merge(khm_shp, df_max_year, by.x="province", by.y="province_num")
-      xShp_trendMap <- merge(khm_shp, diff, by.x="province", by.y="province_num")
+      xShp_currMap <- merge(khm_shp, df_max_year, by.x="province", by.y="province_num", all.x=T)
+      xShp_trendMap <- merge(khm_shp, diff, by.x="province", by.y="province_num", all.x=T)
       
       currMap <- ggplot(xShp_currMap, aes_string(fill = input$trendIn)) +
         geom_sf() +
@@ -469,13 +478,13 @@ server <- function(input, output, session) {
     for(currVar in names(data_out)){
       if(all(is.na(data_out[[currVar]])) | all(data_out[[currVar]]==0)){
         data_out <- data_out %>% select(!matches(currVar))
-        }
+        } else {
       if(!is.numeric(data_out[[currVar]])){
       data_out <- data_out %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
       data_out[[currVar]] <- as.numeric(data_out[[currVar]])
         }
       }
-    
+    }
     #truncated_pretty_names <- substr(pretty_names, 1, 35)
     #print(pretty_names)
     cor_matrix <- cor(data_out, use="pairwise.complete.obs")
@@ -550,12 +559,14 @@ server <- function(input, output, session) {
     aggs_list <- c(aggs_list, "year")
     out_flag <- F
     exit <- F
-    for(file in files){
+    for(file in files){ #TODO NOTES FOR 5/1: Dealing with multiple files (should combine them first?) - check and make sure the 0 filter is doing what it's supposed to.
       df <- tryCatch(read.csv(paste0("Data/", file)), 
                      error=function(e){
                        showNotification(paste("File", file, "not found"), type="error")
                        break
                      }) #can simplify using full paths in list.files
+      #Fix capitalization issues
+      #varslist_short <- names(df)[which(tolower(names(df)) %in% tolower(varslist))]
       varslist_short <- names(df)[which(names(df) %in% varslist)]
       if(length(varslist_short)==0){
         showNotification(paste("No variables for policy priority", input$policyBox1, "were found in", str_extract(file, "2[0-9]{3}")))
@@ -565,7 +576,7 @@ server <- function(input, output, session) {
         
         #TODO: Fix this w/r/t the trends page. 
         if(drop_0s){
-          df <- df[df[[yvars]]!=0,]
+          df <- df %>% filter(!!sym(yvars)!=0)
         }
         
         for(currVar in varslist_short) {
@@ -615,14 +626,18 @@ server <- function(input, output, session) {
         output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
         }
         
-        if (any(aggs_list %in% "livestock_area")) {
+        
+        #if (any(aggs_list %in% "livestock_area")) {
           #tempdata$livestock_area <- cut(tempdata$livestock_area, c(-1, 0, 0.01, 0.05, 0.1, max(tempdata$livestock_area)* 1.1), c("0 ha", "<=0.01 ha", ">0.01 - 0.05 ha", ">0.05 - 0.1 ha", ">0.1 - 0.25 ha"))
-          df$livestock_area <- cut(df$livestock_area, c(-1, 0, 0.01, 0.05, 0.1, max(df$livestock_area)* 1.1), c("0 ha", "<=0.01 ha", ">0.01 - 0.05 ha", ">0.05 - 0.1 ha", ">0.1 - 0.25 ha"))																																																	
-        }
+         # df$livestock_area <- cut(df$livestock_area, c(-1, 0, 0.01, 0.05, 0.1, max(df$livestock_area)* 1.1), c("0 ha", "<=0.01 ha", ">0.01 - 0.05 ha", ">0.05 - 0.1 ha", ">0.1 - 0.25 ha"))																																																	
+        #}
         
         if(!exists("subsetdata")){
           subsetdata <- df
         } else { 
+          if(source_call=="explorer"){
+            df <- df
+          }
           subsetdata <- bind_rows(subsetdata, df)
         }
         }
@@ -662,7 +677,7 @@ server <- function(input, output, session) {
           pivot_wider()
         names(mapdata)[names(mapdata)=="value"] <- currVar
         mapdata$province_num <- as.numeric(mapdata$province)
-        xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num")
+        xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
         return(list(tempdata=outdata, mapdata=xShp))
         } else {
           return(list(tempdata=outdata))
@@ -719,7 +734,7 @@ server <- function(input, output, session) {
         aggs_list <- NULL
       }
       #messy error handling here
-      all_data <- getData(paste0("CAS_", input$yearBtn, "_", tolower(input$policiesBox2), ".csv"), xvars=input$indicsIn, yvars=input$corrsIn, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer")
+      all_data <- getData(paste0("CAS_", input$yearBtn, "_", tolower(input$policiesBox2), ".csv"), xvars=input$indicsIn, yvars=input$corrsIn, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
     } 
     if(any(all_data!="")){
     #else if(tab=="trend"){
@@ -734,7 +749,7 @@ server <- function(input, output, session) {
     xvars = input$corrsIn
     yvars = input$indicsIn
     if(!all(c(xvars, yvars) %in% names(outdata))){
-      #Error notification here?
+      showNotification("Error: one or both variables is missing from the dataset. Did you capitalize everything the same way?")
     } else {
       output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
                                                   , indicator_list$labelName[indicator_list$shortName==input$indicsIn])))
@@ -745,19 +760,21 @@ server <- function(input, output, session) {
     bins <- ifelse(adm_level=="province", 6, 30)
     #heatmapdata <- getData()$tempheatmapdata
     #outdata <- heatmapdata %>% select(all_of(c(xvars,yvars)))
-    xlab = indicator_list$labelName[indicator_list$shortName==xvars]
-    ylab = indicator_list$labelName[indicator_list$shortName==yvars]
+    xlab <- indicator_list$labelName[indicator_list$shortName==xvars]
+    ylab <- indicator_list$labelName[indicator_list$shortName==yvars]
 
+    indicAxis <- indicator_list$axisName[indicator_list$shortName==xvars]
+    corrAxis <- indicator_list$axisName[indicator_list$shortName==yvars]
     if(input$groupsChk==""){
       indicatorHist <- ggplot(outdata, aes_string(x=yvars))+
         geom_histogram(bins = bins) +
-        labs(x=xlab, y="Number of Observations")+
+        labs(x=indicAxis, y="Number of Observations")+
         ggtitle(str_to_title(paste("Histogram of", ylab))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
       corrHist <- ggplot(outdata, aes(x = !!sym(xvars))) +
         geom_histogram(bins = bins) +
-        labs(x = xlab, y = "Number of Observations") +
-        ggtitle(str_to_title(paste("Histogram of", indicator_list$labelName[indicator_list$shortName == xvars]))) +
+        labs(x = corrAxis, y = "Number of Observations") +
+        ggtitle(str_to_title(paste("Histogram of", xlab))) +
         theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
         
       scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
@@ -810,16 +827,16 @@ server <- function(input, output, session) {
     }
     res <- eval(parse_expr(sprintf("with(outdata, cor.test(%s, %s))", xvars, yvars)))
     
-    if(res$p.value > 0.2) {
-      adj = "<font color='#e51f1f'>no</font>"
-    } else if(res$p.value <= 0.2) {
-      adj="<font color='#f2a134'>low</font>"
-    } else if(res$p.value <= 0.1) {
-      adj="<font color='#f7e379'>moderate</font>"
+    if(res$p.value <= 0.01){ 
+      adj="<font color='#44ce1b'>very high</font>"
     } else if(res$p.value <= 0.05) {
       adj="<font color='#bbdb44'>high</font>"
-    } else if(res$p.value <= 0.01) {
-      adj="<font color='#44ce1b'>very high</font>"
+    } else if(res$p.value <= 0.1) {
+      adj="<font color='#f7e379'>moderate</font>"
+    }  else if(res$p.value <= 0.2) {
+      adj="<font color='#f2a134'>low</font>"
+    } else {
+      adj = "<font color='#e51f1f'>no</font>"
     }
     
     res_out <- sprintf("<div style='font-family: 'Open Sans';'><br><br>There is %s%% (%s%% - %s%%) correlation between <font color='#0a2167'><b>%s</b></font> and <font color='#0a2167'><b>%s</b></font>. There is %s confidence in this result.</div>", 
