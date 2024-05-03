@@ -68,8 +68,8 @@ policy_path <- read.csv(paste0(root_dir,"Update/Policy_Pathways.csv"), header = 
 pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
 
 #TODO - we should not need to do this during runtime
-pathways <- pathways[-c(10:13)]
-colnames(pathways)[8] <- "Related Indicator(s)"
+#pathways <- pathways[-c(10:13)]
+#colnames(pathways)[8] <- "Related Indicator(s)"
 
 #TODO - probably best to have all of these as CSV. Either way, we need consistency
 policy_link <- read.csv("Update/Policy_Link.csv") 
@@ -266,13 +266,23 @@ server <- function(input, output, session) {
       output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Choose a pathway (optional)", choices=pathway_list))
       
       if(!inputChk){
+        shinyjs::disable('pathwaysIn')
+        shinyjs::disable('policiesBox1')
+        showNotification("Loading, please wait")
         updateTrends()
+        shinyjs::enable('pathwaysIn')
+        shinyjs::enable('policiesBox1')
       }
     }
   
     })
   observeEvent(input$pathwaysIn, {
+    shinyjs::disable('pathwaysIn')
+    shinyjs::disable('policiesBox1')
+    showNotification("Loading, please wait")
     updateTrends()
+    shinyjs::enable('pathwaysIn')
+    shinyjs::enable('policiesBox1')
   }) 
   
   updateTrends <- function(){
@@ -326,7 +336,7 @@ server <- function(input, output, session) {
     data_table[[paste0(max(data_out$year), " N obs")]] <- NA
     data_table$Trend <- ""
     
-    for(var in indics_out){ #TO DO: ADD WEIGHTING
+    for(var in indics_out){
       sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
       if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
         next
@@ -565,17 +575,44 @@ server <- function(input, output, session) {
     aggs_list <- c(aggs_list, "year")
     out_flag <- F
     exit <- F
-    for(file in files){ #TODO NOTES FOR 5/1: Dealing with multiple files (should combine them first?) - check and make sure the 0 filter is doing what it's supposed to.
-      df <- tryCatch(read.csv(paste0("Data/", file)), 
-                     error=function(e){
-                       showNotification(paste("File", file, "not found"), type="error")
-                       break
-                     }) #can simplify using full paths in list.files
+    for(year in years){
+      files_in <- files %>% filter(year==year)
+      for(file in files_in){ #TODO NOTES FOR 5/1: Dealing with multiple files (should combine them first?) - check and make sure the 0 filter is doing what it's supposed to.
+        df_in <- tryCatch(read.csv(paste0("Data/", file)), 
+                          error=function(e){
+                            showNotification(paste("File", file, "not found"), type="error")
+                            break
+                          }) #can simplify using full paths in list.files
+        if(exists("df_out")){
+          df_out <- merge(df_in, by=c("hhid", "province"))
+        } else {
+          df_out <- df_in
+        }
+        weights <- read.csv(sprintf("Data/weights_%s.csv"),year) #add a file that consists of just hhid and weight
+        df_out <- merge(df_out, weights, by="hhid")
+        if(length(aggs_list)>1){
+          groups <- tryCatch(read.csv(sprintf("Data/groups_%s.csv"), year) %>% select(all_of("hhid",aggs_list[-which(aggs_list=="year")])), 
+                             error=function(e){
+                               showNotification(paste("Grouping file for", year, "was not found. No groups were applied."))
+                               aggs_list <- "year"
+                               return("")
+                             })
+          if(ncol(groups)>1){
+            df_out <- merge(df_out, groups, by="hhid")
+            }
+        }
+      }
+      if(exists("df")){
+        df <- bind_rows(df,df_out)
+      } else {
+        df <- df_out
+      }
+    }
       #Fix capitalization issues
       #varslist_short <- names(df)[which(tolower(names(df)) %in% tolower(varslist))]
       varslist_short <- names(df)[which(names(df) %in% varslist)]
       if(length(varslist_short)==0){
-        showNotification(paste("No variables for policy priority", input$policyBox1, "were found in", str_extract(file, "2[0-9]{3}")))
+        showNotification(paste("No variables for policy priority", input$policyBox1, "were found"))
       } else {
         df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
           select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
@@ -638,7 +675,7 @@ server <- function(input, output, session) {
          # df$livestock_area <- cut(df$livestock_area, c(-1, 0, 0.01, 0.05, 0.1, max(df$livestock_area)* 1.1), c("0 ha", "<=0.01 ha", ">0.01 - 0.05 ha", ">0.05 - 0.1 ha", ">0.1 - 0.25 ha"))																																																	
         #}
         
-        if(!exists("subsetdata")){
+        if(!exists("subsetdata", mode="list")){ #Subsetdata is apparently a stats function - should change the name.
           subsetdata <- df
         } else { 
           if(source_call=="explorer"){
