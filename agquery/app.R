@@ -324,7 +324,7 @@ server <- function(input, output, session) {
     #} 
     
     #Get variables from the 
-    data_out <- getData(data_files$file.name, data_files$year, indics_out)
+    data_out <- getData(data_files, indics_out)
     if(!any(data_out=="")){
     data_out <- data_out$tempdata
     indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
@@ -403,7 +403,8 @@ server <- function(input, output, session) {
       names(data_files) <- "file.name"
       data_files$year <- str_extract(data_files$file.name, "[0-9]{4}")
       
-      data_out <- getData(data_files$file.name, data_files$year, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
+      #data_out <- getData(data_files$file.name, data_files$year, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
+      data_out <- getData(data_files, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
       
       if(!any(data_out=="")){
         data_out <- data_out$tempdata
@@ -570,13 +571,17 @@ server <- function(input, output, session) {
   #  corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
   #})		
 	
-  getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
+  #getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
+  getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
     varslist <- c(xvars, yvars)
     aggs_list <- c(aggs_list, "year")
+    years <- files$year %>% unique()
     out_flag <- F
     exit <- F
-    for(year in years){
-      files_in <- files %>% filter(year==year)
+    files$survey <- str_extract(files$file.name, "([aA-zZ]+_2[0-9]{3})", group=1)
+    surveys <- unique(files$survey)
+    for(survey in surveys){
+      files_in <- files$file.name[files$survey==survey]
       for(file in files_in){ #TODO NOTES FOR 5/1: Dealing with multiple files (should combine them first?) - check and make sure the 0 filter is doing what it's supposed to.
         df_in <- tryCatch(read.csv(paste0("Data/", file)), 
                           error=function(e){
@@ -584,16 +589,17 @@ server <- function(input, output, session) {
                             break
                           }) #can simplify using full paths in list.files
         if(exists("df_out")){
-          df_out <- merge(df_in, by=c("hhid", "province"))
+          df_out <- merge(df_out, df_in, by=c("hhid", "province"))
         } else {
           df_out <- df_in
         }
-        weights <- read.csv(sprintf("Data/weights_%s.csv"),year) #add a file that consists of just hhid and weight
+        
+        weights <- read.csv(sprintf("Data/%s_weights.csv",survey)) #add a file that consists of just hhid and weight
         df_out <- merge(df_out, weights, by="hhid")
         if(length(aggs_list)>1){
-          groups <- tryCatch(read.csv(sprintf("Data/groups_%s.csv"), year) %>% select(all_of("hhid",aggs_list[-which(aggs_list=="year")])), 
+          groups <- tryCatch(read.csv(sprintf("Data/%s_groups.csv", survey)) %>% select(all_of("hhid",aggs_list[-which(aggs_list=="year")])), 
                              error=function(e){
-                               showNotification(paste("Grouping file for", year, "was not found. No groups were applied."))
+                               showNotification(paste("Grouping file for the survey", survey, "was not found. No groups were applied."))
                                aggs_list <- "year"
                                return("")
                              })
@@ -602,11 +608,12 @@ server <- function(input, output, session) {
             }
         }
       }
-      if(exists("df")){
+      if(exists("df", mode="list")){
         df <- bind_rows(df,df_out)
       } else {
         df <- df_out
       }
+      rm(df_out)
     }
       #Fix capitalization issues
       #varslist_short <- names(df)[which(tolower(names(df)) %in% tolower(varslist))]
@@ -685,7 +692,7 @@ server <- function(input, output, session) {
         }
         }
       }
-    }
+    
     
     if(exists("subsetdata")){
       if(!nrow(subsetdata)==0){
@@ -777,7 +784,11 @@ server <- function(input, output, session) {
         aggs_list <- NULL
       }
       #messy error handling here
-      all_data <- getData(paste0("CAS_", input$yearBtn, "_", tolower(input$policiesBox2), ".csv"), xvars=input$indicsIn, yvars=input$corrsIn, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
+      file <- paste0("CAS_", input$yearBtn, "_", tolower(input$policiesBox2), ".csv")
+      file <- as.data.frame(file)
+      names(file) <- "file.name"
+      file$year <- input$yearBtn
+      all_data <- getData(file, xvars=input$indicsIn, yvars=input$corrsIn, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
     } 
     if(any(all_data!="")){
     #else if(tab=="trend"){
