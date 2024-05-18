@@ -1,0 +1,127 @@
+﻿Goal.Id,Pathway,Pathway.Id,Variable
+Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,mortality_rt_chickens
+Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,vax_pct_chickens
+Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,mortality_rt_chickens
+Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,vax_pct_chickens
+Poultry,Improve the production and productivity of existing local/indigenous breeds,2,mortality_rt_chickens
+Poultry,Improve the production and productivity of existing local/indigenous breeds,2,yield_Chickens
+Poultry,Improve the production and productivity of existing local/indigenous breeds,2,sold_Chickens
+Poultry,Improve the production and productivity of existing local/indigenous breeds,2,net_growth_Chickens
+Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,sale_ppkg_chickens
+Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,bought_received_Chickens
+Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,num_Chickens
+Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,sold_Chickens
+Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,for_sale_live_Chickens
+Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,net_growth_pct_Chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,mortality_rt_chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,feed_Chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,trt_int_parasite_Chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,trt_ext_parasite_Chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,trt_vax_spending_Chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,cur_trt_chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,cur_trt_spending_Chickens
+Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,vax_pct_chickens
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,qty_rice_harvested
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,area_rice_harvested
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,feed_cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,mortality_rt_cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,vax_pct_cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,provision_feed_cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,trt_int_parasite_Cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,trt_ext_parasite_Cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,trt_vax_spending_Cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,cur_trt_Cattle
+Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,cur_trt_spending_Cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,feed_cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,productivity_cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,num_cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,feed_cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,productivity_cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,slghtr_value_Cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,meat_unit_value_Cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,prod_value_Cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,provision_feed_cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,sale_revenue_Cattle
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,drought
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,flood
+Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,irrigation
+Livestock,Improve cattle production with high intervention programs that provide both subsidies and education to smallholder farmers,9,mortality_rt_cattle
+Livestock,Improve cattle production with high intervention programs that provide both subsidies and education to smallholder farmers,9,vax_pct_cattle
+Livestock,Indicators associated with cattle productivity,10,births_Cattle
+Livestock,Indicators associated with cattle productivity,10,net_growth_pct_Cattle
+Livestock,Indicators associated with cattle productivity,10,for_draught_cattle
+Livestock,Indicators associated with cattle productivity,10,for_breed_cattle
+Livestock,Indicators associated with cattle productivity,10,productivity_cattle
+Livestock,Indicators associated with cattle productivity,10,yield_Cattle
+Livestock,Indicators associated with cattle productivity,10,prod_value_Cattle
+Livestock,Indicators associated with cattle productivity,10,sale_revenue_Cattle
+Livestock,Indicators associated with cattle productivity,10,meat_unit_value_Cattle
+Livestock,Indicators associated with cattle productivity,10,slghtr_value_Cattle
+Poultry,All indicators associated with poultry production,11,num_Chickens
+Poultry,All indicators associated with poultry production,11,peak_num_Chickens
+Poultry,All indicators associated with poultry production,11,num_start_Chickens
+Poultry,All indicators associated with poultry production,11,births_Chickens
+Poultry,All indicators associated with poultry production,11,deaths_Chickens
+Poultry,All indicators associated with poultry production,11,sold_Chickens
+Poultry,All indicators associated with poultry production,11,sale_ppkg_Chickens
+Poultry,All indicators associated with poultry production,11,slghtr_Chickens
+Poultry,All indicators associated with poultry production,11,num_vax_Chickens
+Poultry,All indicators associated with poultry production,11,daily_avg_egg_prod_Chickens
+Poultry,All indicators associated with poultry production,11,egg_price_Chickens
+Poultry,All indicators associated with poultry production,11,for_eggs_sale_Chickens
+Poultry,All indicators associated with poultry production,11,net_growth_Chickens
+Poultry,All indicators associated with poultry production,11,eggs_total_prod_Chickens
+Poultry,All indicators associated with poultry production,11,eggs_value_cultiv_Chickens
+Poultry,All indicators associated with poultry production,11,eggs_sold_Chickens
+Poultry,All indicators associated with poultry production,11,eggs_revenue_Chickens
+Poultry,All indicators associated with poultry production,11,sale_revenue_Chickens
+Poultry,All indicators associated with poultry production,11,prod_value_Chickens
+Poultry,All indicators associated with poultry production,11,mortality_rt_Chickens
+Poultry,All indicators associated with poultry production,11,vax_pct_Chickens
+Poultry,All indicators associated with poultry production,11,net_growth_pct_Chickens
+Poultry,All indicators associated with poultry production,11,bought_received_Chickens
+Poultry,All indicators associated with poultry production,11,for_sale_live_Chickens
+Poultry,All indicators associated with poultry production,11,trt_int_parasite_Chickens
+Poultry,All indicators associated with poultry production,11,trt_ext_parasite_Chickens
+Poultry,All indicators associated with poultry production,11,trt_vax_spending_Chickens
+Poultry,All indicators associated with poultry production,11,cur_trt_Chickens
+Poultry,All indicators associated with poultry production,11,cur_trt_spending_Chickens
+Poultry,All indicators associated with poultry production,11,sale_price_Chickens
+Poultry,All indicators associated with poultry production,11,slghtr_unit_value_Chickens
+Poultry,All indicators associated with poultry production,11,slghtr_value_Chickens
+Poultry,All indicators associated with poultry production,11,qty_rice_harvested
+Poultry,All indicators associated with poultry production,11,area_rice_harvested
+Poultry,All indicators associated with poultry production,11,animal_area
+Poultry,All indicators associated with poultry production,11,qty_rice_own_use
+Poultry,All indicators associated with poultry production,11,qty_rice_feed
+Livestock,All indicators associated with livestock production,12,bought_received_Cattle
+Livestock,All indicators associated with livestock production,12,qty_rice_harvested
+Livestock,All indicators associated with livestock production,12,area_rice_harvested
+Livestock,All indicators associated with livestock production,12,num_start_Cattle
+Livestock,All indicators associated with livestock production,12,peak_num_Cattle
+Livestock,All indicators associated with livestock production,12,mortality_rt_Cattle
+Livestock,All indicators associated with livestock production,12,vax_pct_Cattle
+Livestock,All indicators associated with livestock production,12,provision_feed_Cattle
+Livestock,All indicators associated with livestock production,12,trt_int_parasite_Cattle
+Livestock,All indicators associated with livestock production,12,trt_ext_parasite_Cattle
+Livestock,All indicators associated with livestock production,12,trt_vax_spending_Cattle
+Livestock,All indicators associated with livestock production,12,cur_trt_Cattle
+Livestock,All indicators associated with livestock production,12,cur_trt_spending_Cattle
+Livestock,All indicators associated with livestock production,12,num_Cattle
+Livestock,All indicators associated with livestock production,12,slghtr_value_Cattle
+Livestock,All indicators associated with livestock production,12,slghtr_unit_value_Cattle
+Livestock,All indicators associated with livestock production,12,prod_value_Cattle
+Livestock,All indicators associated with livestock production,12,sale_revenue_Cattle
+Livestock,All indicators associated with livestock production,12,births_Cattle
+Livestock,All indicators associated with livestock production,12,net_growth_pct_Cattle
+Livestock,All indicators associated with livestock production,12,for_draught_Cattle
+Livestock,All indicators associated with livestock production,12,for_breeding_Cattle
+Livestock,All indicators associated with livestock production,12,deaths_Cattle
+Livestock,All indicators associated with livestock production,12,sold_Cattle
+Livestock,All indicators associated with livestock production,12,sale_price_Cattle
+Livestock,All indicators associated with livestock production,12,slghtr_Cattle
+Livestock,All indicators associated with livestock production,12,num_vax_Cattle
+Livestock,All indicators associated with livestock production,12,net_growth_Cattle
+Livestock,All indicators associated with livestock production,12,animal_area
+Livestock,All indicators associated with livestock production,12,qty_rice_own_use
+Livestock,All indicators associated with livestock production,12,qty_rice_feed

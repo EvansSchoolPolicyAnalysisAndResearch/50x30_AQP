@@ -1,59 +1,127 @@
-﻿Goal,Goal.Id,Pathway,Pathway.Id,Variable
-Stimulate consumption of domestic poultry production,Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,mortality_rt_chickens
-Stimulate consumption of domestic poultry production,Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,vax_pct_chickens
-Stimulate consumption of domestic poultry production,Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,mortality_rt_chickens
-Stimulate consumption of domestic poultry production,Poultry,Improve farmer access to training on poultry production and marketing through government/NGO digital extension services,1,vax_pct_chickens
-Stimulate consumption of domestic poultry production,Poultry,Improve the production and productivity of existing local/indigenous breeds,2,mortality_rt_chickens
-Stimulate consumption of domestic poultry production,Poultry,Improve the production and productivity of existing local/indigenous breeds,2,yield_Chickens
-Stimulate consumption of domestic poultry production,Poultry,Improve the production and productivity of existing local/indigenous breeds,2,sold_Chickens
-Stimulate consumption of domestic poultry production,Poultry,Improve the production and productivity of existing local/indigenous breeds,2,net_growth_Chickens
-Stimulate consumption of domestic poultry production,Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,sale_ppkg_chickens
-Stimulate consumption of domestic poultry production,Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,bought_received_Chickens
-Stimulate consumption of domestic poultry production,Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,num_Chickens
-Stimulate consumption of domestic poultry production,Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,sold_Chickens
-Stimulate consumption of domestic poultry production,Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,for_sale_live_Chickens
-Stimulate consumption of domestic poultry production,Poultry,Incentivize poultry production with government-backed guaranteed prices and government-enforced price floors for poultry (by weight and quality),3,net_growth_pct_Chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,mortality_rt_chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,feed_Chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,trt_int_parasite_Chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,trt_ext_parasite_Chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,trt_vax_spending_Chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,cur_trt_chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,cur_trt_spending_Chickens
-Stimulate consumption of domestic poultry production,Poultry,"Incentivize poultry production with government-subsidized feed, chicks, and medicine",5,vax_pct_chickens
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,qty_rice_harvested
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,area_rice_harvested
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,feed_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,mortality_rt_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,vax_pct_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,provision_feed_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,trt_int_parasite_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,trt_ext_parasite_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,trt_vax_spending_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,cur_trt_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve farmer access to training on cattle production (best feeding practices and disease prevention) through government/NGO extension services,7,cur_trt_spending_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,feed_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,productivity_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,num_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,feed_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,productivity_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,slghtr_value_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,meat_unit_value_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,prod_value_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,provision_feed_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,sale_revenue_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,drought
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,flood
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle productivity and reduce farmer labor on livestock feeding through government-subsidized programs which introduce forage species on smallholder land,8,irrigation
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle production with high intervention programs that provide both subsidies and education to smallholder farmers,9,mortality_rt_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Improve cattle production with high intervention programs that provide both subsidies and education to smallholder farmers,9,vax_pct_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,births_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,net_growth_pct_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,for_draught_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,for_breed_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,productivity_cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,yield_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,prod_value_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,sale_revenue_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,meat_unit_value_Cattle
-Reduce the import of beef through the stimulation of domestic production,Livestock,Indicators associated with cattle productivity,10,slghtr_value_Cattle
+﻿pathwayID,goalName,shortName
+1,Poultry,mortality_rt_chickens
+1,Poultry,vax_pct_chickens
+1,Poultry,mortality_rt_chickens
+1,Poultry,vax_pct_chickens
+2,Poultry,mortality_rt_chickens
+2,Poultry,yield_Chickens
+2,Poultry,sold_Chickens
+2,Poultry,net_growth_Chickens
+3,Poultry,sale_ppkg_chickens
+3,Poultry,bought_received_Chickens
+3,Poultry,num_Chickens
+3,Poultry,sold_Chickens
+3,Poultry,for_sale_live_Chickens
+3,Poultry,net_growth_pct_Chickens
+5,Poultry,mortality_rt_chickens
+5,Poultry,feed_Chickens
+5,Poultry,trt_int_parasite_Chickens
+5,Poultry,trt_ext_parasite_Chickens
+5,Poultry,trt_vax_spending_Chickens
+5,Poultry,cur_trt_chickens
+5,Poultry,cur_trt_spending_Chickens
+5,Poultry,vax_pct_chickens
+7,Livestock,qty_rice_harvested
+7,Livestock,area_rice_harvested
+7,Livestock,feed_cattle
+7,Livestock,mortality_rt_cattle
+7,Livestock,vax_pct_cattle
+7,Livestock,provision_feed_cattle
+7,Livestock,trt_int_parasite_Cattle
+7,Livestock,trt_ext_parasite_Cattle
+7,Livestock,trt_vax_spending_Cattle
+7,Livestock,cur_trt_Cattle
+7,Livestock,cur_trt_spending_Cattle
+8,Livestock,feed_cattle
+8,Livestock,productivity_cattle
+8,Livestock,num_cattle
+8,Livestock,feed_cattle
+8,Livestock,productivity_cattle
+8,Livestock,slghtr_value_Cattle
+8,Livestock,meat_unit_value_Cattle
+8,Livestock,prod_value_Cattle
+8,Livestock,provision_feed_cattle
+8,Livestock,sale_revenue_Cattle
+8,Livestock,drought
+8,Livestock,flood
+8,Livestock,irrigation
+9,Livestock,mortality_rt_cattle
+9,Livestock,vax_pct_cattle
+10,Livestock,births_Cattle
+10,Livestock,net_growth_pct_Cattle
+10,Livestock,for_draught_cattle
+10,Livestock,for_breed_cattle
+10,Livestock,productivity_cattle
+10,Livestock,yield_Cattle
+10,Livestock,prod_value_Cattle
+10,Livestock,sale_revenue_Cattle
+10,Livestock,meat_unit_value_Cattle
+10,Livestock,slghtr_value_Cattle
+11,Poultry,num_Chickens
+11,Poultry,peak_num_Chickens
+11,Poultry,num_start_Chickens
+11,Poultry,births_Chickens
+11,Poultry,deaths_Chickens
+11,Poultry,sold_Chickens
+11,Poultry,sale_ppkg_Chickens
+11,Poultry,slghtr_Chickens
+11,Poultry,num_vax_Chickens
+11,Poultry,daily_avg_egg_prod_Chickens
+11,Poultry,egg_price_Chickens
+11,Poultry,for_eggs_sale_Chickens
+11,Poultry,net_growth_Chickens
+11,Poultry,eggs_total_prod_Chickens
+11,Poultry,eggs_value_cultiv_Chickens
+11,Poultry,eggs_sold_Chickens
+11,Poultry,eggs_revenue_Chickens
+11,Poultry,sale_revenue_Chickens
+11,Poultry,prod_value_Chickens
+11,Poultry,mortality_rt_Chickens
+11,Poultry,vax_pct_Chickens
+11,Poultry,net_growth_pct_Chickens
+11,Poultry,bought_received_Chickens
+11,Poultry,for_sale_live_Chickens
+11,Poultry,trt_int_parasite_Chickens
+11,Poultry,trt_ext_parasite_Chickens
+11,Poultry,trt_vax_spending_Chickens
+11,Poultry,cur_trt_Chickens
+11,Poultry,cur_trt_spending_Chickens
+11,Poultry,sale_price_Chickens
+11,Poultry,slghtr_unit_value_Chickens
+11,Poultry,slghtr_value_Chickens
+11,Poultry,qty_rice_harvested
+11,Poultry,area_rice_harvested
+11,Poultry,animal_area
+11,Poultry,qty_rice_own_use
+11,Poultry,qty_rice_feed
+12,Livestock,bought_received_Cattle
+12,Livestock,qty_rice_harvested
+12,Livestock,area_rice_harvested
+12,Livestock,num_start_Cattle
+12,Livestock,peak_num_Cattle
+12,Livestock,mortality_rt_Cattle
+12,Livestock,vax_pct_Cattle
+12,Livestock,provision_feed_Cattle
+12,Livestock,trt_int_parasite_Cattle
+12,Livestock,trt_ext_parasite_Cattle
+12,Livestock,trt_vax_spending_Cattle
+12,Livestock,cur_trt_Cattle
+12,Livestock,cur_trt_spending_Cattle
+12,Livestock,num_Cattle
+12,Livestock,slghtr_value_Cattle
+12,Livestock,slghtr_unit_value_Cattle
+12,Livestock,prod_value_Cattle
+12,Livestock,sale_revenue_Cattle
+12,Livestock,births_Cattle
+12,Livestock,net_growth_pct_Cattle
+12,Livestock,for_draught_Cattle
+12,Livestock,for_breeding_Cattle
+12,Livestock,deaths_Cattle
+12,Livestock,sold_Cattle
+12,Livestock,sale_price_Cattle
+12,Livestock,slghtr_Cattle
+12,Livestock,num_vax_Cattle
+12,Livestock,net_growth_Cattle
+12,Livestock,animal_area
+12,Livestock,qty_rice_own_use
+12,Livestock,qty_rice_feed
