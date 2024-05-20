@@ -473,7 +473,6 @@ server <- function(input, output, session) {
     #target_policy=tolower(input$policiesBox2)
     #if(target_policy!="none"){
     if(input$policiesBox2!="None"){
-      
       indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName")
       indics <- as.list(indics_out$shortName)
       names(indics) <- indics_out$labelName
@@ -683,9 +682,9 @@ server <- function(input, output, session) {
               #    names(tempdata)[names(tempdata)=="value"] <- currVar
               if(adm_level=="hhid"){
                 if(!exists('outdata')){
-                  outdata <- tempdata
+                  outdata <- df
                 } else { 
-                  outdata <- bind_rows(subset, tempdata)
+                  outdata <- bind_rows(outdata, df)
                 }
               } else {
                 tempdata <- df %>% 
@@ -698,24 +697,33 @@ server <- function(input, output, session) {
                 } 
               }
               
+              mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
+                summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=weight, na.rm=T)))
+              
+              if(!exists("mapdata")){
+                mapdata <- mapdata_temp 
+              } else {
+                mapdata <- bind_rows(mapdata, mapdata_temp)
+              }
+              
               #if(length(aggs_list==1)) #I.e., aggs_list only contains year
-              pivotbyvars <- c('province', 'name')
-              groupbyvars <- c('province', varslist_short, "weight", aggs_list)
+              #pivotbyvars <- c('province', 'name')
+              #groupbyvars <- c('province', varslist_short, "weight", aggs_list)
               #groupbyvars <- groupbyvars[nzchar(groupbyvars)]
               #if(source_call!="trends"){ #Minor kludge because we're getting a pivot longer error here if there's variables missing.
-              mapdata_temp <- subsetdata  %>% select(all_of(groupbyvars)) %>% 
-                na.omit() %>% 
-                pivot_longer(., varslist_short) %>% 
-                group_by(across(all_of(pivotbyvars))) %>% 
-                summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T))) %>%
-                pivot_wider()
+              #mapdata_temp <- subsetdata  %>% select(all_of(groupbyvars)) %>% 
+              #  na.omit() %>% 
+              #  pivot_longer(., varslist_short) %>% 
+              #  group_by(across(all_of(pivotbyvars))) %>% 
+              #  summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T))) %>%
+              #  pivot_wider()
               #mapdata$province_num <- as.numeric(mapdata$province)
               #xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
-              if(exists("mapdata_temp")){
-                mapdata <- mapdata_temp
-              } else {
-                mapdata <- bind_rows(mapdata_temp)
-              }
+              #if(exists("mapdata_temp")){
+              #  mapdata <- mapdata_temp
+              #} else {
+              #  mapdata <- bind_rows(mapdata_temp)
+              #}
               #} else {
               #  return(list(tempdata=outdata))
               #}
@@ -723,6 +731,7 @@ server <- function(input, output, session) {
               #  mapdata$province_num <- as.numeric(mapdata$province)
               #  xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
               #  return(xShp)
+              rm(df)
             }
           }
         }
