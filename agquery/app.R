@@ -41,41 +41,65 @@ import::from(spatstat.geom, weighted.median)
 #root_dir <- paste0(getwd(), "/")
 root_dir <- ""
 
-####INITIAL SETUP#######
+#LOADING IN AND VALIDATING SPREADSHEETS
 #Some of this could probably be cached for faster startup
 
-indicatorCategories <- read.xlsx("Update/indicatorCategories.xlsx") %>% 
-  melt() %>% 
-  filter(value==1) %>% 
-  select(-value) %>% 
-  rename(goalName=variable)
-
-
+indicatorCategories <- tryCatch(read.xlsx("Update/indicatorCategories.xlsx"),
+                                error=function(e) {
+                                  return(F)
+                                  }) 
+if(is.list(indicatorCategories)){
+  if(("shortName" %in% names(indicatorCategories)) & ncol(indicatorCategories) > 1) {
+  indicatorCategories <- indicatorCategories %>% 
+    melt() %>% 
+    filter(value==1) %>% 
+    select(-value) %>% 
+    rename(goalName=variable)
+goalNames <- str_to_title(unique(indicatorCategories$goalName))
+  }
+}
 
 dataset_list <- list.files("Data", pattern="*.csv")
-instrument_list <- readxl::read_xlsx("Update/instrument_list.xlsx")
-year_list <- as.list(instrument_list$year)
-names(year_list) <- instrument_list$yearlabel
+instrument_list <- tryCatch(readxl::read_xlsx("Update/instrument_list.xlsx"),
+         error=function(e){return(F)})
+if(is.list(instrument_list)){
+  colnm_instr <- c("survey","wave","country","year","yearlabel") #including only the essentials right now
+  if(any(!(colnm_instr %in% names(instrument_list)))){
+    instrument_list <- F
+  } else {
+  year_list <- as.list(instrument_list$year)
+  names(year_list) <- instrument_list$yearlabel
+  }
+}
+
+indicator_list <- tryCatch(readxl::read_xlsx("Update/indicators.xlsx"),
+                           error=function(e){return(F)}
+                           )
+
+if(is.list(indicator_list)){
+  colnm_indic <- c("shortName", "labelName","axisName", "file", "wins_limit", "units", "denominator") #Again, only what we minimally need to operate. Note we're moving flags to a new sheet
+if(any(!(colnm_indic %in% names(indicator_list)))){
+  indicator_list <- F
+    }
+  }
 
 
-indicator_list <- readxl::read_xlsx(paste0(root_dir,"Update/indicators.xlsx"))
-groups_list <- readxl::read_xlsx(paste0(root_dir, "Update/grouping_vars.xlsx"))
+groups_list <- tryCatch(readxl::read_xlsx("Update/grouping_vars.xlsx"),
+                        error=function(e){return(F)})
+if(is.list(groups_list)){
+  colnm_grps <- c("varName","label","shortName","Levels","Labels","level") #need to fix names here
+  if(any(!(colnm_indic %in% names(groups_list)))){
+    groups_list <- F
+  }
+}
 
-#Not implemented
-#group_cats <- unique(groups_list$level)
-#group_labs <- unique(groups_list$level_lab)
-#group_cats <- group_cats[group_cats!="Hidden" & group_cats!="Within Household"] #Filter out categories that we want to include but not have boxes for (because, for crops e.g. we have boxes elsewhere)
-
-#Update this file to change filters #Note: not implemented
-#filters_list <- readxl::read_xlsx(paste0(root_dir, "Update/filterset.xlsx"))
-
-#Admin levels, mainly for tagging datasets after manipulation - Not implemented
-#adm_list <- readxl::read_xlsx(paste0(root_dir, "Update/adm_levels.xlsx"))
-
-
-policy_path <- read.csv(paste0(root_dir,"Update/Policy_Pathways.csv"), header = TRUE)
+policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
+                        error=function(e){return(F)}) #It's possible to pass bad inputs here that will just render as garbage on the table panel; let 'em
+if(is.list(policy_path)){
 pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
 names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
+pathway_names <- unique(policy_path$Policy.Goal)
+}
 #pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
 
 #TODO - we should not need to do this during runtime
@@ -83,12 +107,18 @@ names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
 #colnames(pathways)[8] <- "Related Indicator(s)"
 
 #TODO - probably best to have all of these as CSV. Either way, we need consistency
-pathway_link <- read.csv("Update/Policy_Link.csv") %>% distinct() #Remove duplicates (bad input protection)
+
+pathway_link <- tryCatch(read.csv("Update/Policy_Link.csv") %>% distinct(), #Remove duplicates (bad input protection)
+                        error=function(e){return(F)})
+if(is.list(pathway_link)){
+  colnm_link <- c("pathwayID", "goalName","shortName")
+  if(any(!(colnm_indic %in% names(groups_list)))){
+    pathway_link <- F
+  }
+}
 
 
-pathway_names <- unique(policy_path$Policy.Goals)
 
-goalNames <- str_to_title(unique(indicatorCategories$goalName))
 
 
 
@@ -143,12 +173,13 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                            tabPanel("Policy Pathways",
                                     fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
                              <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
-                             fluidRow(dataTableOutput("path_table"))
+                             fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
                            ),
                            tabPanel("Instructions",
                                     includeHTML('www/Instructions_50x30_D2.html')
                            ),
                            tabPanel("Trends Explorer", shinyjs::useShinyjs(),
+                                    fluidRow(column(4, uiOutput("trendsErr"))),
                                     fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", goalNames)))),
                                     fluidRow(column(4, uiOutput('pathwaysBox'))),
                                     fluidRow(column(2, uiOutput('msgText')), column(4,
@@ -161,10 +192,15 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                     plotOutput('currMap'),
                                                     plotOutput('trendMap'))
                                     ),
-                                    fluidRow(column(12, uiOutput("droppedVars")))
+                                    fluidRow(column(12, uiOutput("droppedVars"))),
+                                    fluidRow(column(6, bsCollapse(
+                                      bsCollapsePanel("Detailed Information",
+                                                      dataTableOutput('flagsTable'))
+                                    )))
                            ),
                            tabPanel("Data Explorer",
-                                    fluidRow(column(12, selectInput('policiesBox2', "Select the Policy Priority", choices=c("None", goalNames)))), #radioButtons('policySelect', 'Policy Goal', choices=unique(indicator_list$policy_priority)))),
+                                    fluidRow(column(4,uiOutput("explorerErr"))),
+                                    fluidRow(column(12, uiOutput('dataPolicBox'))), 
                                     conditionalPanel(condition="input.policiesBox2!='None'",
                                                      fluidRow(column(12, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year)))),
                                                      fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
@@ -212,6 +248,13 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
 
 server <- function(input, output, session) {
   
+  output$dataPolicBox <- renderUI({if(exists("goalNames")){ 
+    selectInput('policiesBox2', "Select the Policy Priority:", choices=c("None", goalNames)) 
+  } else {
+    selectInput('policiesBox2', "Select the Policy Priority:", choices="None")
+    }
+    })
+  
   cor.test.p <- function(x){
     FUN <- function(x, y) cor.test(x, y)[["p.value"]]
     z <- outer(
@@ -224,7 +267,7 @@ server <- function(input, output, session) {
   }
   
   observeEvent(input$indicsIn, {
-    
+    if(with(indicator_list, exists(paste0("survey_question_", input$yearBtn)))){
     output$indicsDesc <- renderUI(HTML(sprintf('<table style="border: 3px #ddd; border-style: groove; padding: 9px;">
                                                <tr><td style="border: 3px #ddd; border-style: groove; padding: 9px;">%s</td></tr>
                                                <tr><td style="border: 3px #ddd; border-style: groove; padding: 9px;">%s</td></tr>
@@ -236,14 +279,21 @@ server <- function(input, output, session) {
                                                #round(weighted.mean(na.omit(data[[input$indicsIn]]), data[["weight"]][which(!is.na(data[[input$indicsIn]]))]), 2),
                                                #round(sd(na.omit(data[[input$indicsIn]])),2)
     )))
+    } else {
+      ouput$indicsDesc <- renderUI(verbatimTextOutput("Survey details not found for selected indicator."))
+    }
   })
   
   observeEvent(input$corrsIn, {
+    if(with(indicator_list, exists(paste0("survey_question_", input$yearBtn)))){
     output$corrsDesc <- renderUI(HTML(sprintf('<table style="border: 3px #ddd; border-style: groove; padding: 9px;">
                                               <tr><td style="border: 3px #ddd; border-style: groove; padding: 9px;">%s</td></tr>
                                               <tr><td style="border: 3px #ddd; border-style: groove; padding: 9px;">%s</td></tr>', 
                                               indicator_list[[paste0("survey_question_", input$yearBtn)]][indicator_list$shortName==input$corrsIn], 
                                               indicator_list$ques_text[indicator_list$shortName==input$corrsIn])))
+    } else {
+      ouput$corrsDesc <- renderUI(verbatimTextOutput("Survey details not found for selected indicator."))
+    }
   })
   
   
@@ -261,7 +311,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$policiesBox1, {
-    if(input$policiesBox1!="None"){
+    if(input$policiesBox1!="None" & is.list(policy_path)){
       inputChk <- is.null(input$pathwaysIn)
       pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
       
@@ -327,11 +377,16 @@ server <- function(input, output, session) {
         data_out <- data_out$tempdata
         indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
         data_table <- data.frame(shortName=indics_out) #TODO: Simplify
+        flag_table <- data_table #make a copy for metadata.
+        flag_table[[paste0(min(data_out$year), " N obs")]] <- NA
+        flag_table[[paste0(max(data_out$year), " N obs")]] <- NA
+        flag_table <- merge(data_table, indicator_list %>% select(shortName, labelName, flag_text))
         data_table <- merge(data_table, indicator_list %>% select(shortName, labelName), by="shortName")
+        
         data_table[[paste0(min(data_out$year), " Mean")]] <- NA
-        data_table[[paste0(min(data_out$year), " N obs")]] <- NA
+        #data_table[[paste0(min(data_out$year), " N obs")]] <- NA #Moved these to the metadata table. 
         data_table[[paste0(max(data_out$year), " Mean")]] <- NA
-        data_table[[paste0(max(data_out$year), " N obs")]] <- NA
+        #data_table[[paste0(max(data_out$year), " N obs")]] <- NA
         data_table$Trend <- ""
         
         for(var in indics_out){
@@ -372,8 +427,8 @@ server <- function(input, output, session) {
               }
               data_table[[paste0(min(data_out$year), " Mean")]][data_table$shortName==var] <- signif(min_mean,4)
               data_table[[paste0(max(data_out$year), " Mean")]][data_table$shortName==var] <- signif(max_mean,4)
-              data_table[[paste0(min(data_out$year), " N obs")]][data_table$shortName==var] <- min_n
-              data_table[[paste0(max(data_out$year), " N obs")]][data_table$shortName==var] <- max_n
+              flag_table[[paste0(min(data_out$year), " N obs")]][flag_table$shortName==var] <- min_n
+              flag_table[[paste0(max(data_out$year), " N obs")]][flag_table$shortName==var] <- max_n
               data_table$Trend[data_table$shortName==var] <- chg
             } #Implement regression later?
             
@@ -383,6 +438,7 @@ server <- function(input, output, session) {
         trendVarList <- as.list(c("0", data_table$shortName))
         names(trendVarList) <- c("Select...", data_table$labelName)
         data_table <- data_table %>% rename(Variable=labelName) %>% select(-shortName)
+        flags_table <- flags_table %>% rename(Variable=labelName, Notes=flag_text) %>% select(-shortName)
         output$trendsTable <- renderDataTable(data_table, options=list(paging=F, searching=F), rownames=F)
         
         output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
@@ -473,6 +529,7 @@ server <- function(input, output, session) {
     #target_policy=tolower(input$policiesBox2)
     #if(target_policy!="none"){
     if(input$policiesBox2!="None"){
+      if(is.list(pathway_link) & is.list(indicator_list)) {
       indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName")
       indics <- as.list(indics_out$shortName)
       names(indics) <- indics_out$labelName
@@ -552,7 +609,8 @@ server <- function(input, output, session) {
         output$heatMap <- renderPlotly(heatMap)
         #output$corrPlot <- renderPlot(corrPlot)
       }
-    }
+      }
+    } 
   })
   
   #observeEvent(input$yChk, {
