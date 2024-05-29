@@ -700,8 +700,19 @@ server <- function(input, output, session) {
         rm(df_in)
       }
       if(!with(df, exists("weight"))){
-      weights <- read.csv(sprintf("Data/%s_weights.csv",survey)) #add a file that consists of just hhid and weight
-      df <- merge(df, weights, by="hhid")
+        weights <- tryCatch(read.csv(sprintf("Data/%s_weights.csv",survey)),
+                            error=function(e){
+                              showNotification("Weights file missing; unweighted averages will be shown", type="warning")
+                              df$weight <- 1
+                            })
+      if(exists("weights")){
+        mergeNames <- names(df)[which(names(df) %in% names(weights))] #Slightly more flexible
+        if(length(mergeNames)==0){
+          showNotification("Error in merging weights file: ID column not found. Unweighted averages will be shown.", type="error")
+        }
+        df <- merge(df, weights, by=mergeNames)
+        rm(weights)
+        }
       }
       if(length(aggs_list > 1)){
       if(!all(aggs_list[aggs_list!="year"] %in% names(df))){
@@ -716,6 +727,7 @@ server <- function(input, output, session) {
             showNotification(paste("Grouping variable", aggs_list[aggs_list!="year"], "was not found"))
             aggs_list <- "year"
           } else {
+            mergeNames <- names(df)[which(names(df) %in% names(groups))] 
           df <- merge(df, groups, by="hhid")
           }
         }
