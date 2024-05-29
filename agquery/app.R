@@ -88,7 +88,7 @@ groups_list <- tryCatch(readxl::read_xlsx("Update/grouping_vars.xlsx"),
                         error=function(e){return(F)})
 if(is.list(groups_list)){
   colnm_grps <- c("varName","label","shortName","Levels","Labels","level") #need to fix names here
-  if(any(!(colnm_indic %in% names(groups_list)))){
+  if(any(!(colnm_grps %in% names(groups_list)))){
     groups_list <- F
   }
 }
@@ -112,7 +112,7 @@ pathway_link <- tryCatch(read.csv("Update/Policy_Link.csv") %>% distinct(), #Rem
                         error=function(e){return(F)})
 if(is.list(pathway_link)){
   colnm_link <- c("pathwayID", "goalName","shortName")
-  if(any(!(colnm_indic %in% names(groups_list)))){
+  if(any(!(colnm_link %in% names(pathway_link)))){
     pathway_link <- F
   }
 }
@@ -123,7 +123,8 @@ if(is.list(pathway_link)){
 
 
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
-
+khm_shp$ADM1_EN[khm_shp$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
+#Implement fuzzy matching later?
 
 ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                 base_font = bslib::font_google("Open Sans"), 
@@ -131,7 +132,7 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                          column(2, HTML("<h2>CAS Survey Data Explorer</h2>")),
                          column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>"))),
                 #img(src='moa_logo.png', width='10%'),
-                navbarPage(title="50x30 Cambodia Data Explorer", theme = bslib::bs_theme(version="3",
+                navbarPage(title="", theme = bslib::bs_theme(version="3",
                                                                                          bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                                                                                          base_font = bslib::font_google("Open Sans")), 
                            tabPanel("Introduction", column(1),column(10, #To do: move this to a separate file.
@@ -190,10 +191,11 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                     fluidRow(column(6, dataTableOutput('trendsTable')),
                                              column(6,
                                                     plotOutput('currMap'),
-                                                    plotOutput('trendMap'))
+                                                    plotOutput('trendMap'),
+                                                    uiOutput("plotsErr"))
                                     ),
                                     fluidRow(column(12, uiOutput("droppedVars"))),
-                                    fluidRow(column(6, bsCollapse(
+                                    fluidRow(column(6, br(), bsCollapse(
                                       bsCollapsePanel("Detailed Information",
                                                       dataTableOutput('flagsTable'))
                                     )))
@@ -211,7 +213,7 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                                   hr(),
                                                                                   checkboxInput('yChk', 'Omit 0s from Indicator'),
                                                                                   radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
-                                                                                  uiOutput("groupsBtns"),
+                                                                                  uiOutput("groupsBtn"),
                                                                                   #radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_list$label), choiceValues=c("", groups_list$varName)),
                                                                                   actionButton('submitBtn', "Compare Variables"))),
                                                               column(6, 
@@ -397,7 +399,7 @@ server <- function(input, output, session) {
             if(length(unique(sub_data$year))<2){
               year <- unique(sub_data$year)
               data_table[[paste0(year, " Mean")]][data_table$shortName==var] <- signif(inject(with(sub_data,weighted.mean(!!sym(var), weight))),4)
-              data_table[[paste0(year, " N obs")]][data_table$shortName==var] <- nrow(sub_data)
+              flag_table[[paste0(year, " N obs")]][flag_table$shortName==var] <- nrow(sub_data)
               data_table$Trend[data_table$shortName==var] <- "N/A"
             } else if(length(unique(sub_data$year>=2))) {
               min_mean <- inject(with(sub_data %>% filter(year==min(sub_data$year)), weighted.mean(!!sym(var), weight)))
@@ -438,9 +440,9 @@ server <- function(input, output, session) {
         trendVarList <- as.list(c("0", data_table$shortName))
         names(trendVarList) <- c("Select...", data_table$labelName)
         data_table <- data_table %>% rename(Variable=labelName) %>% select(-shortName)
-        flags_table <- flags_table %>% rename(Variable=labelName, Notes=flag_text) %>% select(-shortName)
-        output$trendsTable <- renderDataTable(data_table, options=list(paging=F, searching=F), rownames=F)
-        
+        flag_table <- flag_table %>% rename(Variable=labelName, Notes=flag_text) %>% select(-shortName) %>% relocate(Notes, .after=last_col())
+        output$trendsTable <- renderDataTable(data_table, options=list(searching=F, pageLength=15), rownames=F)
+        output$flagsTable <- renderDataTable(flag_table, options=list(searchign=F, pageLength=15), rownames=F)
         output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
         #output$trendsTable <- renderDataTable(data_table)
       }
@@ -463,31 +465,43 @@ server <- function(input, output, session) {
       if(!any(data_out=="")){
         data_out <- data_out$tempdata
         
-        data_out$province_num <- as.numeric(data_out$province)
+        #data_out$province_num <- tryCatch(as.numeric(data_out$province), error=function(e){
+        #  return(data_out %>% mutate(province=as.numeric(factor(province))))
+        #})
+        n_row <- nrow(data_out) 
+        data_out <- na.omit(data_out)
+        data_out <- data_out[data_out$province!="",]
+        if(nrow(data_out) < n_row){
+          output$plotsErr <- renderUI(HTML("<i>Note: some observations removed due to missing province information</i>"))
+        }
         max_year <- max(data_out$year)
         min_year <- min(data_out$year)
         
         if(min_year!=max_year){
           df_min_year=data_out %>% filter(year==min_year)
           df_max_year=data_out %>% filter(year==max_year)
-          diff <- df_max_year-df_min_year
-          diff$province_num <- df_max_year$province_num
+          diff <- data_out %>% pivot_wider(names_from=year, values_from=input$trendIn)
+          diff[,4] <- diff[,3]-diff[,2]
+          names(diff)[[4]] <- input$trendIn
+          #diff$province_num <- df_max_year$province_num
           
-          xShp_currMap <- merge(khm_shp, df_max_year, by.x="province", by.y="province_num", all.x=T)
-          xShp_trendMap <- merge(khm_shp, diff, by.x="province", by.y="province_num", all.x=T)
+          xShp_currMap <- merge(khm_shp, df_max_year, by.x="ADM1_EN", by.y="province", all.x=T) #changed y from province_num to province. Issue with the province_num not following alphabetical order meaning a numerical merge isn't good.
+          xShp_trendMap <- merge(khm_shp, diff, by.x="ADM1_EN", by.y="province", all.x=T)
           
           currMap <- ggplot(xShp_currMap, aes_string(fill = input$trendIn)) +
             geom_sf() +
             ggtitle(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values")) +
-            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_currMap[[input$trendIn]], na.rm = TRUE), max(xShp_currMap[[input$trendIn]], na.rm = TRUE)), 
-                                 name =  str_wrap(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn], min_year, "values", sep=" "), 10))+
+            #scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_currMap[[input$trendIn]], na.rm = TRUE), max(xShp_currMap[[input$trendIn]], na.rm = TRUE)), 
+            #                     name =  str_wrap(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn], min_year, "values", sep=" "), 10))+
+            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_currMap[[input$trendIn]], na.rm = TRUE), max(xShp_currMap[[input$trendIn]], na.rm = TRUE)))+
             theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
           
           trendMap <- ggplot(xShp_trendMap, aes_string(fill = input$trendIn)) +
             geom_sf() +
             ggtitle(paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, "-", max_year, " Difference")) +
-            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_trendMap[[input$trendIn]], na.rm = TRUE), max(xShp_trendMap[[input$trendIn]], na.rm = TRUE)), 
-                                 name =  str_wrap(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn],", ",paste0(min_year,"-",max_year), "difference", sep=" "), 10)) +
+            #scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_trendMap[[input$trendIn]], na.rm = TRUE), max(xShp_trendMap[[input$trendIn]], na.rm = TRUE)), 
+            #                     name =  str_wrap(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn],", ",paste0(min_year,"-",max_year), "difference", sep=" "), 10)) +
+            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_trendMap[[input$trendIn]], na.rm = TRUE), max(xShp_trendMap[[input$trendIn]], na.rm = TRUE))) +
             theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
           
           output$currMap <- renderPlot(currMap)
@@ -530,39 +544,64 @@ server <- function(input, output, session) {
     #if(target_policy!="none"){
     if(input$policiesBox2!="None"){
       if(is.list(pathway_link) & is.list(indicator_list)) {
-      indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName")
+      indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
       indics <- as.list(indics_out$shortName)
-      names(indics) <- indics_out$labelName
+      names(indics) <- indics_out$labelName 
+      indics <- unique(indics)
       updateBoxes(indics) #Might need to global this
-      files_list <- indics_out %>% select(file) %>% unique() #Using tolower here helps filter out differences in capitalization 
-      survey_pref <- indics_out$survey[indics_out$year==input$yearBtn]
-      for(file in files_list){
-        infile <- list.files("Data", sprintf("%s_%s_%s", survey_pref, input$yearBtn, file), ignore.case=T, full.names=T) #this differs from the other file loading subroutine in getData - should probably make them consistent.
-        if(length(infile)!=0){
-          temp <- read.csv(infile)
+      data_files_select <- indics_out %>% 
+        select(file) %>% 
+        distinct() %>%
+        unlist() #Using tolower here helps filter out differences in capitalization 
+      #survey_pref <- indics_out$survey[indics_out$year==input$yearBtn] # TO FIX; this line no longer does anything.
+      data_files <- lapply(data_files_select, FUN=function(x){dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(x)))]}) %>% unique() %>% unlist()  #Drop duplicates if they're somehow in there.
+      #data_files <- dataset_list %>% select(which(str_to_lower(dataset_list) %in% str_to_lower(data_files_select)))
+      #data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
+      data_files <- as.data.frame(data_files)
+      names(data_files) <- "file.name"
+      data_files$year <- str_extract(data_files$file.name, "[0-9]{4}") #Might be unnecessary 
+      data_files <- filter(data_files, year==input$yearBtn)
+      for(file in data_files$file.name){
+        #infile <- list.files("Data", sprintf("%s_%s_%s", survey_pref, input$yearBtn, file), ignore.case=T, full.names=T) #this differs from the other file loading subroutine in getData - should probably make them consistent.
+        #if(length(infile)!=0){
+          temp <- read.csv(paste0("Data/",file))
           if(!exists("data_out")){
             data_out <- temp
           } else {
+            temp <- temp %>% select(all_of(c(names(temp)[which(!(names(temp) %in% names(data_out)))], "hhid"))) #Fix for redundant input.
             data_out <- merge(data_out, temp, by="hhid")
           }
         }
-      } 
+      #} 
       #data_out <- data_out %>% mutate(indicatorCategory=tolower(indicatorCategory)) %>% subset(indicatorCategory==target_policy, select=all_of(indicator_list$shortName)) %>% na.omit()
       if(exists("data_out")){
-        data_out <- data_out[,(names(data_out) %in% indicator_list$shortName[which(tolower(indicator_list$indicatorCategory)==target_policy)])]
+        indic_shortNames <- unlist(indics, use.names=F)
+        data_out <- data_out %>% select(any_of(indic_shortNames)) #Won't throw an error if names are missing)
+        if(ncol(data_out) < length(indic_shortNames)){
+          indics_missing <- indics[which(!(indic_shortNames %in% names(data_out)))]
+          showNotification(paste("Variable(s)", paste(indics_missing, collapse=", "), "not found in the dataset"), type="warning")
+        }
         varnames <- data.frame(shortName=names(data_out))
         varnames <- merge(varnames, indicator_list %>% select(shortName, labelName), by="shortName")
         #label_names <- indicator_list$labelName[which(indicator_list$shortName %in% names(data_out))]
         #ALT: Fix for bad input, specific to CAS variable coding (if someone exports labels instead of values); possible to remove if we return to dta input or with different data.
+        missing_vars <- NULL
         for(currVar in names(data_out)){
-          if(all(is.na(data_out[[currVar]])) | all(data_out[[currVar]]==0)){
-            data_out <- data_out %>% select(!matches(currVar))
+          if(all(is.na(data_out[[currVar]])) | all(na.omit(data_out[[currVar]]==0))){
+            missing_vars <- c(missing_vars, currVar)
           } else {
             if(!is.numeric(data_out[[currVar]])){
               data_out <- data_out %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
               data_out[[currVar]] <- as.numeric(data_out[[currVar]])
+              if(all(is.na(data_out[[currVar]])) | all(na.omit(data_out[[currVar]]==0))){
+                missing_vars <- c(missing_vars, currVar)
+              }
             }
           }
+        }
+        if(!is.null(missing_vars)){
+          data_out <- data_out %>% select(!matches(missing_vars))
+          showNotification(paste("Variable(s)", paste(missing_vars, collapse = ", "), "were non-numeric and were removed from the dataset"), type="warning")
         }
         #truncated_pretty_names <- substr(pretty_names, 1, 35)
         #print(pretty_names)
@@ -609,6 +648,8 @@ server <- function(input, output, session) {
         output$heatMap <- renderPlotly(heatMap)
         #output$corrPlot <- renderPlot(corrPlot)
       }
+      } else {
+        showNotification("Error in input files; one or more not found.", type="error")
       }
     } 
   })
@@ -658,19 +699,27 @@ server <- function(input, output, session) {
         }
         rm(df_in)
       }
-      
+      if(!with(df, exists("weight"))){
       weights <- read.csv(sprintf("Data/%s_weights.csv",survey)) #add a file that consists of just hhid and weight
       df <- merge(df, weights, by="hhid")
-      if(length(aggs_list)>1){
-        groups <- tryCatch(read.csv(sprintf("Data/%s_groups.csv", survey)) %>% select(all_of("hhid",aggs_list[-which(aggs_list=="year")])), 
+      }
+      if(length(aggs_list > 1)){
+      if(!all(aggs_list[aggs_list!="year"] %in% names(df))){
+      groups <- tryCatch(read.csv(sprintf("Data/%s_groups.csv", survey)) %>% select(any_of(c("hhid",aggs_list[aggs_list!="year"]))), #Should fix this workaround with year
                            error=function(e){
                              showNotification(paste("Grouping file for the survey", survey, "was not found. No groups were applied."))
                              aggs_list <- "year"
                              return("")
                            })
-        if(ncol(groups)>1){
+        if(is.list(groups)){
+          if(ncol(groups)==1){
+            showNotification(paste("Grouping variable", aggs_list[aggs_list!="year"], "was not found"))
+            aggs_list <- "year"
+          } else {
           df <- merge(df, groups, by="hhid")
+          }
         }
+      }
       }
       varslist_short <- names(df)[which(names(df) %in% varslist)]
       if(length(varslist_short)==0){
@@ -833,6 +882,7 @@ output$downloadRaw <- downloadHandler(
   })
 
 #To do: compact this for better display.
+if(exists("pathwaysDT")){
 output$path_table <- renderDataTable(pathwaysDT,
                                      options = list(scrollX = TRUE,
                                                     pageLength = 5,
@@ -843,6 +893,9 @@ output$path_table <- renderDataTable(pathwaysDT,
                                      ),
                                      rownames = FALSE
 )
+} else {
+  output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
+}
 
 updatePlots <- function(tab="data", maps=T){
   #Old way
@@ -941,6 +994,7 @@ updatePlots <- function(tab="data", maps=T){
           
         }
         if(maps==T){
+          mapdata <- merge(khm_shp, mapdata, by.x="ADM1_EN", by.y="province", all.x=T)
           corrMap <- ggplot(mapdata, aes_string(fill = xvars)) +
             geom_sf() +
             ggtitle(str_to_title(paste("Map of", indicator_list$labelName[indicator_list$shortName == xvars], "by Province"))) +
