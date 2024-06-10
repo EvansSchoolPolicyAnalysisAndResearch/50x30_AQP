@@ -179,15 +179,18 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                            tabPanel("Instructions",
                                     includeHTML('www/Instructions_50x30_D2.html')
                            ),
+                           
+                           ###########
+                           # Trends Explorer Tab
+                           ###########
                            tabPanel("Trends Explorer", shinyjs::useShinyjs(),
                                     fluidRow(column(4, uiOutput("trendsErr"))),
                                     fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", goalNames)))),
-                                    fluidRow(column(4, uiOutput('pathwaysBox'))),
-                                    fluidRow(column(2, uiOutput('msgText')), column(4,
-                                                                                    conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend')))
+                                    fluidRow(column(4, uiOutput('pathwaysBox1'))),
+                                    fluidRow(column(2, uiOutput('msgText')) #, column(4, conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend')))
                                     ),
                                     column(6, conditionalPanel(condition="input.policiesBox1!='None'", uiOutput("trendVarChoose"))
-                                    )),
+                                    ),
                                     fluidRow(column(6, dataTableOutput('trendsTable')),
                                              column(6,
                                                     plotOutput('currMap'),
@@ -200,10 +203,16 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                       dataTableOutput('flagsTable'))
                                     )))
                            ),
+                           
+                           #################
+                           # Data Explorer Tab
+                           #################
                            tabPanel("Data Explorer",
                                     fluidRow(column(4,uiOutput("explorerErr"))),
-                                    fluidRow(column(12, uiOutput('dataPolicBox'))), 
+                                    fluidRow(column(12, uiOutput('policiesBox2'))),
+                                    fluidRow(column(12, uiOutput("pathwaysBox2"))),
                                     conditionalPanel(condition="input.policiesBox2!='None'",
+                                                     fluidRow(column(4, uiOutput('pathwaysBox2'))),
                                                      fluidRow(column(12, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year)))),
                                                      fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
                                                                                   
@@ -250,12 +259,14 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
 
 server <- function(input, output, session) {
   
-  output$dataPolicBox <- renderUI({if(exists("goalNames")){ 
-    selectInput('policiesBox2', "Select the Policy Priority:", choices=c("None", goalNames)) 
+  output$policiesBox2 <- renderUI({if(exists("goalNames")){ 
+    selectInput('policiesIn2', "Select the Policy Priority:", choices=c("None", goalNames)) 
   } else {
-    selectInput('policiesBox2', "Select the Policy Priority:", choices="None")
+    selectInput('policiesIn2', "Select the Policy Priority:", choices="None")
     }
     })
+  
+  
   
   cor.test.p <- function(x){
     FUN <- function(x, y) cor.test(x, y)[["p.value"]]
@@ -307,21 +318,19 @@ server <- function(input, output, session) {
   updateBoxes <- function(indics){
     output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Indicator</b>"), choices=indics, size=length(indics), selectize=F)) 
     output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select Correlate</b>'), choices=indics, size=length(indics), selectize=F))
-    groups_sub <- groups_list %>% filter(level=="All" | level==input$policiesBox2)
+    groups_sub <- groups_list %>% filter(level=="All" | level==input$policiesIn2)
     output$groupsBtn <- renderUI(radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
   }
   
   
   observeEvent(input$policiesBox1, {
     if(input$policiesBox1!="None" & is.list(policy_path)){
-      inputChk <- is.null(input$pathwaysIn)
+      inputChk <- is.null(input$pathwaysIn1)
       pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
-      
-      
       #pathway_sub <- pathway_link %>% filter(goalName==input$policiesBox1)
-      pathway_list <- as.list(c(0, pathway_sub$pathwayID)) 
-      names(pathway_list) <- c("All", pathway_sub$Pathway)
-      output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Choose a pathway (optional)", choices=pathway_list))
+      pathway_list <- as.list(c(pathway_sub$pathwayID,0)) 
+      names(pathway_list) <- c(pathway_sub$Pathway, "All")
+      output$pathwaysBox1 <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=pathway_list))
       
       if(!inputChk){
         shinyjs::disable('pathwaysIn')
@@ -332,16 +341,26 @@ server <- function(input, output, session) {
         shinyjs::enable('policiesBox1')
       }
     }
-    
   })
-  observeEvent(input$pathwaysIn, {
-    shinyjs::disable('pathwaysIn')
+  
+  observeEvent(input$pathwaysIn1, {
+    shinyjs::disable('pathwaysIn1')
     shinyjs::disable('policiesBox1')
     showNotification("Loading, please wait")
     updateTrends()
-    shinyjs::enable('pathwaysIn')
+    shinyjs::enable('pathwaysIn1')
     shinyjs::enable('policiesBox1')
-  }) 
+  })
+  
+  observeEvent(input$policiesIn2, {
+    if(input$policiesIn2!="None"){
+    pathway_sub <- policy_path %>% filter(goalName==input$policiesIn2)
+               pathway_list <- as.list(c(pathway_sub$pathwayID,0)) 
+               names(pathway_list) <- c(pathway_sub$Pathway, "All")
+               output$pathwaysBox2 <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=pathway_list))
+    }
+  }
+  )
   
   updateTrends <- function(){
     if(input$policiesBox1=="None"){
@@ -350,7 +369,7 @@ server <- function(input, output, session) {
       
       #updateSelectInput(session, "policiesBox2", selected=input$policiesBox1)
       #TODO: Long term it makes more sense to have a single file for this operation; the central challenge is the fact that users will probably want to view indicators without having a pathway in mind.
-      if(input$pathwaysIn==0){
+      if(input$pathwaysIn1==0){
         indics_out <- indicatorCategories %>% filter(goalName==input$policiesBox1) %>% select(shortName) %>% distinct() %>% unlist()
       } else {
         indics_out <- pathway_link %>% filter(pathwayID==input$pathwaysIn) %>% select(shortName) %>% distinct() %>% unlist()
@@ -389,7 +408,9 @@ server <- function(input, output, session) {
         #data_table[[paste0(min(data_out$year), " N obs")]] <- NA #Moved these to the metadata table. 
         data_table[[paste0(max(data_out$year), " Mean")]] <- NA
         #data_table[[paste0(max(data_out$year), " N obs")]] <- NA
+        data_table$Units <- ""
         data_table$Trend <- ""
+        data_table$LTT_Trend <- ""
         
         for(var in indics_out){
           sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
@@ -539,12 +560,12 @@ server <- function(input, output, session) {
   })
   
   
-  observeEvent(input$policiesBox2, {
+  observeEvent(input$policiesIn2, {
     #target_policy=tolower(input$policiesBox2)
     #if(target_policy!="none"){
-    if(input$policiesBox2!="None"){
+    if(input$policiesIn2!="None"){
       if(is.list(pathway_link) & is.list(indicator_list)) {
-      indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
+      indics_out <- pathway_link %>% filter(goalName==input$policiesIn2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
       indics <- as.list(indics_out$shortName)
       names(indics) <- indics_out$labelName 
       indics <- unique(indics)
