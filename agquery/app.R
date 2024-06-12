@@ -29,6 +29,8 @@ library(heatmaply)
 library(shinyjs)
 library(reshape2)
 
+#dir(path="R", full.names=T) |> map(~ source(.))
+
 thematic_shiny(
   font = "auto",
   sequential = colorRampPalette(colors = c("white", "#440154FF"))(12),
@@ -117,14 +119,12 @@ if(is.list(pathway_link)){
   }
 }
 
-
-
-
-
-
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
 khm_shp$ADM1_EN[khm_shp$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
 #Implement fuzzy matching later?
+
+
+
 
 ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                 base_font = bslib::font_google("Open Sans"), 
@@ -143,7 +143,7 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                      hr(),
                                                                      fluidRow(column(8, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer is a way to view and compare information from the Cambodian Agricultural Surveys to address the following policy priorities:',
                                                                                                    '<ul>',
-                                                                                                   lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}),
+                                                                                                   paste(lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}), collapse=" "),
                                                                                                    '</ul></p>',
                                                                                                    '<h3>Using the Cambodia 50x30 App</h3> <p>The Cambodian Agricultural Survey contains information on household production of crops and livestock that can be used to understand trends in small-scale farmer contributions to national supply and the economic conditions small-scale producers face.',
                                                                                                    'Selecting a policy priority will allow you to narrow down the indicators to those considered most relevant.</p>',
@@ -171,19 +171,20 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                      )
                            )
                            ),
-                           tabPanel("Policy Pathways",
+                           tabPanel("Policy Pathways", icon=icon("landmark-flag"),
                                     fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
                              <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
                              fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
                            ),
-                           tabPanel("Instructions",
+                           tabPanel("Instructions", icon=icon("readme"),
                                     includeHTML('www/Instructions_50x30_D2.html')
                            ),
                            
                            ###########
                            # Trends Explorer Tab
                            ###########
-                           tabPanel("Trends Explorer", shinyjs::useShinyjs(),
+                           tabPanel("Trends Explorer", icon=icon("magnifying-glass-chart"),
+                                    shinyjs::useShinyjs(),
                                     fluidRow(column(4, uiOutput("trendsErr"))),
                                     fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", goalNames)))),
                                     fluidRow(column(4, uiOutput('pathwaysBox1'))),
@@ -207,11 +208,12 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                            #################
                            # Data Explorer Tab
                            #################
-                           tabPanel("Data Explorer",
+                           tabPanel("Data Comparisons",
+                                    icon=icon("chart-area"),
                                     fluidRow(column(4,uiOutput("explorerErr"))),
                                     fluidRow(column(12, uiOutput('policiesBox2'))),
                                     fluidRow(column(12, uiOutput("pathwaysBox2"))),
-                                    conditionalPanel(condition="input.policiesBox2!='None'",
+                                    conditionalPanel(condition="input.policiesIn2!='None'",
                                                      fluidRow(column(4, uiOutput('pathwaysBox2'))),
                                                      fluidRow(column(12, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year)))),
                                                      fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
@@ -237,7 +239,7 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                      fluidRow(uiOutput('plotInterp'))
                                     )
                            ),
-                           tabPanel("Downloads", column(4, fluidRow(downloadButton('downloadExcel',
+                           tabPanel("Downloads", icon=icon("download"), column(4, fluidRow(downloadButton('downloadExcel',
                                                                                    label='Download Indicators',
                                                                                    icon=icon('file-excel'))),
                                                         br(),
@@ -258,15 +260,81 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
 
 
 server <- function(input, output, session) {
+  bicolorMap <- function(xShp, fillVal, plotTitle, units){
+    plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
+      geom_sf() +
+      ggtitle(plotTitle) +
+      scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp_currMap[[fillVal]], na.rm = TRUE)), name=units)+
+      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+    return(plotOut)
+  }
   
-  output$policiesBox2 <- renderUI({if(exists("goalNames")){ 
+  monoColorMap <- function(xShp, fillVal, plotTitle, year, units){
+    plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
+      geom_sf() +
+      ggtitle(paste0(plotTitle, ", ", year, " Values")) +
+      scale_fill_gradient(low = "white", high = "darkblue", limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp_currMap[[fillVal]], na.rm = TRUE)), name=units)+
+      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+    return(plotOut)
+  }
+  
+  makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, aggs_lab) {
+    ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list))+
+      geom_histogram(bins = bins)+
+      #geom_density(fill=NA)+scale_color_discrete(guide='none')+
+      labs(x=xlab, y="Number of Observations", fill=aggs_lab)+
+      ggtitle(str_to_title(paste("Histogram of", ylab))) +
+      theme(plot.background = element_rect(fill = "transparent", color = NA), 
+            panel.background = element_blank(), 
+            panel.grid = element_blank(), 
+            axis.title = element_text(hjust = 0.5, size = 14), 
+            axis.ticks = element_blank(), 
+            plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
+            axis.text = element_text(size=12))
+  }
+  
+  makeHist <- function(outdata, yvars, bins, indicAxis, titleLab){
+    ggplot(outdata, aes(x=!!sym(yvars)))+
+      geom_histogram(bins = bins) +
+      labs(x=indicAxis, y="Number of Observations")+
+      ggtitle(str_to_title(paste("Histogram of", titleLab))) +
+      theme(plot.background = element_rect(fill = "transparent", color = NA), 
+            panel.background = element_blank(), 
+            panel.grid = element_blank(), 
+            axis.title = element_text(hjust = 0.5, size = 14), 
+            axis.ticks = element_blank(), 
+            plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
+            axis.text=element_text(size=12))
+  }
+  
+  
+  makeScatterGrps <- function(outdata, xvars, yvars, aggs_list, xlab, ylab){
+    ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list))+
+      geom_histogram(bins = bins)+
+      #geom_density(fill=NA)+scale_color_discrete(guide='none')+
+      labs(x=xlab, y="Number of Observations", fill=aggs_lab)+
+      ggtitle(str_to_title(paste("Histogram of", ylab))) +
+      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+  }
+  
+  makeScatter <- function(outdata, xvars, yvars, xlab, ylab) {
+    ggplot(outdata, aes_string(x=yvars))+
+      geom_histogram(bins = bins)+
+      #geom_density(fill=NA)+scale_color_discrete(guide='none')+
+      labs(x=xlab, y="Number of Observations", fill=aggs_lab)+
+      ggtitle(str_to_title(paste("Histogram of", ylab))) +
+      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+  }
+  
+
+  output$policiesBox2 <- renderUI({
+    if(exists("goalNames")){ 
     selectInput('policiesIn2', "Select the Policy Priority:", choices=c("None", goalNames)) 
   } else {
     selectInput('policiesIn2', "Select the Policy Priority:", choices="None")
     }
     })
-  
-  
+
   
   cor.test.p <- function(x){
     FUN <- function(x, y) cor.test(x, y)[["p.value"]]
@@ -333,11 +401,11 @@ server <- function(input, output, session) {
       output$pathwaysBox1 <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=pathway_list))
       
       if(!inputChk){
-        shinyjs::disable('pathwaysIn')
+        shinyjs::disable('pathwaysIn1')
         shinyjs::disable('policiesBox1')
         showNotification("Loading, please wait")
         updateTrends()
-        shinyjs::enable('pathwaysIn')
+        shinyjs::enable('pathwaysIn1')
         shinyjs::enable('policiesBox1')
       }
     }
@@ -347,7 +415,7 @@ server <- function(input, output, session) {
     shinyjs::disable('pathwaysIn1')
     shinyjs::disable('policiesBox1')
     showNotification("Loading, please wait")
-    updateTrends()
+    updateTrends(input$policiesBox1, input$pathwaysIn1)
     shinyjs::enable('pathwaysIn1')
     shinyjs::enable('policiesBox1')
   })
@@ -362,17 +430,17 @@ server <- function(input, output, session) {
   }
   )
   
-  updateTrends <- function(){
-    if(input$policiesBox1=="None"){
+  updateTrends <- function(policy, pathway){
+    if(policy=="None"){
       output$msgText <- renderUI(HTML("<h4>Select a policy priority above to get started</h4>"))
     } else {
       
       #updateSelectInput(session, "policiesBox2", selected=input$policiesBox1)
       #TODO: Long term it makes more sense to have a single file for this operation; the central challenge is the fact that users will probably want to view indicators without having a pathway in mind.
-      if(input$pathwaysIn1==0){
-        indics_out <- indicatorCategories %>% filter(goalName==input$policiesBox1) %>% select(shortName) %>% distinct() %>% unlist()
+      if(pathway==0){
+        indics_out <- indicatorCategories %>% filter(goalName==policy) %>% select(shortName) %>% distinct() %>% unlist()
       } else {
-        indics_out <- pathway_link %>% filter(pathwayID==input$pathwaysIn) %>% select(shortName) %>% distinct() %>% unlist()
+        indics_out <- pathway_link %>% filter(pathwayID==pathway) %>% select(shortName) %>% distinct() %>% unlist()
       } 
       
       #data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), str_to_lower(input$policiesBox1))]) #Might need to store this as a global later. 
@@ -509,22 +577,9 @@ server <- function(input, output, session) {
           xShp_currMap <- merge(khm_shp, df_max_year, by.x="ADM1_EN", by.y="province", all.x=T) #changed y from province_num to province. Issue with the province_num not following alphabetical order meaning a numerical merge isn't good.
           xShp_trendMap <- merge(khm_shp, diff, by.x="ADM1_EN", by.y="province", all.x=T)
           
-          currMap <- ggplot(xShp_currMap, aes_string(fill = input$trendIn)) +
-            geom_sf() +
-            ggtitle(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values")) +
-            #scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_currMap[[input$trendIn]], na.rm = TRUE), max(xShp_currMap[[input$trendIn]], na.rm = TRUE)), 
-            #                     name =  str_wrap(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn], min_year, "values", sep=" "), 10))+
-            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_currMap[[input$trendIn]], na.rm = TRUE), max(xShp_currMap[[input$trendIn]], na.rm = TRUE)))+
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-          
-          trendMap <- ggplot(xShp_trendMap, aes_string(fill = input$trendIn)) +
-            geom_sf() +
-            ggtitle(paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, "-", max_year, " Difference")) +
-            #scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_trendMap[[input$trendIn]], na.rm = TRUE), max(xShp_trendMap[[input$trendIn]], na.rm = TRUE)), 
-            #                     name =  str_wrap(paste(indicator_list$labelName[indicator_list$shortName == input$trendIn],", ",paste0(min_year,"-",max_year), "difference", sep=" "), 10)) +
-            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp_trendMap[[input$trendIn]], na.rm = TRUE), max(xShp_trendMap[[input$trendIn]], na.rm = TRUE))) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-          
+          #TODO: Simplify this further
+          currMap <- biColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values"), indicator_list$units[indicator_list$shortName==input$trendIn])
+          trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values"), indicator_list$units[indicator_list$shortName==input$trendIn])
           output$currMap <- renderPlot(currMap)
           output$trendMap <- renderPlot(trendMap)
         } else {
@@ -943,7 +998,7 @@ updatePlots <- function(tab="data", maps=T){
       aggs_list <- NULL
     }
     #messy error handling here
-    file <- paste0("CAS_", input$yearBtn, "_", tolower(input$policiesBox2), ".csv")
+    file <- paste0("CAS_", input$yearBtn, "_", tolower(input$policiesIn2), ".csv")
     file <- as.data.frame(file)
     names(file) <- "file.name"
     file$year <- input$yearBtn
@@ -979,24 +1034,10 @@ updatePlots <- function(tab="data", maps=T){
         indicAxis <- indicator_list$axisName[indicator_list$shortName==xvars]
         corrAxis <- indicator_list$axisName[indicator_list$shortName==yvars]
         if(input$groupsChk==""){
-          indicatorHist <- ggplot(outdata, aes_string(x=yvars))+
-            geom_histogram(bins = bins) +
-            labs(x=indicAxis, y="Number of Observations")+
-            ggtitle(str_to_title(paste("Histogram of", ylab))) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-          corrHist <- ggplot(outdata, aes(x = !!sym(xvars))) +
-            geom_histogram(bins = bins) +
-            labs(x = corrAxis, y = "Number of Observations") +
-            ggtitle(str_to_title(paste("Histogram of", xlab))) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+          corrHist <- makeHistGrps(outdata, xvars, bins, aggs_list, indicAxis, str_to_title(paste("Histogram of", xlab)))
+          indicatorHist <- makeHistGrps(outdata,yvars,bins,aggs_list,indicAxis, str_to_title(paste("Histogram of", ylab)))
+          scatterPlot <- makeScatter(outdata, xvars, yvars, xlab, ylab)
           
-          scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
-            geom_point() +
-            stat_smooth(method="lm") +
-            labs(x=xlab, y=ylab) +
-            ggtitle(str_to_title(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab )))) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-          #print(heatMap) 
         } else {
           aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
           if(!is.factor(outdata[[aggs_list]])){
@@ -1004,40 +1045,31 @@ updatePlots <- function(tab="data", maps=T){
             flabels = groups_list[which(groups_list$varName==aggs_list),]$Labels %>% str_split(., ",") %>% unlist()
             outdata[[aggs_list]] <- factor(outdata[[aggs_list]], levels=flevels, labels=flabels)
           }
-          corrHist <- ggplot(outdata, aes_string(x=xvars, group=aggs_list, fill=aggs_list))+
-            geom_histogram(bins = bins)+
-            #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-            labs(x=xlab, y="Number of Observations", fill=aggs_lab)+
-            ggtitle(str_to_title(paste("Histogram of", xlab)))  +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
           
-          indicatorHist <- ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list))+
-            geom_histogram(bins = bins)+
-            #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-            labs(x=xlab, y="Number of Observations", fill=aggs_lab)+
-            ggtitle(str_to_title(paste("Histogram of", ylab))) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
           
-          scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
-            geom_point()+
-            stat_smooth(method="lm")+
-            labs(x=indicator_list$labelName[indicator_list$shortName==xvars], y=indicator_list$labelName[indicator_list$shortName==yvars], color=aggs_lab)+
-            ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.title = element_text(hjust = 0.5, size = 14), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-          
+          corrHist <- makeHistGrps(outdata, xvars, bins, aggs_list, indicAxis, str_to_title(paste("Histogram of", xlab)), aggs_lab)
+          indicatorHist <- makeHistGrps(outdata,yvars,bins,aggs_list,indicAxis, str_to_title(paste("Histogram of", ylab)), aggs_lab)
+          scatterPlot <- makeScatterGrps(outdata,xvars,yvars,aggs_list,xlab,ylab)
         }
         if(maps==T){
           mapdata <- merge(khm_shp, mapdata, by.x="ADM1_EN", by.y="province", all.x=T)
-          corrMap <- ggplot(mapdata, aes_string(fill = xvars)) +
-            geom_sf() +
-            ggtitle(str_to_title(paste("Map of", indicator_list$labelName[indicator_list$shortName == xvars], "by Province"))) +
-            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(mapdata[[xvars]], na.rm = TRUE), max(mapdata[[xvars]], na.rm = TRUE)), name =  xlab) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-          indicatorMap <- ggplot(mapdata, aes_string(fill = yvars)) +
-            geom_sf() +
-            ggtitle(str_to_title(paste("Map of", indicator_list$labelName[indicator_list$shortName == yvars], "by Province"))) +
-            scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(mapdata[[yvars]], na.rm = TRUE), max(mapdata[[yvars]], na.rm = TRUE)), name =  ylab) +
-            theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+          corrTitle <- paste("Map of", indicator_list$labelName[indicator_list$shortName == xvars], "by Province")
+          corrUnits <- indicator_list$units[indicator_list$shortName==xvars]
+          
+          indicTitle <- paste("Map of", indicator_list$labelName[indicator_list$shortName == yvars], "by Province")
+          indicUnits <- indicator_list$units[indicator_list$shortName==yvars]
+          
+          if(min(mapdata[[xvars]]) < 0 & max(mapdata[[xvars]]) > 0){ 
+            corrMap <- bicolorMap(mapdata, xvars, corrTitle, corrUnits) 
+          } else {
+            corrMap <- monoColorMap(mapdata, xvars, corrTitle, corrUnits)
+          }
+          
+          if(min(mapdata[[yvars]]) < 0 & max(mapdata[[yvars]]) > 0){
+            indicatorMap <- bicolorMap(mapdata, yvars, corrTitle, corrUnits) 
+          } else {
+            indicatorMap <- monoColorMap(mapdata, yvars, indicTitle, indicUnits)
+          }
         }
         res <- eval(parse_expr(sprintf("with(outdata, cor.test(%s, %s))", xvars, yvars)))
         
