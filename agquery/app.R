@@ -30,102 +30,8 @@ library(shinyjs)
 library(reshape2)
 library(ggtext)
 
-thematic_shiny(
-  font = "auto",
-  sequential = colorRampPalette(colors = c("white", "#440154FF"))(12),
-  qualitative = c("#440154FF",  "#21908CFF", "#3B528BFF", "#5DC863FF", "#FDE725FF")
-)
-options(shiny.useragg = TRUE)
+lapply(list.files("R", full.names=T), FUN=source)
 
-import::from(spatstat.geom, weighted.median)
-
-#root_dir <- paste0(getwd(), "/")
-root_dir <- ""
-
-#LOADING IN AND VALIDATING SPREADSHEETS
-#Some of this could probably be cached for faster startup
-
-indicatorCategories <- tryCatch(read.xlsx("Update/indicatorCategories.xlsx"),
-                                error=function(e) {
-                                  return(F)
-                                  }) 
-if(is.list(indicatorCategories)){
-  if(("shortName" %in% names(indicatorCategories)) & ncol(indicatorCategories) > 1) {
-  indicatorCategories <- indicatorCategories %>% 
-    melt() %>% 
-    filter(value==1) %>% 
-    select(-value) %>% 
-    rename(goalName=variable)
-goalNames <- str_to_title(unique(indicatorCategories$goalName))
-  }
-}
-
-dataset_list <- list.files("Data", pattern="*.csv")
-instrument_list <- tryCatch(readxl::read_xlsx("Update/instrument_list.xlsx"),
-         error=function(e){return(F)})
-if(is.list(instrument_list)){
-  colnm_instr <- c("survey","wave","country","year","yearlabel") #including only the essentials right now
-  if(any(!(colnm_instr %in% names(instrument_list)))){
-    instrument_list <- F
-  } else {
-  year_list <- as.list(instrument_list$year)
-  names(year_list) <- instrument_list$yearlabel
-  }
-}
-
-indicator_list <- tryCatch(readxl::read_xlsx("Update/indicators.xlsx"),
-                           error=function(e){return(F)}
-                           )
-
-if(is.list(indicator_list)){
-  colnm_indic <- c("shortName", "labelName","axisName", "file", "wins_limit", "units", "denominator") #Again, only what we minimally need to operate. Note we're moving flags to a new sheet
-if(any(!(colnm_indic %in% names(indicator_list)))){
-  indicator_list <- F
-    }
-  }
-
-
-groups_list <- tryCatch(readxl::read_xlsx("Update/grouping_vars.xlsx"),
-                        error=function(e){return(F)})
-if(is.list(groups_list)){
-  colnm_grps <- c("varName","label","shortName","Levels","Labels","level") #need to fix names here
-  if(any(!(colnm_grps %in% names(groups_list)))){
-    groups_list <- F
-  }
-}
-
-policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
-                        error=function(e){return(F)}) #It's possible to pass bad inputs here that will just render as garbage on the table panel; let 'em
-if(is.list(policy_path)){
-pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
-names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
-pathway_names <- unique(policy_path$Policy.Goal)
-}
-#pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
-
-#TODO - we should not need to do this during runtime
-#pathways <- pathways[-c(10:13)]
-#colnames(pathways)[8] <- "Related Indicator(s)"
-
-#TODO - probably best to have all of these as CSV. Either way, we need consistency
-
-pathway_link <- tryCatch(read.csv("Update/Policy_Link.csv") %>% distinct(), #Remove duplicates (bad input protection)
-                        error=function(e){return(F)})
-if(is.list(pathway_link)){
-  colnm_link <- c("pathwayID", "goalName","shortName")
-  if(any(!(colnm_link %in% names(pathway_link)))){
-    pathway_link <- F
-  }
-}
-
-
-
-
-
-
-khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
-khm_shp$ADM1_EN[khm_shp$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
-#Implement fuzzy matching later?
 
 ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                 base_font = bslib::font_google("Open Sans"), 
@@ -204,9 +110,11 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                            ),
                            tabPanel("Explore Relationships", icon=icon("chart-line"),
                                     fluidRow(column(4,uiOutput("explorerErr"))),
-                                    fluidRow(column(12, uiOutput('dataPolicBox'))), 
+                                    fluidRow(column(6, uiOutput('dataPolicBox'))), 
                                     conditionalPanel(condition="input.policiesBox2!='None'",
-                                                     fluidRow(column(12, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year)))),
+                                                     fluidRow(column(8, uiOutput('dataPathBox'))),
+                                                     fluidRow(column(6, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year))), 
+                                                              column(6,actionButton('makeHeatMap',"Show Heatmap"))),
                                                      fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
                                                                                   
                                                                                   fluidRow(column(6, align='center', uiOutput('indicsBox')),
@@ -252,99 +160,53 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
 
 
 server <- function(input, output, session) {
-  
-  biColorMap <- function(xShp, fillVal, plotTitle, units){
-    plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
-      geom_sf() +
-      ggtitle(plotTitle) +
-      scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), name=units)+
-      theme(plot.background = element_rect(fill = "transparent", color = NA), 
-            panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-    return(plotOut)
-  }
-  
-  monoColorMap <- function(xShp, fillVal, plotTitle, units){
-    plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
-      geom_sf() +
-      ggtitle(plotTitle) +
-      scale_fill_gradient(low = "white", high = "darkblue", limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), name=units)+
-      theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
-    return(plotOut)
-  }
-  
-  makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, aggs_lab) {
-    ggplot(outdata, aes_string(x=yvars, group=aggs_list, fill=aggs_list))+
-      geom_histogram(bins = bins)+
-      #geom_density(fill=NA)+scale_color_discrete(guide='none')+
-      labs(x=indicAxis, y="Number of Observations", fill=aggs_lab)+
-      ggtitle(str_to_title(paste("Histogram of", titleLab))) +
-      theme(plot.background = element_rect(fill = "transparent", color = NA), 
-            panel.background = element_blank(), 
-            panel.grid = element_blank(), 
-            axis.title = element_text(hjust = 0.5, size = 14), 
-            axis.ticks = element_blank(), 
-            plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
-            axis.text = element_text(size=12))
-  }
-  
-  makeHist <- function(outdata, yvars, bins, indicAxis, titleLab){
-    ggplot(outdata, aes(x=!!sym(yvars)))+
-      geom_histogram(bins = bins) +
-      labs(x=indicAxis, y="Number of Observations")+
-      ggtitle(str_to_title(paste("Histogram of", titleLab))) +
-      theme(plot.background = element_rect(fill = "transparent", color = NA), 
-            panel.background = element_blank(), 
-            panel.grid = element_blank(), 
-            axis.title = element_text(hjust = 0.5, size = 14), 
-            axis.ticks = element_blank(), 
-            plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
-            axis.text=element_text(size=12))
-  }
-  
-  
-  makeScatterGrps <- function(outdata, xvars, yvars, aggs_list, xlab, ylab, aggs_lab, annot){
-    scatterPlot <- ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars), group=!!sym(aggs_list), color=!!sym(aggs_list)))+ #only one yvar for now
-      geom_point()+
-      stat_smooth(method="lm", show.legend=F)+
-      labs(x=xlab, y=ylab, color=aggs_lab)+
-      ggtitle(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab ))) +
-      theme(plot.background = element_rect(fill = "transparent", color = NA), 
-            panel.background = element_blank(), 
-            panel.grid = element_blank(), 
-            axis.text = element_text(size=12),
-            axis.title = element_text(hjust = 0.5, size = 14), 
-            axis.ticks = element_blank(), 
-            plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
-            legend.title=element_text(size=14),
-            legend.text=element_text(size=12))+
-      annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]])) 
-  }
-  
-  makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
-  ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
-    geom_point() +
-    stat_smooth(method="lm")+
-    labs(x=xlab, y=ylab) +
-    ggtitle(str_to_title(paste("Scatterplot of",str_to_title(ylab), "\n",  "and", str_to_title(xlab )))) +
-    theme(plot.background = element_rect(fill = "transparent", color = NA), 
-          panel.background = element_blank(), 
-          panel.grid = element_blank(), 
-          axis.text = element_text(size=12),
-          axis.title = element_text(hjust = 0.5, size = 14), 
-          axis.ticks = element_blank(), 
-          plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
-          legend.title=element_text(size=14),
-          legend.text=element_text(size=12))+
-    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]]))
-  }
-  
-  
-  output$dataPolicBox <- renderUI({if(exists("goalNames")){ 
-    selectInput('policiesBox2', "Select the Policy Priority:", choices=c("None", goalNames)) 
-  } else {
-    selectInput('policiesBox2', "Select the Policy Priority:", choices="None")
+  corMat <- function(shortNames, labelNames, data_out){
+    cor_matrix <- cor(data_out, use="pairwise.complete.obs")
+    par(mar = c(5, 5, 4, 2) - 2)
+    
+    #corrPlot <- corrplot.mixed(cor_matrix, order = 'AOE')
+    #output$corrPlot <- renderPlot(corrplot(cor_matrix, order = 'AOE',col=colorRampPalette(c("white","lightblue","red"))(100)))
+    #print(corrPlot) 
+    res <- match(rownames(cor_matrix), shortNames)
+    rownames(cor_matrix) <- labelNames[res]
+    res <- match(colnames(cor_matrix), shortNames)
+    colnames(cor_matrix) <- labelNames[res]
+    #print(cor_matrix)
+    p_matrix <- matrix(nrow = ncol(data_out), ncol = ncol(data_out))
+    for(i in seq_len(ncol(data_out))) {
+      for(j in seq_len(ncol(data_out))) {
+        test_result <- cor.test(data_out[, i], data_out[, j], method = "pearson")
+        p_matrix[i, j] <- test_result$p.value
+      }
     }
-    })
+    #print(p_matrix)
+    p_matrix[upper.tri(p_matrix)] <- NA
+    hover_text <- matrix("", nrow = ncol(data_out), ncol = ncol(data_out))
+    for(i in 1:nrow(p_matrix)) {
+      for(j in 1:ncol(p_matrix)) {
+        cor_value <- cor_matrix[i, j]
+        p_value <- p_matrix[i, j]
+        # Construct the hover text
+        hover_text[i, j] <- paste0("P-value: ", format(p_value, digits = 3))
+      }
+    }
+    #print(hover_text)
+    #cor_matrix[upper.tri(cor_matrix)] <- NA
+    hover_text[upper.tri(hover_text)] <- NA
+    heatMap <- heatmaply_cor(cor_matrix,
+                             node_type = "scatter",
+                             point_size_mat = -log10(p_matrix),
+                             point_size_name = "-log10(p-value)",
+                             label_names=c("Row", "Column", "Correlation"),
+                             custom_hovertext = hover_text,
+                             Colv=NA, Rowv=NA, plot_method="ggplot") %>%
+      layout(title = "Correlation Heatmap", margin = list(t = 60), height=1000)
+    return(heatMap)
+  }
+  
+  denom_wt_mean <- function(){
+    # TO DO
+  }
   
   cor.test.p <- function(x){
     FUN <- function(x, y) cor.test(x, y)[["p.value"]]
@@ -356,6 +218,14 @@ server <- function(input, output, session) {
     dimnames(z) <- list(colnames(x), colnames(x))
     z
   }
+  
+  
+  output$dataPolicBox <- renderUI({if(exists("goalNames")){ 
+    selectInput('policiesBox2', "Select the Policy Priority:", choices=c("None", goalNames)) 
+  } else {
+    selectInput('policiesBox2', "Select the Policy Priority:", choices="None")
+  }
+  })
   
   observeEvent(input$indicsIn, {
     if(with(indicator_list, exists(paste0("survey_question_", input$yearBtn)))){
@@ -405,9 +275,6 @@ server <- function(input, output, session) {
     if(input$policiesBox1!="None" & is.list(policy_path)){
       inputChk <- is.null(input$pathwaysIn)
       pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
-      
-      
-      #pathway_sub <- pathway_link %>% filter(goalName==input$policiesBox1)
       pathway_list <- as.list(c(0, pathway_sub$pathwayID)) 
       names(pathway_list) <- c("All", pathway_sub$Pathway)
       output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Choose a pathway (optional)", choices=pathway_list))
@@ -427,7 +294,7 @@ server <- function(input, output, session) {
     shinyjs::disable('pathwaysIn')
     shinyjs::disable('policiesBox1')
     showNotification("Loading, please wait")
-    updateTrends()
+    updateTrends() # TO DO: Find a way to avoid recalculating this every time
     shinyjs::enable('pathwaysIn')
     shinyjs::enable('policiesBox1')
   }) 
@@ -444,13 +311,16 @@ server <- function(input, output, session) {
       } else {
         indics_out <- pathway_link %>% filter(pathwayID==input$pathwaysIn) %>% select(shortName) %>% distinct() %>% unlist()
       } 
-      
+      indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] %>% unique() #TO DO: Include some cleaning code in the startup script 
       #data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), str_to_lower(input$policiesBox1))]) #Might need to store this as a global later. 
       #Need to be more consistent in tracking case
-      data_files_select <- indicator_list[which(indicator_list$shortName %in% indics_out),] %>% 
+      data_files_select <- indicator_list[which(indicator_list$shortName %in% indics_out),] %>% #Typo correction here - might not be a sustainable solution.
         select(file) %>% 
         distinct() %>% 
         unlist() #TODO: Clean this up
+      if(length(data_files_select)==0){
+        showNotification("No data files related to the selected pathway were found", type="error")
+      } else {
       data_files <- lapply(data_files_select, FUN=function(x){dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(x)))]}) %>% unique() %>% unlist()  #Drop duplicates if they're somehow in there.
       #data_files <- dataset_list %>% select(which(str_to_lower(dataset_list) %in% str_to_lower(data_files_select)))
       #data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
@@ -473,27 +343,29 @@ server <- function(input, output, session) {
         flag_table[[paste0(max(data_out$year), " N obs")]] <- NA
         flag_table <- merge(data_table, indicator_list %>% select(shortName, labelName, flag_text))
         data_table <- merge(data_table, indicator_list %>% select(shortName, labelName), by="shortName")
-        
+        data_table$Units <- ""
         data_table[[paste0(min(data_out$year), " Mean")]] <- NA
         #data_table[[paste0(min(data_out$year), " N obs")]] <- NA #Moved these to the metadata table. 
         data_table[[paste0(max(data_out$year), " Mean")]] <- NA
         #data_table[[paste0(max(data_out$year), " N obs")]] <- NA
         data_table$Trend <- ""
-        
+        data_table$`Long Term Trend` <- ""
         for(var in indics_out){
           sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
           if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
             next
           } else {
+            data_table$Units[data_table$shortName==var] <- indicator_list$units[indicator_list$shortName==var]
             if(length(unique(sub_data$year))<2){
               year <- unique(sub_data$year)
               data_table[[paste0(year, " Mean")]][data_table$shortName==var] <- signif(inject(with(sub_data,weighted.mean(!!sym(var), weight))),4)
               flag_table[[paste0(year, " N obs")]][flag_table$shortName==var] <- nrow(sub_data)
               data_table$Trend[data_table$shortName==var] <- "N/A"
             } else if(length(unique(sub_data$year>=2))) {
-              min_mean <- inject(with(sub_data %>% filter(year==min(sub_data$year)), weighted.mean(!!sym(var), weight)))
+              prevYear <- max(sub_data$year[sub_data$year!=max(sub_data$year)]) 
+              min_mean <- inject(with(sub_data %>% filter(year==prevYear), weighted.mean(!!sym(var), weight)))
               max_mean <- inject(with(sub_data %>% filter(year==max(sub_data$year)), weighted.mean(!!sym(var), weight)))
-              min_n <- nrow(sub_data %>% filter(year==min(sub_data$year)))
+              min_n <- nrow(sub_data %>% filter(year==prevYear))
               max_n <- nrow(sub_data %>% filter(year==max(sub_data$year)))
               if(min_mean==0){ 
                 if(max_mean > 0){
@@ -522,10 +394,23 @@ server <- function(input, output, session) {
               flag_table[[paste0(max(data_out$year), " N obs")]][flag_table$shortName==var] <- max_n
               data_table$Trend[data_table$shortName==var] <- chg
             } #Implement regression later?
-            
+            reg_data <- sub_data %>% na.omit() %>% group_by(year) %>% summarize(mean=weighted.mean(!!sym(var), weight))
+            reg_data$mean <- with(reg_data, log(mean+0.5*min(mean[mean>0])))
+            if(length(unique(reg_data$year>=2))){ #Future releases should change this to >2; currently here for testing
+              reg_res <- tryCatch(lm(mean~year, data=reg_data), error=function(e){return("")})
+              if(is.list(reg_res)){
+                pct_diff <- round((exp(reg_res$coefficients[[2]])-1)*100,1)
+                if(!is.na(pct_diff)){
+                  data_table$`Long Term Trend`[data_table$shortName==var] <- paste0(pct_diff, "%")
+                }
+              }
+            }
           }
         }
         output$msgText <- renderUI(HTML("<h3>Related Variables</h3>"))
+        if(all(data_table$`Long Term Trend`=="")){
+          data_table <- data_table %>% select(-`Long Term Trend`)
+        }
         trendVarList <- as.list(c("0", data_table$shortName))
         names(trendVarList) <- c("Select...", data_table$labelName)
         data_table <- data_table %>% rename(Variable=labelName) %>% select(-shortName)
@@ -534,6 +419,7 @@ server <- function(input, output, session) {
         output$flagsTable <- renderDataTable(flag_table, options=list(searching=F, pageLength=15), rownames=F)
         output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
         #output$trendsTable <- renderDataTable(data_table)
+      }
       }
     }
   }
@@ -617,20 +503,16 @@ server <- function(input, output, session) {
   observeEvent(input$submitBtn, {
     updatePlots(maps=T)
     
-    
   })
   
+ 
   
-  observeEvent(input$policiesBox2, {
-    #target_policy=tolower(input$policiesBox2)
-    #if(target_policy!="none"){
-    if(input$policiesBox2!="None"){
+  observeEvent(input$makeHeatMap, {
+    if(input$policiesBox2=="None"){
+       showNotification("Please select a policy priority first") 
+    } else {
       if(is.list(pathway_link) & is.list(indicator_list)) {
-      indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
-      indics <- as.list(indics_out$shortName)
-      names(indics) <- indics_out$labelName 
-      indics <- unique(indics)
-      updateBoxes(indics) #Might need to global this
+        indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
       data_files_select <- indics_out %>% 
         select(file) %>% 
         distinct() %>%
@@ -646,17 +528,18 @@ server <- function(input, output, session) {
       for(file in data_files$file.name){
         #infile <- list.files("Data", sprintf("%s_%s_%s", survey_pref, input$yearBtn, file), ignore.case=T, full.names=T) #this differs from the other file loading subroutine in getData - should probably make them consistent.
         #if(length(infile)!=0){
-          temp <- read.csv(paste0("Data/",file))
-          if(!exists("data_out")){
-            data_out <- temp
-          } else {
-            temp <- temp %>% select(all_of(c(names(temp)[which(!(names(temp) %in% names(data_out)))], "hhid"))) #Fix for redundant input.
-            data_out <- merge(data_out, temp, by="hhid")
-          }
+        temp <- read.csv(paste0("Data/",file))
+        if(!exists("data_out")){
+          data_out <- temp
+        } else {
+          temp <- temp %>% select(all_of(c(names(temp)[which(!(names(temp) %in% names(data_out)))], "hhid"))) #Fix for redundant input.
+          data_out <- merge(data_out, temp, by="hhid")
         }
+      }
       #} 
       #data_out <- data_out %>% mutate(indicatorCategory=tolower(indicatorCategory)) %>% subset(indicatorCategory==target_policy, select=all_of(indicator_list$shortName)) %>% na.omit()
       if(exists("data_out")){
+        indics <- as.list(indics_out$shortName)
         indic_shortNames <- unlist(indics, use.names=F)
         data_out <- data_out %>% select(any_of(indic_shortNames)) #Won't throw an error if names are missing)
         if(ncol(data_out) < length(indic_shortNames)){
@@ -685,51 +568,34 @@ server <- function(input, output, session) {
           data_out <- data_out %>% select(!matches(missing_vars))
           showNotification(paste("Variable(s)", paste(missing_vars, collapse = ", "), "were non-numeric and were removed from the dataset"), type="warning")
         }
-        #truncated_pretty_names <- substr(pretty_names, 1, 35)
-        #print(pretty_names)
-        cor_matrix <- cor(data_out, use="pairwise.complete.obs")
-        par(mar = c(5, 5, 4, 2) - 2)
-        
-        #corrPlot <- corrplot.mixed(cor_matrix, order = 'AOE')
-        #output$corrPlot <- renderPlot(corrplot(cor_matrix, order = 'AOE',col=colorRampPalette(c("white","lightblue","red"))(100)))
-        #print(corrPlot) 
-        res <- match(rownames(cor_matrix), varnames$shortName)
-        rownames(cor_matrix) <- varnames$labelName[res]
-        res <- match(colnames(cor_matrix), varnames$shortName)
-        colnames(cor_matrix) <- varnames$labelName[res]
-        #print(cor_matrix)
-        p_matrix <- matrix(nrow = ncol(data_out), ncol = ncol(data_out))
-        for(i in seq_len(ncol(data_out))) {
-          for(j in seq_len(ncol(data_out))) {
-            test_result <- cor.test(data_out[, i], data_out[, j], method = "pearson")
-            p_matrix[i, j] <- test_result$p.value
-          }
-        }
-        #print(p_matrix)
-        p_matrix[upper.tri(p_matrix)] <- NA
-        hover_text <- matrix("", nrow = ncol(data_out), ncol = ncol(data_out))
-        for(i in 1:nrow(p_matrix)) {
-          for(j in 1:ncol(p_matrix)) {
-            cor_value <- cor_matrix[i, j]
-            p_value <- p_matrix[i, j]
-            # Construct the hover text
-            hover_text[i, j] <- paste0("P-value: ", format(p_value, digits = 3))
-          }
-        }
-        #print(hover_text)
-        #cor_matrix[upper.tri(cor_matrix)] <- NA
-        hover_text[upper.tri(hover_text)] <- NA
-        heatMap <- heatmaply_cor(cor_matrix,
-                                 node_type = "scatter",
-                                 point_size_mat = -log10(p_matrix),
-                                 point_size_name = "-log10(p-value)",
-                                 label_names=c("Row", "Column", "Correlation"),
-                                 custom_hovertext = hover_text,
-                                 Colv=NA, Rowv=NA, plot_method="ggplot") %>%
-          layout(title = "Correlation Heatmap", margin = list(t = 60), height=1000)
-        output$heatMap <- renderPlotly(heatMap)
-        #output$corrPlot <- renderPlot(corrPlot)
+        output$heatMap <- renderPlotly(corMat(varnames$shortName, varnames$labelName, data_out))
       }
+      } else {
+        showNotification("Error in input files; one or more not found.", type="error")
+    }
+      
+
+    }
+    
+  })
+  
+  observeEvent(input$policiesBox2, {
+    #target_policy=tolower(input$policiesBox2)
+    #if(target_policy!="none"){
+    if(input$policiesBox2!="None"){
+      if(is.list(pathway_link) & is.list(indicator_list)) {
+      indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
+      indics <- as.list(indics_out$shortName)
+      names(indics) <- indics_out$labelName 
+      indics <- unique(indics)
+      updateBoxes(indics) #Might need to global this
+      
+      pathway_sub <- policy_path %>% filter(goalName==input$policiesBox2)
+      pathway_list <- as.list(c(0, pathway_sub$pathwayID)) 
+      names(pathway_list) <- c("All", pathway_sub$Pathway)
+      output$dataPathBox <- renderUI(selectInput("pathwaysIn", "Choose a pathway (optional)", choices=pathway_list))
+      
+      
       } else {
         showNotification("Error in input files; one or more not found.", type="error")
       }
