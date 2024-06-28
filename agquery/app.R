@@ -1,4 +1,5 @@
-options(shiny.error=browser) #For debugging 
+options(shiny.error=browser,
+        shiny.autoload.r=F) #For debugging 
 library(shiny)
 library(shinyBS)
 library(tidyr)
@@ -29,8 +30,18 @@ library(heatmaply)
 library(shinyjs)
 library(reshape2)
 library(ggtext)
+import::from(spatstat.geom, weighted.median)
+lapply(list.files("Scripts", full.names=T), FUN=source)
 
-lapply(list.files("R", full.names=T), FUN=source)
+
+
+thematic_shiny(
+  font = "auto",
+  sequential = colorRampPalette(colors = c("white", "#440154FF"))(12),
+  qualitative = c("#440154FF",  "#21908CFF", "#3B528BFF", "#5DC863FF", "#FDE725FF")
+)
+options(shiny.useragg = TRUE)
+
 
 
 ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
@@ -44,11 +55,11 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                                          base_font = bslib::font_google("Open Sans")), 
                            tabPanel("Introduction", column(1),column(10, #To do: move this to a separate file.
                                                                      wellPanel(HTML(
-                                                                       "The 50x30 Cambodia Data explorer is a tool to rapidly summarize and visualize the Cambodian Agricultural Survey data. In conjunction with other forms of analysis, this app..."
+                                                                       "The 50x30 Cambodia Data explorer can rapidly summarize and visualize the Cambodian Agricultural Survey data. It provides tools for exploring policy instruments to achieve agricultural development goals and connecting those instruments to information available in the CAS surveys. Export report-ready graphs and raw data for follow-up analyses. Inputs and interface elements are also user-modifiable for a custom data analysis environment."
                                                                      )),
                                                                      img(src='logic-model.png', width='80%'),
                                                                      hr(),
-                                                                     fluidRow(column(8, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer is a way to view and compare information from the Cambodian Agricultural Surveys to address the following policy priorities:',
+                                                                     fluidRow(column(8, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer bridges the gap between survey data collection and policy decisionmaking. It provides the opportunity to combine knowledge from scholarly research in agricultural policy with observed trends in indicators collected in the field. These trends can inform progress toward established goals or aid in the formation of new programs. The results of those policies become visible in new data collection, which is added through updates. This version shows information related to the following policy priorities:',
                                                                                                    '<ul>',
                                                                                                    paste(lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}), collapse=" "),
                                                                                                    '</ul></p>',
@@ -70,7 +81,10 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                                                    '<p> The Stata code used to process the data is publicly available at (Git Repository TBD). <br> The app source code and related files can be downloaded at (Git repository TBD)</p>',
                                                                                                    '<br>',
                                                                                                    '<h3>Inquire</h3>',
-                                                                                                   '<p>This tool is maintained by <i>responsible party</i> who has <i>contact info</i>.</p>',
+                                                                                                   '<p>This tool is maintained by <i>responsible party</i> who has <i>contact info</i>.</p><br>',
+                                                                                                   '<h3>Citation</h3>',
+                                                                                                   '<p>If you use this app for scholarly research or modify it for alternative uses, please use this attribution: </p>',
+                                                                                                   '<p> Tomes, A.L., Kenne, S., Wood, S.R., and Anderson, C.L. (2024). 50x30 Cambodia Data Explorer. v1.0.',
                                                                                                    '<br><br>',
                                                                                                    '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p><br><br><br>')
                                                                      )
@@ -78,22 +92,21 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                      )
                            )
                            ),
+                           tabPanel("Instructions", icon=icon("readme"),
+                                    includeHTML('www/Instructions_50x30_D2.html')
+                           ),
                            tabPanel("Policy Pathways", icon=icon("landmark-dome"),
                                     fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
                              <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
                              fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
-                           ),
-                           tabPanel("Instructions", icon=icon("readme"),
-                                    includeHTML('www/Instructions_50x30_D2.html')
                            ),
                            tabPanel("Explore Indicators", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
                                     fluidRow(column(4, uiOutput("trendsErr"))),
                                     fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", goalNames)))),
                                     fluidRow(column(4, uiOutput('pathwaysBox'))),
-                                    fluidRow(column(2, uiOutput('msgText')), column(4,
-                                                                                    conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend')))
-                                    ),
+                                    fluidRow(column(2, uiOutput('msgText')), column(4), #,conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend')))
+                                    #),
                                     column(6, conditionalPanel(condition="input.policiesBox1!='None'", uiOutput("trendVarChoose"))
                                     )),
                                     fluidRow(column(6, dataTableOutput('trendsTable')),
@@ -227,6 +240,8 @@ server <- function(input, output, session) {
   }
   })
   
+  
+  
   observeEvent(input$indicsIn, {
     if(with(indicator_list, exists(paste0("survey_question_", input$yearBtn)))){
     output$indicsDesc <- renderUI(HTML(sprintf('<table style="border: 3px #ddd; border-style: groove; padding: 9px;">
@@ -273,29 +288,30 @@ server <- function(input, output, session) {
   
   observeEvent(input$policiesBox1, {
     if(input$policiesBox1!="None" & is.list(policy_path)){
-      inputChk <- is.null(input$pathwaysIn)
+      inputChk <- is.null(input$pathwaysIn1)
       pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
       pathway_list <- as.list(c(0, pathway_sub$pathwayID)) 
       names(pathway_list) <- c("All", pathway_sub$Pathway)
-      output$pathwaysBox <- renderUI(selectInput("pathwaysIn", "Choose a pathway (optional)", choices=pathway_list))
+      output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=pathway_list))
       
       if(!inputChk){
-        shinyjs::disable('pathwaysIn')
+        shinyjs::disable('pathwaysIn1')
         shinyjs::disable('policiesBox1')
         showNotification("Loading, please wait")
         updateTrends()
-        shinyjs::enable('pathwaysIn')
+        shinyjs::enable('pathwaysIn1')
         shinyjs::enable('policiesBox1')
       }
     }
     
   })
-  observeEvent(input$pathwaysIn, {
-    shinyjs::disable('pathwaysIn')
+  
+  observeEvent(input$pathwaysIn1, {
+    shinyjs::disable('pathwaysIn1')
     shinyjs::disable('policiesBox1')
     showNotification("Loading, please wait")
     updateTrends() # TO DO: Find a way to avoid recalculating this every time
-    shinyjs::enable('pathwaysIn')
+    shinyjs::enable('pathwaysIn1')
     shinyjs::enable('policiesBox1')
   }) 
   
@@ -306,10 +322,10 @@ server <- function(input, output, session) {
       
       #updateSelectInput(session, "policiesBox2", selected=input$policiesBox1)
       #TODO: Long term it makes more sense to have a single file for this operation; the central challenge is the fact that users will probably want to view indicators without having a pathway in mind.
-      if(input$pathwaysIn==0){
+      if(input$pathwaysIn1==0){
         indics_out <- indicatorCategories %>% filter(goalName==input$policiesBox1) %>% select(shortName) %>% distinct() %>% unlist()
       } else {
-        indics_out <- pathway_link %>% filter(pathwayID==input$pathwaysIn) %>% select(shortName) %>% distinct() %>% unlist()
+        indics_out <- pathway_link %>% filter(pathwayID==input$pathwaysIn1) %>% select(shortName) %>% distinct() %>% unlist()
       } 
       indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] %>% unique() #TO DO: Include some cleaning code in the startup script 
       #data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), str_to_lower(input$policiesBox1))]) #Might need to store this as a global later. 
@@ -512,7 +528,10 @@ server <- function(input, output, session) {
        showNotification("Please select a policy priority first") 
     } else {
       if(is.list(pathway_link) & is.list(indicator_list)) {
-        indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
+        indics_out <- getIndics(pathway_link, indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
+        indics_out <- unlist(indics_out)
+        indics_out <- data.frame(shortName=indics_out)
+        indics_out <- merge(indics_out, indicator_list, by="shortName")
       data_files_select <- indics_out %>% 
         select(file) %>% 
         distinct() %>%
@@ -579,28 +598,63 @@ server <- function(input, output, session) {
     
   })
   
-  observeEvent(input$policiesBox2, {
+  getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear){
+    if(pathway!=0){ 
+      indics_out <- pathway_link %>% filter(goalName==policy, pathwayID==pathway) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
+      
+    } else {
+      indics_out <- pathway_link %>% filter(goalName==policy) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
+    }
+    indics_out <- merge(indics_out, indic_inventory %>% filter(as.numeric(year)==obsyear), by="shortName")
+    indics <- as.list(indics_out$shortName)
+    names(indics) <- indics_out$labelName 
+    indics <- unique(indics)
+  }
+
+  observeEvent(input$pathwaysIn2, {
     #target_policy=tolower(input$policiesBox2)
     #if(target_policy!="none"){
     if(input$policiesBox2!="None"){
       if(is.list(pathway_link) & is.list(indicator_list)) {
-      indics_out <- pathway_link %>% filter(goalName==input$policiesBox2) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
-      indics <- as.list(indics_out$shortName)
-      names(indics) <- indics_out$labelName 
-      indics <- unique(indics)
+      indics <- getIndics(pathway_link, indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
       updateBoxes(indics) #Might need to global this
-      
-      pathway_sub <- policy_path %>% filter(goalName==input$policiesBox2)
-      pathway_list <- as.list(c(0, pathway_sub$pathwayID)) 
-      names(pathway_list) <- c("All", pathway_sub$Pathway)
-      output$dataPathBox <- renderUI(selectInput("pathwaysIn", "Choose a pathway (optional)", choices=pathway_list))
-      
-      
+
       } else {
         showNotification("Error in input files; one or more not found.", type="error")
       }
-    } 
+    }
   })
+
+  observeEvent(input$yearBtn, {
+    if(input$policiesBox2!="None"){
+      if(is.list(pathway_link) & is.list(indicator_list)) {
+        indics <- getIndics(pathway_link, indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
+        updateBoxes(indics) #Might need to global this
+      }
+    }
+  }, ignoreInit = T)
+  
+  observeEvent(input$policiesBox2, {
+    if(input$policiesBox2!="None"){
+      if(is.list(pathway_link) & is.list(indicator_list)) {
+    pathway_sub <- policy_path %>% filter(goalName==input$policiesBox2)
+    pathway_list <- as.list(c(0, pathway_sub$pathwayID))
+    names(pathway_list) <- c("All", pathway_sub$Pathway)
+    output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=pathway_list))
+    if(!is.null(input$pathwaysIn2)){
+      if(input$policiesBox2!="None"){
+        if(is.list(pathway_link) & is.list(indicator_list)) {
+          indics <- getIndics(pathway_link, indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
+          updateBoxes(indics) #Might need to global this
+        }
+      }
+    }
+
+      }
+    }
+  })
+
+  
   
   #observeEvent(input$yChk, {
   #  updatePlots()

@@ -5,6 +5,6 @@ account: evans-par
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 10377852
-bundleId: 8734341
+bundleId: 8802233
 url: https://evans-par.shinyapps.io/agquery/
 version: 1

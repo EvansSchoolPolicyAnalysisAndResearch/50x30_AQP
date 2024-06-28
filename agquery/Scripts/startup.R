@@ -1,12 +1,4 @@
 
-thematic_shiny(
-  font = "auto",
-  sequential = colorRampPalette(colors = c("white", "#440154FF"))(12),
-  qualitative = c("#440154FF",  "#21908CFF", "#3B528BFF", "#5DC863FF", "#FDE725FF")
-)
-options(shiny.useragg = TRUE)
-
-import::from(spatstat.geom, weighted.median)
 
 #root_dir <- paste0(getwd(), "/")
 root_dir <- ""
@@ -30,6 +22,24 @@ if(is.list(indicatorCategories)){
 }
 
 dataset_list <- list.files("Data", pattern="*.csv")
+years <- lapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) %>% unique()
+for(year in years){
+  names <- lapply(dataset_list[which(str_detect(dataset_list, year))], function(x){
+    dat <- read.csv(paste0("Data/",x), nrows=1)
+    outdf <- data.frame(shortName=names(dat))
+    outdf$file <- str_extract(x, "_([aA-zZ]+).csv", group=1)
+    return(outdf)
+  })
+  names <- do.call("rbind", names) %>% distinct()
+  names$year <- year
+  #names <- unlist(names) %>% unique()
+  if(!exists("indic_inventory")){
+    indic_inventory <- names
+  } else {
+    indic_inventory <- rbind(indic_inventory, names)
+  }
+ }
+
 instrument_list <- tryCatch(readxl::read_xlsx("Update/instrument_list.xlsx"),
                             error=function(e){return(F)})
 if(is.list(instrument_list)){
