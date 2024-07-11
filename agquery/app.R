@@ -57,12 +57,13 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                      wellPanel(HTML(
                                                                        "The 50x30 Cambodia Data explorer can rapidly summarize and visualize the Cambodian Agricultural Survey data. It provides tools for exploring policy instruments to achieve agricultural development goals and connecting those instruments to information available in the CAS surveys. Export report-ready graphs and raw data for follow-up analyses. Inputs and interface elements are also user-modifiable for a custom data analysis environment."
                                                                      )),
-                                                                     img(src='logic-model.png', width='80%'),
+                                                                     img(src='logic-model.png', width='60%'),
                                                                      hr(),
-                                                                     fluidRow(column(8, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer bridges the gap between survey data collection and policy decisionmaking. It provides the opportunity to combine knowledge from scholarly research in agricultural policy with observed trends in indicators collected in the field. These trends can inform progress toward established goals or aid in the formation of new programs. The results of those policies become visible in new data collection, which is added through updates. This version shows information related to the following policy priorities:',
+                                                                     fluidRow(column(5, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer bridges the gap between survey data collection and policy decisionmaking. It provides the opportunity to combine knowledge from scholarly research in agricultural policy with observed trends in indicators collected in the field. These trends can inform progress toward established goals or aid in the formation of new programs. The results of those policies become visible in new data collection, which is added through updates. This version shows information related to the following policy priorities:',
                                                                                                    '<ul>',
                                                                                                    paste(lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}), collapse=" "),
-                                                                                                   '</ul></p>',
+                                                                                                   '</ul></p>')
+                                                                     )), column(5, HTML(paste(
                                                                                                    '<h3>Using the Cambodia 50x30 App</h3> <p>The Cambodian Agricultural Survey contains information on household production of crops and livestock that can be used to understand trends in small-scale farmer contributions to national supply and the economic conditions small-scale producers face.',
                                                                                                    'Selecting a policy priority will allow you to narrow down the indicators to those considered most relevant.</p>',
                                                                                                    '<h3> Tabs </h3>',
@@ -676,9 +677,9 @@ server <- function(input, output, session) {
   #  req(input$indicsIn) # Ensure that indicsIn is not NULL
   #  corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
   #})		
-  
+
   #getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
-  getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
+  getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
     varslist <- c(xvars, yvars)
     aggs_list <- c(aggs_list, "year")
     years <- files$year %>% unique()
@@ -701,6 +702,7 @@ server <- function(input, output, session) {
         }
         rm(df_in)
       }
+      ##### TO DO: DENOM WEIGHTS
       if(!with(df, exists("weight"))){
         weights <- tryCatch(read.csv(sprintf("Data/%s_weights.csv",survey)),
                             error=function(e){
@@ -740,7 +742,7 @@ server <- function(input, output, session) {
         showNotification(paste("No variables for the selected policy priority were found in", survey))
       } else {
         df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
-          select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
+          select(all_of(c("hhid","province", varslist_short, denoms, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
         
         #TODO: Fix this w/r/t the trends page. 
         if(drop_0s){
@@ -748,8 +750,12 @@ server <- function(input, output, session) {
         }
         
         for(currVar in varslist_short) {
+          if(!is.numeric(df[[currVar]])){
+            df <- df %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
+            df[[currVar]] <- as.numeric(df[[currVar]])
+          }
           #Error handling
-          if(!(currVar %in% indicator_list$shortName) | all(is.na(df[[currVar]]))){
+          if(!(currVar %in% indicator_list$shortName) | all(is.na(df[[currVar]]) | df[[currVar==0]])){
             varslist_short <- varslist_short[-which(varslist_short==currVar)]
             if(!exists("dropped_vars")){
               dropped_vars <- currVar
@@ -758,20 +764,13 @@ server <- function(input, output, session) {
             }
           }
         }
-        if(length(varslist_short)==0){ 
+        if(length(varslist_short)==0) { 
           showNotification(paste("Error: Data file", file, "is empty or only contains variables not listed in indicators_list"), type="error")
         } else {
           for(currVar in varslist_short){
-            
-            #Error handling: in case the data export still has the Stata labels (protects against bad exports; might be better to use dtas instead to avoid this entirely).
-            if(!is.numeric(df[[currVar]])){
-              df <- df %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
-              df[[currVar]] <- as.numeric(df[[currVar]])
-            }
-            
             var_unit <- subset(indicator_list, shortName %in% currVar)$units[[1]] #Should only be 1 list item
-            var_continuous <- max(c("count","ratio", "boolean") %in% var_unit)==0
-            if(var_continuous==T) { 
+            var_continuous <- max(c("ratio", "boolean") %in% var_unit)==0
+            if(var_continuous==T) {
               l_wins_threshold <- (indicator_list$wins_limit[[which(indicator_list$shortName %in% currVar)]])/100
               u_wins_threshold <- 1-l_wins_threshold
               
@@ -790,17 +789,6 @@ server <- function(input, output, session) {
           }
           if(exists("df", mode="list")){
             if(!nrow(df)==0){  
-
-              
-              #Long term: Might need to find a different way to handle this.
-              #if(adm_level!="hhid"){
-              #  outdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level))) %>% distinct()
-              #  for(currVar in varslist_short){
-              #    tempdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level, currVar, "weight"))) %>%
-              #      group_by(!!!syms(c(aggs_list, adm_level))) %>% 
-              #      na.omit() %>%
-              #      summarize_at(value=weighted.mean(!!sym(currVar), weight))
-              #    names(tempdata)[names(tempdata)=="value"] <- currVar
               if(adm_level=="hhid"){
                 if(!exists('outdata')){
                   outdata <- df
@@ -808,16 +796,35 @@ server <- function(input, output, session) {
                   outdata <- bind_rows(outdata, df)
                 }
               } else {
+                for(currVar in varslist_short) {
+                  if(!is.null(denoms)){
+                    denom <- denoms$denom[denoms$shortName==currVar]
+                    if(!is.na(denom)){
+                      df[[paste0("weight_", currvar)]] <- df[[denom]]*df$weight
+                    } else {
+                      df[[paste0("weight_", currVar)]] <- df$weight
+                    }
+                      
+                    }
+                  df_temp <- 
+                }
+                
+                if(is.null(denoms)) {
                 tempdata <- df %>% 
                   group_by(!!!syms(c(adm_level, aggs_list))) %>% 
                   summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T)))
+                weight_tots <- df %>% group_by(!!!syms(c(adm_level, aggs_list))) %>% summarize(weight=sum(weight))
+                tempdata <- merge(tempdata, weight_tots, by=c(adm_level, aggs_list))
+                } else {
+                  
+                }
                 if(!exists('outdata')){
                   outdata <- tempdata
                 } else { 
                   outdata <- bind_rows(outdata, tempdata) 
                 } 
               }
-              
+            
               mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
                 summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=weight, na.rm=T)))
               
@@ -826,32 +833,6 @@ server <- function(input, output, session) {
               } else {
                 mapdata <- bind_rows(mapdata, mapdata_temp)
               }
-              
-              #if(length(aggs_list==1)) #I.e., aggs_list only contains year
-              #pivotbyvars <- c('province', 'name')
-              #groupbyvars <- c('province', varslist_short, "weight", aggs_list)
-              #groupbyvars <- groupbyvars[nzchar(groupbyvars)]
-              #if(source_call!="trends"){ #Minor kludge because we're getting a pivot longer error here if there's variables missing.
-              #mapdata_temp <- subsetdata  %>% select(all_of(groupbyvars)) %>% 
-              #  na.omit() %>% 
-              #  pivot_longer(., varslist_short) %>% 
-              #  group_by(across(all_of(pivotbyvars))) %>% 
-              #  summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T))) %>%
-              #  pivot_wider()
-              #mapdata$province_num <- as.numeric(mapdata$province)
-              #xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
-              #if(exists("mapdata_temp")){
-              #  mapdata <- mapdata_temp
-              #} else {
-              #  mapdata <- bind_rows(mapdata_temp)
-              #}
-              #} else {
-              #  return(list(tempdata=outdata))
-              #}
-              
-              #  mapdata$province_num <- as.numeric(mapdata$province)
-              #  xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
-              #  return(xShp)
               rm(df)
             }
           }
@@ -861,8 +842,11 @@ server <- function(input, output, session) {
     if(exists("dropped_vars")){
       output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
     }
+    if(!exists("flags")){
+      flags <- "" #Placeholder
+    }
     if(exists("outdata")){
-      return(list(tempdata=outdata, mapdata=mapdata)) #really need to fix the names here.
+      return(list(tempdata=outdata, mapdata=mapdata, flags=flags)) #really need to fix the names here.
     } else {
       return("")
     }
@@ -930,7 +914,8 @@ updatePlots <- function(tab="data", maps=T){
     file <- as.data.frame(file)
     names(file) <- "file.name"
     file$year <- input$yearBtn
-    all_data <- getData(file, xvars=input$indicsIn, yvars=input$corrsIn, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
+    denoms <- indicator_list$denominator[which(indicator_list$shortName %in% c(input$indicsIn, input$corrsIn))] 
+    all_data <- getData(file, xvars=input$indicsIn, yvars=input$corrsIn, denoms=denoms, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
   } 
   if(any(all_data!="")){
     #else if(tab=="trend"){
@@ -994,7 +979,7 @@ updatePlots <- function(tab="data", maps=T){
             flabels = groups_list[which(groups_list$varName==aggs_list),]$Labels %>% str_split(., ",") %>% unlist()
             outdata[[aggs_list]] <- factor(outdata[[aggs_list]], levels=flevels, labels=flabels)
           }
-          #makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, aggs_lab)
+          #makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, aggs_lab
           corrHist <- makeHistGrps(outdata, xvars, bins, aggs_list, corrAxis, xlab, aggs_lab)
           indicatorHist <- makeHistGrps(outdata,yvars,bins,aggs_list,indicAxis, ylab, aggs_lab)
           scatterPlot <- makeScatterGrps(outdata,xvars,yvars,aggs_list,xlab,ylab,aggs_lab, res_out)
@@ -1026,15 +1011,22 @@ updatePlots <- function(tab="data", maps=T){
           }
           }
 
-        
-        output$indicatorHist <- renderPlot(indicatorHist)
-        output$corrHist <- renderPlot(corrHist)
-        output$scatterPlot <- renderPlot(scatterPlot)
+        if(xvars!=yvars){
+          output$indicatorHist <- renderPlot(indicatorHist)
+          output$corrHist <- renderPlot(corrHist)
+          output$scatterPlot <- renderPlot(scatterPlot) 
+        } else {
+          output$indicatorHist <- renderPlot(indicatorHist)
+        }
         #output$plotInterp <- renderUI(HTML(res_out))
         
         if(maps==T){
+          if(xvars!=yvars){
           output$indicatorMap <- renderPlot(indicatorMap)
           output$corrMap <- renderPlot(corrMap)
+          } else {
+            output$indicatorMap <- renderPlot(indicatorMap)
+          }
         }
       }
     }
