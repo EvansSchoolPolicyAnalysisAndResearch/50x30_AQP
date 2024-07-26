@@ -755,7 +755,7 @@ server <- function(input, output, session) {
             df[[currVar]] <- as.numeric(df[[currVar]])
           }
           #Error handling
-          if(!(currVar %in% indicator_list$shortName) | all(is.na(df[[currVar]]) | df[[currVar==0]])){
+          if(!(currVar %in% indicator_list$shortName) | all(is.na(df[[currVar]]) | df[[currVar]]==0)){
             varslist_short <- varslist_short[-which(varslist_short==currVar)]
             if(!exists("dropped_vars")){
               dropped_vars <- currVar
@@ -789,6 +789,7 @@ server <- function(input, output, session) {
           }
           if(exists("df", mode="list")){
             if(!nrow(df)==0){  
+              #TODO: Fix this for weighted histograms 
               if(adm_level=="hhid"){
                 if(!exists('outdata')){
                   outdata <- df
@@ -796,19 +797,6 @@ server <- function(input, output, session) {
                   outdata <- bind_rows(outdata, df)
                 }
               } else {
-                for(currVar in varslist_short) {
-                  if(!is.null(denoms)){
-                    denom <- denoms$denom[denoms$shortName==currVar]
-                    if(!is.na(denom)){
-                      df[[paste0("weight_", currvar)]] <- df[[denom]]*df$weight
-                    } else {
-                      df[[paste0("weight_", currVar)]] <- df$weight
-                    }
-                      
-                    }
-                  df_temp <- 
-                }
-                
                 if(is.null(denoms)) {
                 tempdata <- df %>% 
                   group_by(!!!syms(c(adm_level, aggs_list))) %>% 
@@ -816,7 +804,21 @@ server <- function(input, output, session) {
                 weight_tots <- df %>% group_by(!!!syms(c(adm_level, aggs_list))) %>% summarize(weight=sum(weight))
                 tempdata <- merge(tempdata, weight_tots, by=c(adm_level, aggs_list))
                 } else {
-                  
+                  for(currVar in varslist_short) {
+                      denom <- denoms$denom[denoms$shortName==currVar]
+                      if(!is.na(denom)){
+                        df[[paste0("weight_", currVar)]] <- df[[denom]]*df$weight #Just add to last column
+                      } else {
+                        df[[paste0("weight_", currVar)]] <- df$weight
+                      }
+                    df_temp <- df %>% group_by(!!!syms(c(adm_level, aggs_list))) %>% 
+                      summarize(across(all_of(currVar), ~weighted.mean(.x, w=!!sym(paste0("weight_",currVar)), na.rm=T)))
+                    if(exists("outdata")){
+                      outdata <- bind_rows(outdata, df_temp)
+                    } else {
+                      outdata <- df_temp
+                    }
+                  }
                 }
                 if(!exists('outdata')){
                   outdata <- tempdata
