@@ -98,7 +98,8 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                            tabPanel("Policy Pathways", icon=icon("landmark-dome"),
                                     fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
                              <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
-                             fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
+                             #fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
+                             fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
                            ),
                            tabPanel("Explore Indicators", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
@@ -897,15 +898,29 @@ output$downloadRaw <- downloadHandler(
 
 #To do: compact this for better display.
 if(exists("pathwaysDT")){
-output$path_table <- renderDataTable(pathwaysDT,
-                                     options = list(scrollX = TRUE,
-                                                    pageLength = 5,
-                                                    lengthMenu = c(2, 5, 10),
-                                                    searching = FALSE,
-                                                    autoWidth = TRUE
-                                     ),
-                                     rownames = FALSE
-)
+#AT: Original
+#  output$path_table <- renderDataTable(pathwaysDT,
+#                                     options = list(scrollX = TRUE,
+#                                                    pageLength = 5,
+#                                                    lengthMenu = c(2, 5, 10),
+#                                                    searching = FALSE,
+#                                                    autoWidth = TRUE
+#                                     ),
+#                                     rownames = FALSE
+#)
+  
+path_tabs <- lapply(pathway_names, function(x){
+  tabPanel(title=x,
+           renderDataTable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`),
+                           options=list(scrollX=T,
+                                        pageLength=5,
+                                        lengthMenu=c(2,5,10),
+                                        searching=T, 
+                                        autoWidth=T)))
+})
+output$path_table <- renderUI({
+  do.call(tabsetPanel, path_tabs) %>% return()
+})
 } else {
   output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
 }
