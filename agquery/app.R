@@ -48,9 +48,8 @@ options(shiny.useragg = TRUE)
 ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                 base_font = bslib::font_google("Open Sans"), 
                 fluidRow(column(3, align='center', HTML("<img src=moa_logo.png width='40%'></img>")),
-                         column(3, HTML("<h2>CAS Survey Data Explorer</h2>")),
-                         column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>")),
-                         column(3, align='left', HTML("<img src='evans2.jpg' width='100%'></img>"))),
+                         column(3, HTML("<h1>CAS Survey Data Explorer</h1>")),
+                         column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>"))),
                 #img(src='moa_logo.png', width='10%'),
                 navbarPage(title="", theme = bslib::bs_theme(version="3",
                                                                                          bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
@@ -88,12 +87,15 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                                                    '<p>If you use this app for scholarly research or modify it for alternative uses, please use this attribution: </p>',
                                                                                                    '<p> Tomes, A.L., Kenne, S., Wood, S.R., and Anderson, C.L. (2024). 50x30 Cambodia Data Explorer. v1.0.',
                                                                                                    '<br><br>',
-                                                                                                   '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p><br><br><br>')
+                                                                                                   '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p><br><br><br>',
+                                                                                             HTML("<img src='evans2.jpg' width='30%' align='center'></img>"))
+                                                                                             #column(2, align='left', HTML("<img src='evans2.jpg' width='100%'></img>")))
                                                                      )
                                                                      )
                                                                      )
                            )
                            ),
+                          
                            tabPanel("Instructions", icon=icon("readme"),
                                     includeHTML('www/Instructions_50x30_D2.html')
                            ),
