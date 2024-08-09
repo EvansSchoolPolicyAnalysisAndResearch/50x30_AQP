@@ -12,7 +12,7 @@ library(stringr)
 library(readstata13)
 library(DT)
 library(glue)
-library(rlang)
+#library(rlang)
 library(shinyWidgets)
 library(sf)
 library(gridExtra)
@@ -22,7 +22,7 @@ library(purrr)
 library(rintrojs)
 library(corrplot)
 library(plotly)
-library(bslib)
+#library(bslib)
 library(thematic)
 library(ragg)
 library(viridis)
@@ -30,7 +30,8 @@ library(heatmaply)
 library(shinyjs)
 library(reshape2)
 library(ggtext)
-import::from(spatstat.geom, weighted.median)
+library(spatstat.geom)
+#import::from(spatstat.geom, weighted.median)
 lapply(list.files("Scripts", full.names=T), FUN=source)
 
 
@@ -47,8 +48,9 @@ options(shiny.useragg = TRUE)
 ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                 base_font = bslib::font_google("Open Sans"), 
                 fluidRow(column(3, align='center', HTML("<img src=moa_logo.png width='40%'></img>")),
-                         column(2, HTML("<h2>CAS Survey Data Explorer</h2>")),
-                         column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>"))),
+                         column(3, HTML("<h2>CAS Survey Data Explorer</h2>")),
+                         column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>")),
+                         column(3, align='left', HTML("<img src='evans2.jpg' width='100%'></img>"))),
                 #img(src='moa_logo.png', width='10%'),
                 navbarPage(title="", theme = bslib::bs_theme(version="3",
                                                                                          bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
