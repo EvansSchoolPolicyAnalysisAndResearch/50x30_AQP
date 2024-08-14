@@ -713,7 +713,8 @@ server <- function(input, output, session) {
         mergeNames <- names(df)[which(names(df) %in% names(weights))] #Slightly more flexible
         if(length(mergeNames)==0){
           showNotification("Error in merging weights file: ID column not found. Unweighted averages will be shown.", type="error")
-        }
+          df$weight <- 1
+        } else {
         df <- merge(df, weights, by=mergeNames)
         rm(weights)
         }
@@ -803,16 +804,22 @@ server <- function(input, output, session) {
                   summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T)))
                 weight_tots <- df %>% group_by(!!!syms(c(adm_level, aggs_list))) %>% summarize(weight=sum(weight))
                 tempdata <- merge(tempdata, weight_tots, by=c(adm_level, aggs_list))
+                
+                mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
+                  summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=weight, na.rm=T)))
                 } else {
                   for(currVar in varslist_short) {
                       denom <- denoms$denom[denoms$shortName==currVar]
                       if(!is.na(denom)){
-                        df[[paste0("weight_", currVar)]] <- df[[denom]]*df$weight #Just add to last column
+                        df$tempweight <- df[[denom]]*df$weight #Just add to last column
                       } else {
-                        df[[paste0("weight_", currVar)]] <- df$weight
+                        df$tempweight <- df$weight
                       }
                     df_temp <- df %>% group_by(!!!syms(c(adm_level, aggs_list))) %>% 
-                      summarize(across(all_of(currVar), ~weighted.mean(.x, w=!!sym(paste0("weight_",currVar)), na.rm=T)))
+                      summarize(across(all_of(currVar), ~weighted.mean(.x, w=tempweight, na.rm=T)))
+                    
+                    mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
+                      summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=tempweight, na.rm=T)))
                     if(exists("outdata")){
                       outdata <- bind_rows(outdata, df_temp)
                     } else {
@@ -820,21 +827,21 @@ server <- function(input, output, session) {
                     }
                   }
                 }
+                
+                if(!exists("mapdata")){
+                  mapdata <- mapdata_temp 
+                } else {
+                  mapdata <- bind_rows(mapdata, mapdata_temp)
+                }
+                
                 if(!exists('outdata')){
                   outdata <- tempdata
                 } else { 
                   outdata <- bind_rows(outdata, tempdata) 
                 } 
               }
+        
             
-              mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
-                summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=weight, na.rm=T)))
-              
-              if(!exists("mapdata")){
-                mapdata <- mapdata_temp 
-              } else {
-                mapdata <- bind_rows(mapdata, mapdata_temp)
-              }
               rm(df)
             }
           }
