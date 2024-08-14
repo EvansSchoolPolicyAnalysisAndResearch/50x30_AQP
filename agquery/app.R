@@ -12,7 +12,7 @@ library(stringr)
 library(readstata13)
 library(DT)
 library(glue)
-library(rlang)
+#library(rlang)
 library(shinyWidgets)
 library(sf)
 library(gridExtra)
@@ -22,7 +22,7 @@ library(purrr)
 library(rintrojs)
 library(corrplot)
 library(plotly)
-library(bslib)
+#library(bslib)
 library(thematic)
 library(ragg)
 library(viridis)
@@ -30,7 +30,8 @@ library(heatmaply)
 library(shinyjs)
 library(reshape2)
 library(ggtext)
-import::from(spatstat.geom, weighted.median)
+library(spatstat.geom)
+#import::from(spatstat.geom, weighted.median)
 lapply(list.files("Scripts", full.names=T), FUN=source)
 
 
@@ -47,7 +48,7 @@ options(shiny.useragg = TRUE)
 ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                 base_font = bslib::font_google("Open Sans"), 
                 fluidRow(column(3, align='center', HTML("<img src=moa_logo.png width='40%'></img>")),
-                         column(2, HTML("<h2>CAS Survey Data Explorer</h2>")),
+                         column(3, HTML("<h1>CAS Survey Data Explorer</h1>")),
                          column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>"))),
                 #img(src='moa_logo.png', width='10%'),
                 navbarPage(title="", theme = bslib::bs_theme(version="3",
@@ -86,19 +87,23 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                                                    '<p>If you use this app for scholarly research or modify it for alternative uses, please use this attribution: </p>',
                                                                                                    '<p> Tomes, A.L., Kenne, S., Wood, S.R., and Anderson, C.L. (2024). 50x30 Cambodia Data Explorer. v1.0.',
                                                                                                    '<br><br>',
-                                                                                                   '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p><br><br><br>')
+                                                                                                   '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p><br><br><br>',
+                                                                                             HTML("<img src='evans2.jpg' width='30%' align='center'></img>"))
+                                                                                             #column(2, align='left', HTML("<img src='evans2.jpg' width='100%'></img>")))
                                                                      )
                                                                      )
                                                                      )
                            )
                            ),
+                          
                            tabPanel("Instructions", icon=icon("readme"),
                                     includeHTML('www/Instructions_50x30_D2.html')
                            ),
                            tabPanel("Policy Pathways", icon=icon("landmark-dome"),
                                     fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
                              <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
-                             fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
+                             #fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
+                             fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
                            ),
                            tabPanel("Explore Indicators", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
@@ -897,15 +902,29 @@ output$downloadRaw <- downloadHandler(
 
 #To do: compact this for better display.
 if(exists("pathwaysDT")){
-output$path_table <- renderDataTable(pathwaysDT,
-                                     options = list(scrollX = TRUE,
-                                                    pageLength = 5,
-                                                    lengthMenu = c(2, 5, 10),
-                                                    searching = FALSE,
-                                                    autoWidth = TRUE
-                                     ),
-                                     rownames = FALSE
-)
+#AT: Original
+#  output$path_table <- renderDataTable(pathwaysDT,
+#                                     options = list(scrollX = TRUE,
+#                                                    pageLength = 5,
+#                                                    lengthMenu = c(2, 5, 10),
+#                                                    searching = FALSE,
+#                                                    autoWidth = TRUE
+#                                     ),
+#                                     rownames = FALSE
+#)
+  
+path_tabs <- lapply(pathway_names, function(x){
+  tabPanel(title=x,
+           renderDataTable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`),
+                           options=list(scrollX=T,
+                                        pageLength=5,
+                                        lengthMenu=c(2,5,10),
+                                        searching=T, 
+                                        autoWidth=T)))
+})
+output$path_table <- renderUI({
+  do.call(tabsetPanel, path_tabs) %>% return()
+})
 } else {
   output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
 }
