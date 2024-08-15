@@ -78,7 +78,24 @@ policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
 if(is.list(policy_path)){
   pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
   pathway_names <- unique(policy_path$Policy.Goal)
+  short_Pathways <- unique(policy_path$goalName)
   names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
+  
+  polic_Names <- lapply(short_Pathways, FUN=function(x){
+    policy_path_sub <- policy_path %>% filter(goalName==x)
+    inst_names <- unique(policy_path_sub$Instrument)
+    temp_list <- lapply(inst_names, FUN=function(y){
+      tempnames <- policy_path_sub$Implementation[policy_path_sub$Instrument==y]
+      tempvals <- as.list(policy_path_sub$pathwayID[policy_path_sub$Instrument==y])
+      
+      names(tempvals) <- tempnames
+      return(tempvals)
+    })
+    names(temp_list) <- inst_names
+    temp_list <- c(list(`All Instruments`=0), temp_list)
+    return(temp_list)
+  })
+  names(polic_Names) <- short_Pathways
 }
 #pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
 

@@ -3,7 +3,7 @@ options(shiny.error=browser,
 library(shiny)
 library(shinyBS)
 library(tidyr)
-#library(shinythemes)
+library(shinythemes)
 library(tools)
 library(ggplot2)
 library(dplyr)
@@ -12,7 +12,7 @@ library(stringr)
 library(readstata13)
 library(DT)
 library(glue)
-#library(rlang)
+library(rlang)
 library(shinyWidgets)
 library(sf)
 library(gridExtra)
@@ -22,7 +22,7 @@ library(purrr)
 library(rintrojs)
 library(corrplot)
 library(plotly)
-#library(bslib)
+library(bslib)
 library(thematic)
 library(ragg)
 library(viridis)
@@ -294,10 +294,10 @@ server <- function(input, output, session) {
   observeEvent(input$policiesBox1, {
     if(input$policiesBox1!="None" & is.list(policy_path)){
       inputChk <- is.null(input$pathwaysIn1)
-      pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
-      pathway_list <- as.list(c(0, pathway_sub$pathwayID)) 
-      names(pathway_list) <- c("All", pathway_sub$Pathway)
-      output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=pathway_list))
+      #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
+      #pathway_list <- as.list(c(0, pathway_sub$pathwayID)) 
+      #names(pathway_list) <- c("All", pathway_sub$Pathway)
+      output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]]))
       
       if(!inputChk){
         shinyjs::disable('pathwaysIn1')
@@ -642,10 +642,10 @@ server <- function(input, output, session) {
   observeEvent(input$policiesBox2, {
     if(input$policiesBox2!="None"){
       if(is.list(pathway_link) & is.list(indicator_list)) {
-    pathway_sub <- policy_path %>% filter(goalName==input$policiesBox2)
-    pathway_list <- as.list(c(0, pathway_sub$pathwayID))
-    names(pathway_list) <- c("All", pathway_sub$Pathway)
-    output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=pathway_list))
+    #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox2)
+    #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
+    #names(pathway_list) <- c("All", pathway_sub$Pathway)
+    output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]]))
     if(!is.null(input$pathwaysIn2)){
       if(input$policiesBox2!="None"){
         if(is.list(pathway_link) & is.list(indicator_list)) {
