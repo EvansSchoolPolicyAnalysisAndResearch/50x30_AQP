@@ -30,8 +30,8 @@ library(heatmaply)
 library(shinyjs)
 library(reshape2)
 library(ggtext)
-library(spatstat.geom)
-#import::from(spatstat.geom, weighted.median)
+#library(spatstat.geom)
+#import::from(spatstat.geom, weighted.mean)
 lapply(list.files("Scripts", full.names=T), FUN=source)
 
 
@@ -353,8 +353,9 @@ server <- function(input, output, session) {
       #  data_files <- data_files %>% filter(year==max(year) | year==max(data_files$year[data_files$year!=max(data_files$year)])) #get highest and second highest values
       #} 
       
-      #Get variables from the 
+      #This would be more efficient if it were reactive values and we just had to filter it at this point, but this function gets used in two places 
       data_out <- getData(data_files, indics_out)
+      
       if(!any(data_out=="")){
         data_out <- data_out$tempdata
         indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
@@ -916,8 +917,11 @@ if(exists("pathwaysDT")){
 path_tabs <- lapply(pathway_names, function(x){
   tabPanel(title=x,
            renderDataTable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`),
+                           filter=list(position='top', clear=F),
+                           rownames=F,
+                           escape=F,
                            options=list(scrollX=T,
-                                        pageLength=5,
+                                        pageLength=10,
                                         lengthMenu=c(2,5,10),
                                         searching=T, 
                                         autoWidth=T)))

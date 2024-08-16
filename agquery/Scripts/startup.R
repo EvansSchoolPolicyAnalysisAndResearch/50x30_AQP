@@ -77,6 +77,7 @@ policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
                         error=function(e){return(F)}) #It's possible to pass bad inputs here that will just render as garbage on the table panel; let 'em
 if(is.list(policy_path)){
   pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
+  pathwaysDT$Indicators <- gsub(pattern="\n", replacement="<br>", x=pathwaysDT$Indicators)
   pathway_names <- unique(policy_path$Policy.Goal)
   short_Pathways <- unique(policy_path$goalName)
   names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
