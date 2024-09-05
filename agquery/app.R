@@ -30,8 +30,8 @@ library(heatmaply)
 library(shinyjs)
 library(reshape2)
 library(ggtext)
-#library(spatstat.geom)
-#import::from(spatstat.geom, weighted.mean)
+
+
 lapply(list.files("Scripts", full.names=T), FUN=source)
 
 
@@ -54,7 +54,85 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                 navbarPage(title="", theme = bslib::bs_theme(version="3",
                                                                                          bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
                                                                                          base_font = bslib::font_google("Open Sans")), 
-                           tabPanel("Introduction", column(1),column(10, #To do: move this to a separate file.
+                           
+                           tabPanel("Policy Pathways", icon=icon("landmark-dome"),
+                                    fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
+                             <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab.</p><br>'),
+                                    downloadButton('downloadPathways',
+                                                     label='Download Policy Pathways',
+                                                     icon=icon('file-csv'))),
+                             fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
+                           ),
+                           tabPanel("Explore Indicators", icon=icon("magnifying-glass-chart"),
+                                    shinyjs::useShinyjs(),
+                                    fluidRow(column(4, uiOutput("trendsErr"))),
+                                    fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", goalNames)))),
+                                    fluidRow(column(4, uiOutput('pathwaysBox'))),
+                                    fluidRow(column(2, uiOutput('msgText')),
+                                             column(4),
+                                             column(6, conditionalPanel(condition="input.policiesBox1!='None'", uiOutput("trendVarChoose"))
+                                             )),
+                                    #fluidRow(column(4, conditionalPanel(condition="input.policiesBox1!='None'",
+                                    #                                               downloadButton('downloadSummary',
+                                    #                                                              label='Download Table Data',
+                                    #                                                              icon=icon('file-csv')))
+                                    #                )
+                                    #         ),
+                                    fluidRow(column(6, dataTableOutput('trendsTable'),
+                                                    conditionalPanel(condition="input.policiesBox1!='None'",
+                                                                     downloadButton('downloadSummary',
+                                                                                    label='Download Table Data',
+                                                                                    icon=icon('file-csv')))),
+                                             column(6,
+                                                    plotOutput('currMap'),
+                                                    plotOutput('trendMap'),
+                                                    uiOutput("plotsErr"))
+                                    ),
+                                    
+                                    fluidRow(column(12, uiOutput("droppedVars"))),
+                                    fluidRow(column(6, bsCollapse(
+                                      bsCollapsePanel("Detailed Information",
+                                                      dataTableOutput('flagsTable'),
+                                                      downloadButton('downloadFlags',
+                                                                     label='Download Table Data',
+                                                                     icon=icon('file-csv')))
+                                    )))
+                           ),
+                           tabPanel("Explore Relationships", icon=icon("chart-line"),
+                                    fluidRow(column(4,uiOutput("explorerErr"))),
+                                    fluidRow(column(6, uiOutput('dataPolicBox'))), 
+                                    conditionalPanel(condition="input.policiesBox2!='None'",
+                                                     fluidRow(column(8, uiOutput('dataPathBox'))),
+                                                     fluidRow(column(6, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year))), 
+                                                              column(6,actionButton('makeHeatMap',"Show Heatmap"))),
+                                                     fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
+                                                                                  
+                                                                                  fluidRow(column(6, align='center', uiOutput('indicsBox')),
+                                                                                           column(6, align='center', uiOutput('corrsBox'))),
+                                                                                  fluidRow(column(6, align='center', uiOutput('indicsDesc')), column(6, align='center', uiOutput('corrsDesc'))),
+                                                                                  hr(),
+                                                                                  fluidRow(checkboxInput('yChk', 'Omit 0s from Indicator')),
+                                                                                  fluidRow(radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid"))),
+                                                                                  fluidRow(uiOutput("groupsBtn")),
+                                                                                  fluidRow(actionButton('submitBtn', "Compare Variables")), 
+                                                                                  fluidRow(downloadButton('downloadRawShort', 'Download Selected Raw Data',icon=icon('file-csv')),
+                                                                                  downloadButton('downloadRawLong', 'Download All Listed Raw Data', icon=icon('file-csv')))
+                                                                                  )
+                                                                                  ),
+                                                              column(6, 
+                                                                     #plotOutput('corrPlot'),
+                                                                     plotlyOutput('heatMap'))),
+                                                     br(),
+                                                     br(),
+                                                     fluidRow(column(6, uiOutput('indicHeader')) ,column(6, uiOutput('corrHeader'))),
+                                                     fluidRow(column(6, plotOutput('indicatorHist')), column(6, plotOutput('corrHist'))),
+                                                     fluidRow(column(6, plotOutput('indicatorMap')), column(6, plotOutput('corrMap'))),
+                                                     fluidRow(plotOutput('scatterPlot')),
+                                                     fluidRow(uiOutput('plotInterp'))
+                                    )
+                           ),
+                           
+                           tabPanel("Introduction", icon=icon("signs-post"), column(1),column(10, #To do: move this to a separate file.
                                                                      wellPanel(HTML(
                                                                        "The 50x30 Cambodia Data explorer can rapidly summarize and visualize the Cambodian Agricultural Survey data. It provides tools for exploring policy instruments to achieve agricultural development goals and connecting those instruments to information available in the CAS surveys. Export report-ready graphs and raw data for follow-up analyses. Inputs and interface elements are also user-modifiable for a custom data analysis environment."
                                                                      )),
@@ -98,82 +176,19 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                           
                            tabPanel("Instructions", icon=icon("readme"),
                                     includeHTML('www/Instructions_50x30_D2.html')
-                           ),
-                           tabPanel("Policy Pathways", icon=icon("landmark-dome"),
-                                    fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
-                             <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab. The table can be downloaded as an excel sheet using the button below:</p><br>')),
-                             #fluidRow(dataTableOutput("path_table"), uiOutput("path_tbl_err"))
-                             fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
-                           ),
-                           tabPanel("Explore Indicators", icon=icon("magnifying-glass-chart"),
-                                    shinyjs::useShinyjs(),
-                                    fluidRow(column(4, uiOutput("trendsErr"))),
-                                    fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", goalNames)))),
-                                    fluidRow(column(4, uiOutput('pathwaysBox'))),
-                                    fluidRow(column(2, uiOutput('msgText')), column(4), #,conditionalPanel(condition="input.policiesBox1!='None'", radioGroupButtons("trendChooser", "", choices=list(`Change Since Previous Survey`='prevSurv', `Long-term Trend`='trend')))
-                                    #),
-                                    column(6, conditionalPanel(condition="input.policiesBox1!='None'", uiOutput("trendVarChoose"))
-                                    )),
-                                    fluidRow(column(6, dataTableOutput('trendsTable')),
-                                             column(6,
-                                                    plotOutput('currMap'),
-                                                    plotOutput('trendMap'),
-                                                    uiOutput("plotsErr"))
-                                    ),
-                                    fluidRow(column(12, uiOutput("droppedVars"))),
-                                    fluidRow(column(6, br(), bsCollapse(
-                                      bsCollapsePanel("Detailed Information",
-                                                      dataTableOutput('flagsTable'))
-                                    )))
-                           ),
-                           tabPanel("Explore Relationships", icon=icon("chart-line"),
-                                    fluidRow(column(4,uiOutput("explorerErr"))),
-                                    fluidRow(column(6, uiOutput('dataPolicBox'))), 
-                                    conditionalPanel(condition="input.policiesBox2!='None'",
-                                                     fluidRow(column(8, uiOutput('dataPathBox'))),
-                                                     fluidRow(column(6, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year))), 
-                                                              column(6,actionButton('makeHeatMap',"Show Heatmap"))),
-                                                     fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
-                                                                                  
-                                                                                  fluidRow(column(6, align='center', uiOutput('indicsBox')),
-                                                                                           column(6, align='center', uiOutput('corrsBox'))),
-                                                                                  fluidRow(column(6, align='center', uiOutput('indicsDesc')), column(6, align='center', uiOutput('corrsDesc'))),
-                                                                                  hr(),
-                                                                                  checkboxInput('yChk', 'Omit 0s from Indicator'),
-                                                                                  radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
-                                                                                  uiOutput("groupsBtn"),
-                                                                                  #radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_list$label), choiceValues=c("", groups_list$varName)),
-                                                                                  actionButton('submitBtn', "Compare Variables"))),
-                                                              column(6, 
-                                                                     #plotOutput('corrPlot'),
-                                                                     plotlyOutput('heatMap'))),
-                                                     br(),
-                                                     br(),
-                                                     fluidRow(column(6, uiOutput('indicHeader')) ,column(6, uiOutput('corrHeader'))),
-                                                     fluidRow(column(6, plotOutput('indicatorHist')), column(6, plotOutput('corrHist'))),
-                                                     fluidRow(column(6, plotOutput('indicatorMap')), column(6, plotOutput('corrMap'))),
-                                                     fluidRow(plotOutput('scatterPlot')),
-                                                     fluidRow(uiOutput('plotInterp'))
-                                    )
-                           ),
-                           tabPanel("Downloads", icon=icon("download"), 
-                                    column(4, fluidRow(downloadButton('downloadExcel',
-                                                                                   label='Download Indicators',
-                                                                                   icon=icon('file-excel'))),
-                                                        br(),
-                                                        br(),
-                                                        fluidRow(downloadButton('downloadRaw',
-                                                                                label="Download Processed Data",
-                                                                                icon=icon('file-csv'))),
-                                                        br(),
-                                                        br(),
-                                                        fluidRow(downloadButton('downloadPathways',
-                                                                                label='Download Policy Pathways',
-                                                                                icon=icon('file-csv'))))
-                                    
+                           )
+                           
+                           #tabPanel("Downloads", icon=icon("download"), 
+                          #          column(4, fluidRow(downloadButton('downloadExcel',
+                          #                                                         label='Download Indicators',
+                          #                                                         icon=icon('file-excel'))),
+                          #                              br(),
+                          #                              br(),
+                          #                              fluidRow(downloadButton('downloadRaw',
+                          #                                                      label="Download Processed Data",
+                          #                                                      icon=icon('file-csv')))))
                            )
                 )
-)
 
 
 
@@ -181,7 +196,6 @@ server <- function(input, output, session) {
   corMat <- function(shortNames, labelNames, data_out){
     cor_matrix <- cor(data_out, use="pairwise.complete.obs")
     par(mar = c(5, 5, 4, 2) - 2)
-    
     #corrPlot <- corrplot.mixed(cor_matrix, order = 'AOE')
     #output$corrPlot <- renderPlot(corrplot(cor_matrix, order = 'AOE',col=colorRampPalette(c("white","lightblue","red"))(100)))
     #print(corrPlot) 
@@ -335,28 +349,19 @@ server <- function(input, output, session) {
       indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] %>% unique() #TO DO: Include some cleaning code in the startup script 
       #data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), str_to_lower(input$policiesBox1))]) #Might need to store this as a global later. 
       #Need to be more consistent in tracking case
-      data_files_select <- indicator_list[which(indicator_list$shortName %in% indics_out),] %>% #Typo correction here - might not be a sustainable solution.
-        select(file) %>% 
-        distinct() %>% 
-        unlist() #TODO: Clean this up
-      if(length(data_files_select)==0){
+      
+      data_files <- getFiles(indicator_list, dataset_list, indics_out)
+      if(nrow(data_files)==0){
         showNotification("No data files related to the selected pathway were found", type="error")
       } else {
-      data_files <- lapply(data_files_select, FUN=function(x){dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(x)))]}) %>% unique() %>% unlist()  #Drop duplicates if they're somehow in there.
-      #data_files <- dataset_list %>% select(which(str_to_lower(dataset_list) %in% str_to_lower(data_files_select)))
-      #data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
-      data_files <- as.data.frame(data_files)
-      names(data_files) <- "file.name"
-      data_files$year <- str_extract(data_files$file.name, "[0-9]{4}") #Might be unnecessary 
-      #This gets tricky for variables that are only collected every three years in each of the rotating modules. 
-      #if(input$trendChooser=='prevSurv') {
-      #  data_files <- data_files %>% filter(year==max(year) | year==max(data_files$year[data_files$year!=max(data_files$year)])) #get highest and second highest values
-      #} 
       
       #This would be more efficient if it were reactive values and we just had to filter it at this point, but this function gets used in two places 
-      data_out <- getData(data_files, indics_out)
+      data_out <- getData(data_files, indics_out, source_call="pathwaysIn1")
       
-      if(!any(data_out=="")){
+      if(is.list(data_out)){
+        if(is.list(data_out$droppedVars)){
+          output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
+        }
         data_out <- data_out$tempdata
         indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
         data_table <- data.frame(shortName=indics_out) #TODO: Simplify
@@ -370,8 +375,8 @@ server <- function(input, output, session) {
         #data_table[[paste0(min(data_out$year), " N obs")]] <- NA #Moved these to the metadata table. 
         data_table[[paste0(max(data_out$year), " Mean")]] <- NA
         #data_table[[paste0(max(data_out$year), " N obs")]] <- NA
-        data_table$Trend <- ""
-        data_table$`Long Term Trend` <- ""
+        data_table$Trend <- NA
+        data_table$`Long Term Trend` <- NA
         for(var in indics_out){
           sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
           if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
@@ -389,41 +394,52 @@ server <- function(input, output, session) {
               max_mean <- inject(with(sub_data %>% filter(year==max(sub_data$year)), weighted.mean(!!sym(var), weight)))
               min_n <- nrow(sub_data %>% filter(year==prevYear))
               max_n <- nrow(sub_data %>% filter(year==max(sub_data$year)))
-              if(min_mean==0){ 
+              #if(min_mean==0){ 
+              #  if(max_mean > 0){
+              #    chg = "+Inf"
+              #  } else if(max_mean < 0) {
+              #    chg="-Inf"
+              #  } else {
+              #    chg="⮕ 0%"
+              #  }
+              #} else {  
+              #  diff=signif((max_mean-min_mean)/min_mean*100, 2)
+              #  
+              #  if(diff>5){
+              #    dir_arrow <- "⬆ "
+              #  } else if(diff < -5) {
+              #    dir_arrow <- "⬇ "
+              #  } else {
+              #    dir_arrow <- "⮕ "
+              #  }
+              #  
+              #  chg=paste0(dir_arrow, diff, "%")  
+              #}
+              
+              if(min_mean==0){
                 if(max_mean > 0){
-                  chg = "+Inf"
-                } else if(max_mean < 0) {
-                  chg="-Inf"
+                  chg = Inf
                 } else {
-                  chg="⮕ 0%"
+                  chg = -Inf
                 }
-              } else {  
-                diff=signif((max_mean-min_mean)/min_mean*100, 2)
-                
-                if(diff>5){
-                  dir_arrow <- "⬆ "
-                } else if(diff < -5) {
-                  dir_arrow <- "⬇ "
-                } else {
-                  dir_arrow <- "⮕ "
-                }
-                
-                chg=paste0(dir_arrow, diff, "%")  
+              } else {
+                chg=signif((max_mean-min_mean)/min_mean, 2)
               }
+              
               data_table[[paste0(min(data_out$year), " Mean")]][data_table$shortName==var] <- signif(min_mean,4)
               data_table[[paste0(max(data_out$year), " Mean")]][data_table$shortName==var] <- signif(max_mean,4)
               flag_table[[paste0(min(data_out$year), " N obs")]][flag_table$shortName==var] <- min_n
               flag_table[[paste0(max(data_out$year), " N obs")]][flag_table$shortName==var] <- max_n
               data_table$Trend[data_table$shortName==var] <- chg
-            } #Implement regression later?
+            }
             reg_data <- sub_data %>% na.omit() %>% group_by(year) %>% summarize(mean=weighted.mean(!!sym(var), weight))
             reg_data$mean <- with(reg_data, log(mean+0.5*min(mean[mean>0])))
             if(length(unique(reg_data$year>=2))){ #Future releases should change this to >2; currently here for testing
               reg_res <- tryCatch(lm(mean~year, data=reg_data), error=function(e){return("")})
               if(is.list(reg_res)){
-                pct_diff <- round((exp(reg_res$coefficients[[2]])-1)*100,1)
+                pct_diff <- round((exp(reg_res$coefficients[[2]])-1),3)
                 if(!is.na(pct_diff)){
-                  data_table$`Long Term Trend`[data_table$shortName==var] <- paste0(pct_diff, "%")
+                  data_table$`Long Term Trend`[data_table$shortName==var] <- pct_diff
                 }
               }
             }
@@ -432,13 +448,23 @@ server <- function(input, output, session) {
         output$msgText <- renderUI(HTML("<h3>Related Variables</h3>"))
         if(all(data_table$`Long Term Trend`=="")){
           data_table <- data_table %>% select(-`Long Term Trend`)
+          pct_cols <- 5
+        } else {
+          pct_cols <- c(5,6)
         }
+        
         trendVarList <- as.list(c("0", data_table$shortName))
         names(trendVarList) <- c("Select...", data_table$labelName)
-        data_table <- data_table %>% rename(Variable=labelName) %>% select(-shortName)
+        data_table <- data_table %>% rename(Variable=labelName) %>% select(-shortName) 
         flag_table <- flag_table %>% rename(Variable=labelName, Notes=flag_text) %>% select(-shortName) %>% relocate(Notes, .after=last_col())
-        output$trendsTable <- renderDataTable(data_table, options=list(searching=F, pageLength=15), rownames=F)
-        output$flagsTable <- renderDataTable(flag_table, options=list(searching=F, pageLength=15), rownames=F)
+        
+        data_table_out <<- data_table #Save this to the global environment to make it accessible to the download handler. 
+        flag_table_out <<- flag_table 
+        
+        data_table[,3:4] <- format(data_table[,3:4], big.mark=',', scientific=F, digits=4, nsmall=0, drop0trailing=T)
+        output$trendsTable <- renderDataTable(DT::datatable(data_table, options=list(searching=F, pageLength=15, dom='tip'), rownames=F)  %>% 
+                                                formatPercentage(pct_cols))
+        output$flagsTable <- renderDataTable(flag_table, options=list(searching=F, pageLength=15), rownames=F) 
         output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
         #output$trendsTable <- renderDataTable(data_table)
       }
@@ -451,15 +477,11 @@ server <- function(input, output, session) {
       showNotification("Processing, please wait")
       #session$sendCustomMessage("disableButton", "start_proc")
       shinyjs::disable('trendIn')
-      data_files_select <- indicator_list[which(indicator_list$shortName %in% input$trendIn),] %>% select(file) %>% distinct() %>% unlist() #TODO: Clean this up
-      data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
-      names(data_files) <- "file.name"
-      data_files$year <- str_extract(data_files$file.name, "[0-9]{4}")
       
-      #data_out <- getData(data_files$file.name, data_files$year, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
+      data_files <- getFiles(indicator_list, dataset_list, input$trendIn) #AT: There's probably a simpler way to pack all of this into the getData function but that's a do later item. 
       data_out <- getData(data_files, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
       
-      if(!any(data_out=="")){
+      if(with(data_out, exists("tempdata"))){
         data_out <- data_out$tempdata
         
         #data_out$province_num <- tryCatch(as.numeric(data_out$province), error=function(e){
@@ -604,18 +626,6 @@ server <- function(input, output, session) {
     
   })
   
-  getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear){
-    if(pathway!=0){ 
-      indics_out <- pathway_link %>% filter(goalName==policy, pathwayID==pathway) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
-      
-    } else {
-      indics_out <- pathway_link %>% filter(goalName==policy) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
-    }
-    indics_out <- merge(indics_out, indic_inventory %>% filter(as.numeric(year)==obsyear), by="shortName")
-    indics <- as.list(indics_out$shortName)
-    names(indics) <- indics_out$labelName 
-    indics <- unique(indics)
-  }
 
   observeEvent(input$pathwaysIn2, {
     #target_policy=tolower(input$policiesBox2)
@@ -660,228 +670,43 @@ server <- function(input, output, session) {
     }
   })
 
-  
-  
-  #observeEvent(input$yChk, {
-  #  updatePlots()
-  #}, ignoreInit=T)
-  
-  #observeEvent(input$disAgg_admin, {
-  #  updatePlots(maps=F)
-  #}, ignoreInit=T)
-  
-  #observeEvent(input$Household, { #Hard coding input$Household even though the name affected by the spreadsheet. Might want to adjust how the spreadsheet gets handled in the future.
-  #  updatePlots(maps=F)
-  #}, ignoreInit=T)
-  
-  #observeEvent(input$corrsIn, {
-  #  updatePlots()
-  #}, ignoreInit=T)
-  
-  #corrvals <- reactive({
-  #  req(input$indicsIn) # Ensure that indicsIn is not NULL
-  #  corr_list$corrSN[corr_list$indicatorSN %in% input$indicsIn] %>% unique()
-  #})		
-  
-  #getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
-  getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
-    varslist <- c(xvars, yvars)
-    aggs_list <- c(aggs_list, "year")
-    years <- files$year %>% unique()
-    out_flag <- F
-    exit <- F
-    files$survey <- str_extract(files$file.name, "([aA-zZ]+_2[0-9]{3})", group=1)
-    surveys <- unique(files$survey)
-    for(survey in surveys){
-      files_in <- files$file.name[files$survey==survey]
-      for(file in files_in){ #TODO NOTES FOR 5/1: Dealing with multiple files (should combine them first?) - check and make sure the 0 filter is doing what it's supposed to.
-        df_in <- tryCatch(read.csv(paste0("Data/", file)), 
-                          error=function(e){
-                            showNotification(paste("File", file, "not found"), type="error")
-                            break
-                          }) #can simplify using full paths in list.files
-        if(exists("df", mode="list")){
-          df <- merge(df, df_in, by=c("hhid", "province"))
-        } else {
-          df <- df_in
-        }
-        rm(df_in)
-      }
-      if(!with(df, exists("weight"))){
-        weights <- tryCatch(read.csv(sprintf("Data/%s_weights.csv",survey)),
-                            error=function(e){
-                              showNotification("Weights file missing; unweighted averages will be shown", type="warning")
-                              df$weight <- 1
-                            })
-      if(exists("weights")){
-        mergeNames <- names(df)[which(names(df) %in% names(weights))] #Slightly more flexible
-        if(length(mergeNames)==0){
-          showNotification("Error in merging weights file: ID column not found. Unweighted averages will be shown.", type="error")
-        }
-        df <- merge(df, weights, by=mergeNames)
-        rm(weights)
-        }
-      }
-      if(length(aggs_list > 1)){
-      if(!all(aggs_list[aggs_list!="year"] %in% names(df))){
-      groups <- tryCatch(read.csv(sprintf("Data/%s_groups.csv", survey)) %>% select(any_of(c("hhid",aggs_list[aggs_list!="year"]))), #Should fix this workaround with year
-                           error=function(e){
-                             showNotification(paste("Grouping file for the survey", survey, "was not found. No groups were applied."))
-                             aggs_list <- "year"
-                             return("")
-                           })
-        if(is.list(groups)){
-          if(ncol(groups)==1){
-            showNotification(paste("Grouping variable", aggs_list[aggs_list!="year"], "was not found"))
-            aggs_list <- "year"
-          } else {
-            mergeNames <- names(df)[which(names(df) %in% names(groups))] 
-          df <- merge(df, groups, by="hhid")
-          }
-        }
-      }
-      }
-      varslist_short <- names(df)[which(names(df) %in% varslist)]
-      if(length(varslist_short)==0){
-        showNotification(paste("No variables for the selected policy priority were found in", survey))
-      } else {
-        df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
-          select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
-        
-        #TODO: Fix this w/r/t the trends page. 
-        if(drop_0s){
-          df <- df %>% filter(!!sym(yvars)!=0)
-        }
-        
-        for(currVar in varslist_short) {
-          #Error handling
-          if(!(currVar %in% indicator_list$shortName) | all(is.na(df[[currVar]]))){
-            varslist_short <- varslist_short[-which(varslist_short==currVar)]
-            if(!exists("dropped_vars")){
-              dropped_vars <- currVar
-            } else {
-              dropped_vars <- c(dropped_vars, currVar)
-            }
-          }
-        }
-        if(length(varslist_short)==0){ 
-          showNotification(paste("Error: Data file", file, "is empty or only contains variables not listed in indicators_list"), type="error")
-        } else {
-          for(currVar in varslist_short){
-            
-            #Error handling: in case the data export still has the Stata labels (protects against bad exports; might be better to use dtas instead to avoid this entirely).
-            if(!is.numeric(df[[currVar]])){
-              df <- df %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
-              df[[currVar]] <- as.numeric(df[[currVar]])
-            }
-            
-            var_unit <- subset(indicator_list, shortName %in% currVar)$units[[1]] #Should only be 1 list item
-            var_continuous <- max(c("count","ratio", "boolean") %in% var_unit)==0
-            if(var_continuous==T) { 
-              l_wins_threshold <- (indicator_list$wins_limit[[which(indicator_list$shortName %in% currVar)]])/100
-              u_wins_threshold <- 1-l_wins_threshold
-              
-              if(!is.numeric(l_wins_threshold)) { #I.e., spreadsheet cell was empty or boxes were somehow made blank
-                l_wins_threshold <- 0
-              }
-              if(!is.numeric(u_wins_threshold)){
-                u_wins_threshold <- 1
-              }
-              
-              #Use zeros in the spreadsheet for vars that you don't want to winsorize
-              lim <- quantile(df[[currVar]],probs=c(l_wins_threshold, u_wins_threshold), na.rm=T)
-              df[[currVar]][df[[currVar]] < lim[1]] <- lim[1] 
-              df[[currVar]][df[[currVar]] > lim[2]] <- lim[2] 
-            }
-          }
-          if(exists("df", mode="list")){
-            if(!nrow(df)==0){  
 
-              
-              #Long term: Might need to find a different way to handle this.
-              #if(adm_level!="hhid"){
-              #  outdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level))) %>% distinct()
-              #  for(currVar in varslist_short){
-              #    tempdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level, currVar, "weight"))) %>%
-              #      group_by(!!!syms(c(aggs_list, adm_level))) %>% 
-              #      na.omit() %>%
-              #      summarize_at(value=weighted.mean(!!sym(currVar), weight))
-              #    names(tempdata)[names(tempdata)=="value"] <- currVar
-              if(adm_level=="hhid"){
-                if(!exists('outdata')){
-                  outdata <- df
-                } else { 
-                  outdata <- bind_rows(outdata, df)
-                }
-              } else {
-                tempdata <- df %>% 
-                  group_by(!!!syms(c(adm_level, aggs_list))) %>% 
-                  summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T)))
-                if(!exists('outdata')){
-                  outdata <- tempdata
-                } else { 
-                  outdata <- bind_rows(outdata, tempdata) 
-                } 
-              }
-              
-              mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
-                summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=weight, na.rm=T)))
-              
-              if(!exists("mapdata")){
-                mapdata <- mapdata_temp 
-              } else {
-                mapdata <- bind_rows(mapdata, mapdata_temp)
-              }
-              
-              #if(length(aggs_list==1)) #I.e., aggs_list only contains year
-              #pivotbyvars <- c('province', 'name')
-              #groupbyvars <- c('province', varslist_short, "weight", aggs_list)
-              #groupbyvars <- groupbyvars[nzchar(groupbyvars)]
-              #if(source_call!="trends"){ #Minor kludge because we're getting a pivot longer error here if there's variables missing.
-              #mapdata_temp <- subsetdata  %>% select(all_of(groupbyvars)) %>% 
-              #  na.omit() %>% 
-              #  pivot_longer(., varslist_short) %>% 
-              #  group_by(across(all_of(pivotbyvars))) %>% 
-              #  summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T))) %>%
-              #  pivot_wider()
-              #mapdata$province_num <- as.numeric(mapdata$province)
-              #xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
-              #if(exists("mapdata_temp")){
-              #  mapdata <- mapdata_temp
-              #} else {
-              #  mapdata <- bind_rows(mapdata_temp)
-              #}
-              #} else {
-              #  return(list(tempdata=outdata))
-              #}
-              
-              #  mapdata$province_num <- as.numeric(mapdata$province)
-              #  xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
-              #  return(xShp)
-              rm(df)
-            }
-          }
-        }
-      }
-    }
-    if(exists("dropped_vars")){
-      output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
-    }
-    if(exists("outdata")){
-      return(list(tempdata=outdata, mapdata=mapdata)) #really need to fix the names here.
-    } else {
-      return("")
+output$downloadRawShort <- downloadHandler(
+  filename="raw_data_export.csv",
+  content=function(file){
+    aggs_list = input$groupsChk
+    if(aggs_list==""){
+      aggs_list <- NULL
     }
     
+    indics <- c(input$indicsIn, input$corrsIn)
+    data_files <- getFiles(indicator_list, dataset_list, indics) #Long  term we should just roll this into the getData function. It just makes the argument list even longer.
+    rawData <- getData(data_files, indics, adm_level=input$disAgg_admin, aggs_list=aggs_list, drop_0s=input$yChk)
+    write.csv(rawData$tempdata, file, row.names=F)
   }
-  
-  #} else if(source_call!="trendmaps") {
-  #  showNotification("Error: No data not found", type="error")
-  #  return("")
-  #} else {
-  #  return("")
-  #}
+)
 
+output$downloadRawLong <- downloadHandler(
+  filename="raw_data_export.csv",
+  content=function(file){
+    aggs_list = input$groupsChk
+    if(aggs_list==""){
+      aggs_list <- NULL
+    }
+    
+    indics <- getIndics(pathway_link, indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
+    data_files <- getFiles(indicator_list, dataset_list, indics)
+    rawData <- getData(data_files, indics, adm_level = input$disAgg_admin, aggs_list=aggs_list, drop_0s=input$yChk) #Think about changing this to a cached reactive expression. 
+    write.csv(rawData$tempdata, file, row.names=F)
+  }
+)
+
+output$downloadSummary <- downloadHandler(
+  filename="summary_table_export.csv", 
+  content=function(file){
+  write.csv(data_table_out, file, row.names=F)
+  }
+)
 
 output$downloadExcel <- downloadHandler(
   filename = "CAS_indicators_demo.xlsx",
@@ -915,16 +740,21 @@ if(exists("pathwaysDT")){
 #)
   
 path_tabs <- lapply(pathway_names, function(x){
-  tabPanel(title=x,
-           renderDataTable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`),
-                           filter=list(position='top', clear=F),
-                           rownames=F,
-                           escape=F,
-                           options=list(scrollX=T,
-                                        pageLength=10,
-                                        lengthMenu=c(2,5,10),
-                                        searching=T, 
-                                        autoWidth=T)))
+  pathwaysDT_out <- datatable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`),
+                              filter=list(position='top', clear=F),
+                              rownames=F,
+                              escape=F,
+                              options=list(columnDefs=list(list(className="dt-center", targets=c('P','Q', 'Quality'))),
+                                           scrollX=T,
+                                           pageLength=10,
+                                           lengthMenu=c(2,5,10),
+                                           searching=T, 
+                                           autoWidth=T)) %>%
+    formatStyle('P', color=styleEqual(c("\U2B07","\U2B06", "\U2B0D"), c("#32a852","#e03d3d","darkgrey")), fontSize="250%") %>%
+    formatStyle(c('Q', 'Quality'), color=styleEqual(c("\U2B07","\U2B06", "\U2B0D"), c("#e03d3d","#32a852","darkgrey")), fontSize="250%")
+  return(tabPanel(title=paste("Goal: ", x),
+           renderDataTable(pathwaysDT_out)
+           ))
 })
 output$path_table <- renderUI({
   do.call(tabsetPanel, path_tabs) %>% return()
@@ -936,7 +766,6 @@ output$path_table <- renderUI({
 updatePlots <- function(tab="data", maps=T){
   
   if(tab=="data"){ 
-    #getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call=NULL)
     #Find better way to do this.
     aggs_list = input$groupsChk
     if(aggs_list==""){

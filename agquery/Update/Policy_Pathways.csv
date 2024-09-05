@@ -1,61 +1,64 @@
-﻿pathwayID,goalName,Policy Goal,Pathway,Instrument,Implementation,Price of final products,Quantity exchanged,Quality,Timeliness,Indicators,Sources
-1,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Subsidy,Subsidized poultry feed,🡾,🡵,⤮,Fast,"Proportion of households using feed
+﻿pathwayID,goalName,Policy Goal,Pathway,Instrument,Implementation,P,Q,Quality,Timeliness,Indicators,Sources
+1,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Subsidy,Subsidized poultry feed,⬇,⬆,⬍,Fast,"Proportion of households using feed
 Quantity of rice used for animal feed
 Flock growth rate",
-2,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Information,Information about less expensive sources of poultry feed,🡾,🡵,⤮,Slow,"Proportion of households using feed
+2,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Information,Information about less expensive sources of poultry feed,⬇,⬆,⬍,Slow,"Proportion of households using feed
 Quantity of rice used for animal feed
 Flock growth rate",
-3,Poultry,Improve domestic poultry production & consumption,Reduce competition with imported poultry,Tariff,Tariffs on poultry imports,🡾,🡵,⤮,Fast,"Producer received price of poultry
+3,Poultry,Improve domestic poultry production & consumption,Reduce competition with imported poultry,Tariff,Tariffs on poultry imports,⬇,⬆,⬍,Fast,"Producer received price of poultry
 Household poultry sales
 Household egg sales",
-4,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Information,Information about poultry vaccines,⤮,⤮,🡵,Slow,"Proportion of households using vaccines
+4,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Information,Information about poultry vaccines,⬍,⬆,⬆,Slow,"Proportion of households using vaccines
 Proportion of chickens vaccinated
 Producers' medical expenses
 Chicken mortality rate",
-5,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Subsidy,Subsidized poultry vaccines,⤮,⤮,🡵,Slow,"Proportion of households using vaccines
+5,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Subsidy,Subsidized poultry vaccines,⬍,⬆,⬆,Slow,"Proportion of households using vaccines
 Proportion of chickens vaccinated
 Producers' medical expenses
 Chicken mortality rate",
-6,Poultry,Improve domestic poultry production & consumption,Increasing demand through government purchases,Regulation,Government poultry purchases,🡵,🡵,⤮,Medium,"Producer received price of poultry
+6,Poultry,Improve domestic poultry production & consumption,Increasing demand through government purchases,Regulation,Government poultry purchases,⬆,⬆,⬍,Medium,"Producer received price of poultry
 Households selling chickens
 Contracting rates",
-7,Poultry,Improve domestic poultry production & consumption,Support producer price received,Regulation,Government-imposed poultry price floors,🡵,⤮,⤮,Medium,Producer received price of poultry,
-8,Poultry,Improve domestic poultry production & consumption,Support producer price received,Information,Information/Awareness about price floors,🡵,⤮,⤮,Fast,"Producer received price of poultry
+7,Poultry,Improve domestic poultry production & consumption,Support producer price received,Regulation,Government-imposed poultry price floors,⬆,⬍,⬍,Medium,Producer received price of poultry,
+8,Poultry,Improve domestic poultry production & consumption,Support producer price received,Information,Information/Awareness about price floors,⬆,⬍,⬍,Fast,"Producer received price of poultry
 Number of poultry owned",
-9,Poultry,Improve domestic poultry production & consumption,Improve domestic chicken quality,Standards,Implement weight and quality standards for chickens,🡵,⤮,🡵,Slow,Weight of chickens slaughtered,
-10,Poultry,Improve domestic poultry production & consumption,Improve domestic chicken quality,Information,Information about standards,🡵,⤮,🡵,Slow,Weight of chickens slaughtered,
-11,Poultry,Improve domestic poultry production & consumption,Increase demand through consumer education,Information,Information instrument about nutritional benefits of chicken,⤮,🡵,⤮,Slow,None available,
-12,Poultry,Improve domestic poultry production & consumption,Reduce prices paid by consumers,Tax,Tax credits to consumers who purchase domestic,⤮,🡵,⤮,Medium,"Sale of chickens
+9,Poultry,Improve domestic poultry production & consumption,Improve domestic chicken quality,Standards,Implement weight and quality standards for chickens,⬆,⬍,⬆,Slow,Weight of chickens slaughtered,
+10,Poultry,Improve domestic poultry production & consumption,Improve domestic chicken quality,Information,Information about standards,⬆,⬍,⬆,Slow,Weight of chickens slaughtered,
+11,Poultry,Improve domestic poultry production & consumption,Increase demand through consumer education,Information,Information instrument about nutritional benefits of chicken,⬍,⬆,⬍,Slow,None available,
+12,Poultry,Improve domestic poultry production & consumption,Reduce prices paid by consumers,Tax,Tax credits to consumers who purchase domestic,⬍,⬆,⬍,Medium,"Sale of chickens
 Number of eggs sold",
-13,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Subsidy,Subsidized feed,🡾,🡵,⤮,Fast,Proportion of households using feed,
-14,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Information,Information about less expensive sources of feed,🡾,🡵,⤮,Slow,"Feed use
+13,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Subsidy,Subsidized feed,⬇,⬆,⬍,Fast,Proportion of households using feed,
+14,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Information,Information about less expensive sources of feed,⬇,⬆,⬍,Slow,"Feed use
 Number of livestock owned",
-15,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing livestock mortality,Information,Information about vaccines,⤮,🡵,🡵,Slow,"Proportion of households using vaccines
+15,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing livestock mortality,Information,Information about vaccines,⬍,⬆,⬆,Slow,"Proportion of households using vaccines
 Proportion of cows vaccinated
 Producers' medical expenses",
-16,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing livestock mortality,Subsidy,Subsidized vaccines,⤮,⤮,🡵,Slow,"Proportion of households using vaccines
+16,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing livestock mortality,Subsidy,Subsidized vaccines,⬍,⬍,⬆,Slow,"Proportion of households using vaccines
 Proportion of cows vaccinated
 Producers' medical expenses",
-17,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Information,Inform farmers about forage crops,🡾,🡵,🡵,Slow,"Proportion of households using forage
+17,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Information,Inform farmers about forage crops,⬇,⬆,⬆,Slow,"Proportion of households using forage
 Crops grown
 Crop production area",
-18,Livestock,Reduce imports of beef by increasing domestic production,Reduce competition with imported beef,Tariff,Tariffs on imports,🡵,🡾,⤮,Fast,"Producer received price of beef
+18,Livestock,Reduce imports of beef by increasing domestic production,Reduce competition with imported beef,Tariff,Tariffs on imports,⬆,⬇,⬍,Fast,"Producer received price of beef
 Contract farming rates",
-19,Livestock,Reduce imports of beef by increasing domestic production,Increasing demand through government purchases,Regulation,Government beef purchases,🡵,🡵,⤮,Medium,"Producer received price of beef
+19,Livestock,Reduce imports of beef by increasing domestic production,Increasing demand through government purchases,Regulation,Government beef purchases,⬆,⬆,⬍,Medium,"Producer received price of beef
 Number of Cattle Owned 
 Contract farming rates",
-20,Livestock,Reduce imports of beef by increasing domestic production,Increase consumption of local/indigenous cattle breeds,Information,Information instrument,⤮,🡵,⤮,Medium,"Cattle Purchased
+20,Livestock,Reduce imports of beef by increasing domestic production,Increase consumption of local/indigenous cattle breeds,Information,Information instrument,⬍,⬆,⬍,Medium,"Cattle Purchased
 Revenue from Cattle Sold",
-21,Livestock,Reduce imports of beef by increasing domestic production,Increase establishment of pasture paddocks/rangeland,Subsidy,Subsidize purchases or conversions of land into pasture,🡵,🡵,⤮,Medium,"Producer received price of beef
+21,Livestock,Reduce imports of beef by increasing domestic production,Increase establishment of pasture paddocks/rangeland,Subsidy,Subsidize purchases or conversions of land into pasture,⬆,⬆,⬍,Medium,"Producer received price of beef
 Number of Cattle Owned
 Herd Growth Rate
 Area dedicated to raising livestock (ha)",
-22,Livestock,Reduce imports of beef by increasing domestic production,Increase supply of cattle via increased use of artificial insemination,Information,Inform producers about the benefits of artificial insemination,🡵,🡵,🡵,Slow,"Producer received price of beef
+22,Livestock,Reduce imports of beef by increasing domestic production,Increase supply of cattle via increased use of artificial insemination,Information,Inform producers about the benefits of artificial insemination,⬆,⬆,⬆,Slow,"Producer received price of beef
 Number of Cattle Owned
 Herd Growth Rate.",
-23,Livestock,Reduce imports of beef by increasing domestic production,Increase supply of cattle via subsidized calves or breeding material,Subsidy,Subsidize livestock breeding materials,⤮,⤮,🡵,Slow,"Number of Cattle Owned
+23,Livestock,Reduce imports of beef by increasing domestic production,Increase supply of cattle via subsidized calves or breeding material,Subsidy,Subsidize livestock breeding materials,⬍,⬍,⬆,Slow,"Number of Cattle Owned
 Herd Growth Rate. ",
-24,Livestock,Reduce imports of beef by increasing domestic production,Increase access to mechanization or tools to reduce non-food uses of cattle,Subsidy,Subsidized farm equipment,🡾,🡾,⤮,Slow,"Use of irrigation
+24,Livestock,Reduce imports of beef by increasing domestic production,Increase access to mechanization or tools to reduce non-food uses of cattle,Subsidy,Subsidized farm equipment,⬇,⬇,⬍,Slow,"Use of irrigation
 Cattle used for drafting
 Cattle Sold
 Area for animal raising",
+25,Poultry,Improve domestic poultry production & consumption,Improve farmer access to training on poultry production,,,,,,,,
+,,,Improve farmer access to information through ICT and digital extension services,,,,,,,,
+,,,Improve the production and productivity of existing local/indigenous breeds,,,,,,,,
