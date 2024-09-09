@@ -750,10 +750,9 @@ path_tabs <- lapply(pathway_names, function(x){
                                            lengthMenu=c(2,5,10),
                                            searching=T, 
                                            autoWidth=T)) %>%
-    formatStyle('P', color=styleEqual(c("\U2B07","\U2B06", "\U2B0D"), c("#32a852","#e03d3d","darkgrey")), fontSize="250%") %>%
-    formatStyle(c('Q', 'Quality'), color=styleEqual(c("\U2B07","\U2B06", "\U2B0D"), c("#e03d3d","#32a852","darkgrey")), fontSize="250%")
+    formatStyle(c('P', 'Q', 'Quality'), color=styleEqual(c("\U2B07","\U2B06", "\U2B0D"), c("#e03d3d","#32a852", "darkgrey")), fontSize="250%")
   return(tabPanel(title=paste("Goal: ", x),
-           renderDataTable(pathwaysDT_out)
+           fluidRow(column(10,renderDataTable(pathwaysDT_out)))
            ))
 })
 output$path_table <- renderUI({
