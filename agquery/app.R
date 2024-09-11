@@ -34,6 +34,7 @@ library(ggtext)
 #import::from(spatstat.geom, weighted.mean)
 lapply(list.files("Scripts", full.names=T), FUN=source)
 
+#setwd("//netid.washington.edu/wfs/EvansEPAR/Project/EPAR/Working Files/RA Working Folders/Joaquin/Github Dirs/Github-50x30_AQP/agquery")
 
 
 thematic_shiny(
@@ -140,7 +141,7 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                                                   fluidRow(column(6, align='center', uiOutput('indicsDesc')), column(6, align='center', uiOutput('corrsDesc'))),
                                                                                   hr(),
                                                                                   checkboxInput('yChk', 'Omit 0s from Indicator'),
-                                                                                  radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid")),
+                                                                                  selectInput("disAgg_admin", HTML("<b>Select Administrative Level</b>"), c("Province"="province","Household"="hhid")),
                                                                                   uiOutput("groupsBtn"),
                                                                                   #radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_list$label), choiceValues=c("", groups_list$varName)),
                                                                                   actionButton('submitBtn', "Compare Variables"))),
@@ -284,10 +285,10 @@ server <- function(input, output, session) {
   #                #column(6, align='center', selectInput('corrsIn', HTML('<b>Select Correlate</b>'), choices=indics, size=length(indics), selectize=F),
   
   updateBoxes <- function(indics){
-    output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Indicator</b>"), choices=indics, size=length(indics), selectize=F)) 
-    output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select Correlate</b>'), choices=indics, size=length(indics), selectize=F))
+    output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Indicator</b>"), choices=indics)) 
+    output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select Correlate</b>'), choices=indics))
     groups_sub <- groups_list %>% filter(level=="All" | level==input$policiesBox2)
-    output$groupsBtn <- renderUI(radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
+    output$groupsBtn <- renderUI(selectInput('groupsChk', "<b>Selecting Grouping Variable<b>",choices = c("None" = "", setNames(groups_sub$varName, groups_sub$label)), selected = "" ))
   }
   
   
@@ -523,9 +524,13 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$submitBtn, {
-    updatePlots(maps=T)
+    updatePlots(maps=T, drop_0s = input$yChk)
     
   })
+  
+  #observeEvent(input$yChk, {
+  #  updatePlots()
+  #}, ignoreInit=T)
   
  
   
@@ -933,7 +938,7 @@ output$path_table <- renderUI({
   output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
 }
 
-updatePlots <- function(tab="data", maps=T){
+updatePlots <- function(tab="data", maps=T, drop_0s=F){
   
   if(tab=="data"){ 
     #getData <- function(files, years, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call=NULL)
@@ -1004,12 +1009,17 @@ updatePlots <- function(tab="data", maps=T){
                            round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
                            xlab, ylab, adj
         )
+        if(drop_0s==T){
+          notelab <- "Notes: Os omitted."
+        } else {
+          notelab <- "Notes: No notes"
+        }
         
         if(input$groupsChk==""){
           #function(outdata, yvars, bins, indicAxis, titleLab){
-          corrHist <- makeHist(outdata, xvars, bins, corrAxis,  xlab)
-          indicatorHist <- makeHist(outdata,yvars,bins,indicAxis, ylab)
-          scatterPlot <- makeScatter(outdata, xvars, yvars, xlab, ylab, res_out)
+          corrHist <- makeHist(outdata, xvars, bins, corrAxis,  xlab, notelab)
+          indicatorHist <- makeHist(outdata,yvars,bins,indicAxis, ylab, notelab)
+          scatterPlot <- makeScatter(outdata, xvars, yvars, xlab, ylab, res_out, notelab)
         } else {
           aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
           if(!is.factor(outdata[[aggs_list]])){
@@ -1037,15 +1047,15 @@ updatePlots <- function(tab="data", maps=T){
           
           
           if((min(na.omit(mapdata[[xvars]])) < 0) & (max(na.omit(mapdata[[xvars]])) > 0)){ 
-            corrMap <- biColorMap(mapdata, xvars, corrTitle, corrUnits) 
+            corrMap <- biColorMap(mapdata, xvars, corrTitle, corrUnits, notelab) 
           } else {
-            corrMap <- monoColorMap(mapdata, xvars, corrTitle, corrUnits)
+            corrMap <- monoColorMap(mapdata, xvars, corrTitle, corrUnits, notelab)
           }
           
           if(min(na.omit(mapdata[[yvars]])) < 0 & max(na.omit(mapdata[[yvars]])) > 0){
-            indicatorMap <- biColorMap(mapdata, yvars, indicTitle, indicUnits) 
+            indicatorMap <- biColorMap(mapdata, yvars, indicTitle, indicUnits, notelab) 
           } else {
-            indicatorMap <- monoColorMap(mapdata, yvars, indicTitle, indicUnits)
+            indicatorMap <- monoColorMap(mapdata, yvars, indicTitle, indicUnits, notelab)
           }
           }
 

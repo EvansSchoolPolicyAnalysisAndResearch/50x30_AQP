@@ -1,20 +1,22 @@
 
-biColorMap <- function(xShp, fillVal, plotTitle, units){
+biColorMap <- function(xShp, fillVal, plotTitle, units, noteLab){
   plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
     geom_sf() +
     ggtitle(plotTitle) +
     scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), name=units)+
     theme(plot.background = element_rect(fill = "transparent", color = NA), 
-          panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+          panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18)) +
+    labs(caption = paste(noteLab))
   return(plotOut)
 }
 
-monoColorMap <- function(xShp, fillVal, plotTitle, units){
+monoColorMap <- function(xShp, fillVal, plotTitle, units, noteLab){
   plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
     geom_sf() +
     ggtitle(plotTitle) +
     scale_fill_gradient(low = "white", high = "darkblue", limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), name=units)+
-    theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+    theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18)) +
+    labs(caption = paste(noteLab))
   return(plotOut)
 }
 
@@ -31,9 +33,10 @@ makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, a
           axis.ticks = element_blank(), 
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
           axis.text = element_text(size=12))
+          labs(caption = "Here is a footnote")
 }
 
-makeHist <- function(outdata, yvars, bins, indicAxis, titleLab){
+makeHist <- function(outdata, yvars, bins, indicAxis, titleLab, noteLab){
   ggplot(outdata, aes(x=!!sym(yvars)))+
     geom_histogram(bins = bins) +
     labs(x=indicAxis, y="Number of Observations")+
@@ -44,7 +47,8 @@ makeHist <- function(outdata, yvars, bins, indicAxis, titleLab){
           axis.title = element_text(hjust = 0.5, size = 14), 
           axis.ticks = element_blank(), 
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
-          axis.text=element_text(size=12))
+          axis.text=element_text(size=12)) +
+    labs(caption = paste(noteLab))
 }
 
 
@@ -66,7 +70,7 @@ makeScatterGrps <- function(outdata, xvars, yvars, aggs_list, xlab, ylab, aggs_l
     annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]])) 
 }
 
-makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
+makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot, noteLab){
   ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars))) + #only one yvar for now
     geom_point() +
     stat_smooth(method="lm")+
@@ -81,5 +85,6 @@ makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
           legend.title=element_text(size=14),
           legend.text=element_text(size=12))+
-    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]]))
+    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]])) +
+    labs(caption = paste(noteLab))
 }
