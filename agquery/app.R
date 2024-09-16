@@ -45,28 +45,87 @@ options(shiny.useragg = TRUE)
 
 
 
-ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
-                base_font = bslib::font_google("Open Sans"), 
-                fluidRow(column(3, align='center', HTML("<img src=moa_logo.png width='40%'></img>")),
-                         column(3, HTML("<h1>CAS Survey Data Explorer</h1>")),
-                         column(3, align='center', HTML("<image src=cam_flag.png width='30%'></img>"))),
-                #img(src='moa_logo.png', width='10%'),
-                navbarPage(title="", theme = bslib::bs_theme(version="3",
-                                                                                         bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
-                                                                                         base_font = bslib::font_google("Open Sans")), 
+ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
+                base_font = bslib::font_google("Open Sans")), 
+                fluidRow(style="background-color:#cadafa;",
+                         column(4, align='center', HTML("<br><img src=moa_logo.png width='300'></img>")),
+                         column(4, fluidRow(HTML("<h1 style='text-align:center; font-weight:900;'>Cambodia Agricultural Survey Policy & Data Explorer</h1>")),
+                                   fluidRow(HTML("<p style='text-align:center;'>(Version 0.8)</p>"))),
+                         column(4, align='center', HTML("<br><image src=cam_flag.png width='200'></img>")),
+                         ),
+                fluidRow(style="background-color:#cadafa;", br()),
+
+                navbarPage(title="", theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF",
+                                                           base_font = bslib::font_google("Open Sans")),
+                           tabPanel("About", icon=icon("signs-post"), column(1),column(10, #To do: move this to a separate file.
+                                                                                              wellPanel(HTML(
+                                                                                                "The 50x30 Cambodia Data explorer can rapidly summarize and visualize the Cambodian Agricultural Survey data. It provides tools for exploring policy instruments to achieve agricultural development goals and connecting those instruments to information available in the CAS surveys. Export report-ready graphs and raw data for follow-up analyses. Inputs and interface elements are also user-modifiable for a custom data analysis environment."
+                                                                                              )),
+                                                                                              img(src='logic-model.png', width='80%'),
+                                                                                              hr(),
+                                                                                              fluidRow(column(8, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer bridges the gap between survey data collection and policy decisionmaking. It provides the opportunity to combine knowledge from scholarly research in agricultural policy with observed trends in indicators collected in the field. These trends can inform progress toward established goals or aid in the formation of new programs. The results of those policies become visible in new data collection, which is added through updates. This version shows information related to the following policy priorities:',
+                                                                                                                            '<ul>',
+                                                                                                                            paste(lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}), collapse=" "),
+                                                                                                                            '</ul></p>',
+                                                                                                                            '<h3>Using the Cambodia 50x30 App</h3> <p>The Cambodian Agricultural Survey contains information on household production of crops and livestock that can be used to understand trends in small-scale farmer contributions to national supply and the economic conditions small-scale producers face.',
+                                                                                                                            'Selecting a policy priority will allow you to narrow down the indicators to those considered most relevant.</p>',
+                                                                                                                            '<h3> Tabs </h3>',
+                                                                                                                            '<h4> Instructions </h4>',
+                                                                                                                            '<p>This tab provides step-by-step instructions, tips, and frequently asked questions (FAQs) about the data explorer.',
+                                                                                                                            '<h4>Policy Pathways</h4>',
+                                                                                                                            '<p>This tab overviews select academic and gray literature for policy pathways that can generate ideas for effective policies and programs that can help shift key indicators of agricultural development</p>',
+                                                                                                                            '<h4>Trends Explorer</h4>',
+                                                                                                                            '<p>This tab shows changes in variables between surveys and across provinces.</p>',
+                                                                                                                            '<h4>Data Explorer</h4>',
+                                                                                                                            '<p>This tab allows for direct comparisons of indicators and provides detailed graphs and summaries of correlations.</p>',
+                                                                                                                            '<h4>Downloads</h4>',
+                                                                                                                            '<p>This tab allows you to download the spreadsheets used to run the app and the processed survey data.</p>',
+                                                                                                                            '<br>',
+                                                                                                                            '<h3>Code and Data Availability</h3>',
+                                                                                                                            '<p> The Stata code used to process the data is publicly available at (Git Repository TBD). <br> The app source code and related files can be downloaded at (Git repository TBD)</p>',
+                                                                                                                            '<br>',
+                                                                                                                            '<h3>Inquire</h3>',
+                                                                                                                            '<p>This tool is maintained by <i>responsible party</i> who has <i>contact info</i>.</p><br>',
+                                                                                                                            '<h3>Citation</h3>',
+                                                                                                                            '<p>If you use this app for scholarly research or modify it for alternative uses, please use this attribution: </p>',
+                                                                                                                            '<p> Tomes, A.L., Kenne, S., Wood, S.R., and Anderson, C.L. (2024). 50x30 Cambodia Data Explorer. v1.0.',
+                                                                                                                            '<br><br>',
+                                                                                                                            '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p><br><br><br>',
+                                                                                                                            HTML("<img src='evans2.jpg' width='30%' align='center'></img>"))
+                                                                                                                      #column(2, align='left', HTML("<img src='evans2.jpg' width='100%'></img>")))
+                                                                                              )
+                                                                                              )
+                                                                                              )
+                           )
+                           ),
                            
-                           tabPanel("Policy Pathways", icon=icon("landmark-dome"),
-                                    fluidRow(HTML('<p><h3>The Policy Pathways</h3></p>
-                             <p>This table shows the results from a literature survey illustrating the contributions of different aspects of agricultural production on the policy priorities. This information can be used to explore relationships between indicators in the Data tab.</p><br>'),
-                                    downloadButton('downloadPathways',
-                                                     label='Download Policy Pathways',
-                                                     icon=icon('file-csv'))),
+                           tabPanel("User Guide", icon=icon("readme"),
+                                    includeHTML('www/Instructions_50x30_D2.html')
+                           ),
+                           
+                           tabPanel("Policy Goals", icon=icon("landmark-dome"),
+                                    
+                                    fluidRow(HTML('<p><h3>Policy Instruments by Subsector</h3></p>
+                             <p>This table presents policy instruments (tax/subsidy, regulatory, information) in support of a particular goal, and the expected effect on market price, quantity, quality and timeliness, followed by outcome indicators and relevant evidence where available. The predicted changes in price and quantity assume competitive markets and do not consider intermediaries.</p><br>')
+                                    #downloadButton('downloadPathways',
+                                    #                 label='Download Policy Pathways',
+                                    #                 icon=icon('file-csv'))
+                                    ),
+                                    fluidRow(HTML('<p><i>This reference set of indicators may be extended and revised by suitably trained user through revisions to the source Excel file '), 
+                                             downloadLink('downloadPathways', label='here.'),
+                                             HTML('See User Guide.</i></p><br>')),
                              fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
                            ),
-                           tabPanel("Explore Indicators", icon=icon("magnifying-glass-chart"),
+                           
+                           tabPanel("Policy Pathway Indicators", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
+                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained user by editing the source Excel files, including '), 
+                                             downloadLink('indicsDL1', label='the pathways table,'),  #this would be easier with modules
+                                             downloadLink('indicsDL2', label='the indidicator list,'),
+                                             downloadLink('indicsDL3', label='and/or the linking sheet.'),
+                                             HTML('See User Guide.</i></p><br>')),
                                     fluidRow(column(4, uiOutput("trendsErr"))),
-                                    fluidRow(column(4, selectInput('policiesBox1', "Select a policy priority", choices=c("None", goalNames)))),
+                                    fluidRow(column(4, selectInput('policiesBox1', "Select a policy goal", choices=c("None", goalNames)))),
                                     fluidRow(column(4, uiOutput('pathwaysBox'))),
                                     fluidRow(column(2, uiOutput('msgText')),
                                              column(4),
@@ -96,9 +155,16 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                       downloadButton('downloadFlags',
                                                                      label='Download Table Data',
                                                                      icon=icon('file-csv')))
-                                    )))
+                                    ))),
+                                    
                            ),
-                           tabPanel("Explore Relationships", icon=icon("chart-line"),
+                           
+                           tabPanel("Indicator Relationships", icon=icon("chart-line"),
+                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained user by editing the source Excel files, including '), 
+                                             downloadLink('relsDL1', label='the pathways table,'), 
+                                             downloadLink('relsDL2', label='the indidicator list,'),
+                                             downloadLink('relsDL3', label='and/or the linking sheet.'),
+                                             HTML('See User Guide.</i></p><br>')),
                                     fluidRow(column(4,uiOutput("explorerErr"))),
                                     fluidRow(column(6, uiOutput('dataPolicBox'))), 
                                     conditionalPanel(condition="input.policiesBox2!='None'",
@@ -131,66 +197,14 @@ ui <- fluidPage(bg = "white", fg = "#3B528BFF", info="#474481", primary = "#4401
                                                      fluidRow(uiOutput('plotInterp'))
                                     )
                            ),
-                           
-                           tabPanel("Introduction", icon=icon("signs-post"), column(1),column(10, #To do: move this to a separate file.
-                                                                     wellPanel(HTML(
-                                                                       "The 50x30 Cambodia Data explorer can rapidly summarize and visualize the Cambodian Agricultural Survey data. It provides tools for exploring policy instruments to achieve agricultural development goals and connecting those instruments to information available in the CAS surveys. Export report-ready graphs and raw data for follow-up analyses. Inputs and interface elements are also user-modifiable for a custom data analysis environment."
-                                                                     )),
-                                                                     img(src='logic-model.png', width='80%'),
-                                                                     hr(),
-                                                                     fluidRow(column(8, HTML(paste('<h3>Purpose</h3><br><p>The 50x30 Cambodia Data Explorer bridges the gap between survey data collection and policy decisionmaking. It provides the opportunity to combine knowledge from scholarly research in agricultural policy with observed trends in indicators collected in the field. These trends can inform progress toward established goals or aid in the formation of new programs. The results of those policies become visible in new data collection, which is added through updates. This version shows information related to the following policy priorities:',
-                                                                                                   '<ul>',
-                                                                                                   paste(lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}), collapse=" "),
-                                                                                                   '</ul></p>',
-                                                                                                   '<h3>Using the Cambodia 50x30 App</h3> <p>The Cambodian Agricultural Survey contains information on household production of crops and livestock that can be used to understand trends in small-scale farmer contributions to national supply and the economic conditions small-scale producers face.',
-                                                                                                   'Selecting a policy priority will allow you to narrow down the indicators to those considered most relevant.</p>',
-                                                                                                   '<h3> Tabs </h3>',
-                                                                                                   '<h4> Instructions </h4>',
-                                                                                                   '<p>This tab provides step-by-step instructions, tips, and frequently asked questions (FAQs) about the data explorer.',
-                                                                                                   '<h4>Policy Pathways</h4>',
-                                                                                                   '<p>This tab overviews select academic and gray literature for policy pathways that can generate ideas for effective policies and programs that can help shift key indicators of agricultural development</p>',
-                                                                                                   '<h4>Trends Explorer</h4>',
-                                                                                                   '<p>This tab shows changes in variables between surveys and across provinces.</p>',
-                                                                                                   '<h4>Data Explorer</h4>',
-                                                                                                   '<p>This tab allows for direct comparisons of indicators and provides detailed graphs and summaries of correlations.</p>',
-                                                                                                   '<h4>Downloads</h4>',
-                                                                                                   '<p>This tab allows you to download the spreadsheets used to run the app and the processed survey data.</p>',
-                                                                                                   '<br>',
-                                                                                                   '<h3>Code and Data Availability</h3>',
-                                                                                                   '<p> The Stata code used to process the data is publicly available at (Git Repository TBD). <br> The app source code and related files can be downloaded at (Git repository TBD)</p>',
-                                                                                                   '<br>',
-                                                                                                   '<h3>Inquire</h3>',
-                                                                                                   '<p>This tool is maintained by <i>responsible party</i> who has <i>contact info</i>.</p><br>',
-                                                                                                   '<h3>Citation</h3>',
-                                                                                                   '<p>If you use this app for scholarly research or modify it for alternative uses, please use this attribution: </p>',
-                                                                                                   '<p> Tomes, A.L., Kenne, S., Wood, S.R., and Anderson, C.L. (2024). 50x30 Cambodia Data Explorer. v1.0.',
-                                                                                                   '<br><br>',
-                                                                                                   '<p> The raw data for the 50x30 survey is located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</p><br><br><br>',
-                                                                                             HTML("<img src='evans2.jpg' width='30%' align='center'></img>"))
-                                                                                             #column(2, align='left', HTML("<img src='evans2.jpg' width='100%'></img>")))
-                                                                     )
-                                                                     )
-                                                                     )
-                           )
-                           ),
-                          
-                           tabPanel("Instructions", icon=icon("readme"),
-                                    includeHTML('www/Instructions_50x30_D2.html')
-                           )
-                           
-                           #tabPanel("Downloads", icon=icon("download"), 
-                          #          column(4, fluidRow(downloadButton('downloadExcel',
-                          #                                                         label='Download Indicators',
-                          #                                                         icon=icon('file-excel'))),
-                          #                              br(),
-                          #                              br(),
-                          #                              fluidRow(downloadButton('downloadRaw',
-                          #                                                      label="Download Processed Data",
-                          #                                                      icon=icon('file-csv')))))
-                           )
+                           tabPanel("Secondary Data Sources", icon=icon("database"),
+                                    fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the </p>"),
+                                    downloadLink("secSourcesDL", "associated spreadsheet.")),
+                                    fluidRow(DTOutput('secsources')) 
+                          ),
                 )
 
-
+)
 
 server <- function(input, output, session) {
   corMat <- function(shortNames, labelNames, data_out){
@@ -259,7 +273,7 @@ server <- function(input, output, session) {
   }
   })
   
-  
+  output$secsources <- renderDT(ext_data, escape=F, options=list(dom="t"), rownames=F)
   
   observeEvent(input$indicsIn, {
     if(with(indicator_list, exists(paste0("survey_question_", input$yearBtn)))){
@@ -445,7 +459,7 @@ server <- function(input, output, session) {
             }
           }
         }
-        output$msgText <- renderUI(HTML("<h3>Related Variables</h3>"))
+        output$msgText <- renderUI(HTML("<h3>Variable Summary Table</h3>"))
         if(all(data_table$`Long Term Trend`=="")){
           data_table <- data_table %>% select(-`Long Term Trend`)
           pct_cols <- 5
@@ -481,7 +495,7 @@ server <- function(input, output, session) {
       data_files <- getFiles(indicator_list, dataset_list, input$trendIn) #AT: There's probably a simpler way to pack all of this into the getData function but that's a do later item. 
       data_out <- getData(data_files, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
       
-      if(with(data_out, exists("tempdata"))){
+      if(is.list(data_out)){ #To do: better error handling
         data_out <- data_out$tempdata
         
         #data_out$province_num <- tryCatch(as.numeric(data_out$province), error=function(e){
@@ -514,7 +528,7 @@ server <- function(input, output, session) {
             
           }
           
-          currMap <- biColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values"), indicator_list$units[indicator_list$shortName==input$trendIn])
+          currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values"), indicator_list$units[indicator_list$shortName==input$trendIn])
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
           output$currMap <- renderPlot(currMap)
           output$trendMap <- renderPlot(trendMap)
@@ -724,7 +738,66 @@ output$downloadRaw <- downloadHandler(
   filename = "processed_data.csv",
   content = function(file) {
     write.csv(data,file,row.names = FALSE)
-  })
+  },
+  contentType="text/csv")
+
+#downloadLink('indicsDL1', label='the pathways table,'),  #this would be easier with modules
+#downloadLink('indicsDL2', label='the indidicator list,'),
+#downloadLink('indicsDL3', label='and/or the linking sheet.'),
+
+output$indicsDL1 <- downloadHandler(
+  filename="Policy_Pathways.csv",
+  content=function(file){
+    file.copy("Update/Policy_Pathways.csv", file)
+  }
+)
+
+output$indicsDL2 <- downloadHandler(
+  filename="indicators.xlsx",
+  content=function(file) {
+    file.copy("Update/indicators.xlsx", file)
+  },
+  contentType="application/vnd.ms-excel"
+)
+
+output$indicsDL3 <- downloadHandler(
+  filename="Policy_Link.csv",
+  content=function(file){
+    file.copy("Update/Policy_Link.csv")
+  },
+  contentType="text/csv"
+)
+
+output$relsDL1 <- downloadHandler(
+  filename="Policy_Pathways.csv",
+  content=function(file){
+    file.copy("Update/Policy_Pathways.csv", file)
+  }
+)
+
+output$relsDL2 <- downloadHandler(
+  filename="indicators.xlsx",
+  content=function(file) {
+    file.copy("Update/indicators.xlsx", file)
+  },
+  contentType="application/vnd.ms-excel"
+)
+
+output$relsDL3 <- downloadHandler(
+  filename="Policy_Link.csv",
+  content=function(file){
+    file.copy("Update/Policy_Link.csv")
+  },
+  contentType="text/csv"
+)
+
+output$secSourcesDL <- downloadHandler(
+  filename="Secondary_Sources.csv",
+  content=function(file){
+    file.copy("Update/Secondary_Sources.csv")
+  },
+  contentType="text/csv"
+)
 
 #To do: compact this for better display.
 if(exists("pathwaysDT")){
@@ -739,19 +812,22 @@ if(exists("pathwaysDT")){
 #                                     rownames = FALSE
 #)
   
-path_tabs <- lapply(pathway_names, function(x){
-  pathwaysDT_out <- datatable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`),
+path_tabs <- lapply(pathway_names[pathway_names=="Improve domestic poultry production & consumption"], function(x){ #ALT: TEMP CODE TO REMOVE LIVESTOCK TAB
+  pathwaysDT_out <- datatable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`, -Instrument),
                               filter=list(position='top', clear=F),
                               rownames=F,
                               escape=F,
-                              options=list(columnDefs=list(list(className="dt-center", targets=c('P','Q', 'Quality'))),
+                              options=list(columnDefs=list(list(className="dt-center", #targets=c('P','Q', 'Quality'))),
+                                                                targets=c('Producer unit costs', 'Final prod price', 'Final prod Q', 'Prod Quality'))),
                                            scrollX=T,
                                            pageLength=10,
                                            lengthMenu=c(2,5,10),
                                            searching=T, 
                                            autoWidth=T)) %>%
-    formatStyle(c('P', 'Q', 'Quality'), color=styleEqual(c("\U2B07","\U2B06", "\U2B0D"), c("#e03d3d","#32a852", "darkgrey")), fontSize="250%")
-  return(tabPanel(title=paste("Goal: ", x),
+    #formatStyle(c('P', 'Q', 'Quality'), color=styleEqual(c("\U2B07","\U2B06", "\U2B0D"), c("#e03d3d","#32a852", "darkgrey")), fontSize="250%")
+    formatStyle(c('Producer unit costs', 'Final prod price', 'Final prod Q', 'Prod Quality'), color=styleEqual(c("\U2B07","\U2B06", "\U2B0D", "="), c("#e03d3d","#32a852", "darkgrey", "darkgrey")), fontSize="250%")
+  
+    return(tabPanel(title=paste("Policy Goal: ", x),
            fluidRow(column(10,renderDataTable(pathwaysDT_out)))
            ))
 })

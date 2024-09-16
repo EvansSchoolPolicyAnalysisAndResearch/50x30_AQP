@@ -105,7 +105,9 @@ getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, 
         }
       }
       if(length(varslist_short)==0){ 
+        if(source_call!="trendmaps"){
         showNotification(paste("Error: Data file", file, "is empty or only contains variables not listed in indicators_list"), type="error")
+        }
       } else {
         for(currVar in varslist_short){
           

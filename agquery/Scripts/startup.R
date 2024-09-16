@@ -63,6 +63,17 @@ if(is.list(indicator_list)){
   }
 }
 
+pathway_link <- tryCatch(read.csv("Update/Policy_Link.csv") %>% distinct(), #Remove duplicates (bad input protection)
+                         error=function(e){return(F)})
+if(is.list(pathway_link)){
+  colnm_link <- c("pathwayID", "goalName","shortName")
+  if(any(!(colnm_link %in% names(pathway_link)))){
+    pathway_link <- F
+  }
+}
+
+
+
 
 groups_list <- tryCatch(readxl::read_xlsx("Update/grouping_vars.xlsx"),
                         error=function(e){return(F)})
@@ -74,10 +85,25 @@ if(is.list(groups_list)){
 }
 
 policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
-                        error=function(e){return(F)}) #It's possible to pass bad inputs here that will just render as garbage on the table panel; let 'em
+                        error=function(e){return(F)}) #Need to add name enforcement to prevent crashes on targeted styles
 if(is.list(policy_path)){
+  if(is.list(pathway_link)){
+    if(is.list(indicator_list)){
+      available_indics <- merge(pathway_link, indicator_list, by="shortName")
+      available_indics <- available_indics %>% group_by(pathwayID) %>% 
+        mutate(Available.CAS.Indicators=paste0(labelName, collapse="<br>")) %>%
+        select(pathwayID, Available.CAS.Indicators) %>% distinct()
+    } else {
+    available_indics <- pathway_link %>% group_by(pathwayID) %>%
+      mutate(Available.CAS.Indicators=paste0(shortName, collapse="<br>")) %>%
+      select(pathwayID, Available.CAS.Indicators)
+    }
+    policy_path <- merge(policy_path, available_indics, by="pathwayID")
+    policy_path <- policy_path %>% relocate(Available.CAS.Indicators, .before=Evidence)
+  }
   pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
-  pathwaysDT$Indicators <- gsub(pattern="\n", replacement="<br>", x=pathwaysDT$Indicators)
+  #pathwaysDT$Available.CAS.Indicators <- gsub(pattern="\n", replacement="<br>", x=pathwaysDT$Available.CAS.Indicators)
+
   pathway_names <- unique(policy_path$Policy.Goal)
   short_Pathways <- unique(policy_path$goalName)
   names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
@@ -98,22 +124,20 @@ if(is.list(policy_path)){
   })
   names(polic_Names) <- short_Pathways
 }
-#pathways <- readxl::read_xlsx(paste0(root_dir,"Update/Policy_Pathways.xlsx"))
 
-#TODO - we should not need to do this during runtime
-#pathways <- pathways[-c(10:13)]
-#colnames(pathways)[8] <- "Related Indicator(s)"
-
-#TODO - probably best to have all of these as CSV. Either way, we need consistency
-
-pathway_link <- tryCatch(read.csv("Update/Policy_Link.csv") %>% distinct(), #Remove duplicates (bad input protection)
-                         error=function(e){return(F)})
-if(is.list(pathway_link)){
-  colnm_link <- c("pathwayID", "goalName","shortName")
-  if(any(!(colnm_link %in% names(pathway_link)))){
-    pathway_link <- F
+ext_data <- tryCatch(read.csv("Update/Secondary_Sources.csv"), 
+  error=function(e){return(F)}
+)
+if(is.list(ext_data)){
+  colnm_ext <- c("Source","Relevant.Variables", "Location")
+  if(any(!(colnm_ext %in% names(ext_data)))){
+    ext_data <- F
+  } else {
+    ext_data$Location <- lapply(ext_data$Location, FUN=function(x){sprintf("<a href=%s>%s</a>", x,x)})
   }
 }
+
+#TODO - probably best to have all of these as CSV. Either way, we need consistency
 
 
 

@@ -3,9 +3,15 @@ biColorMap <- function(xShp, fillVal, plotTitle, units){
   plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
     geom_sf() +
     ggtitle(plotTitle) +
-    scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), name=units)+
+    scale_fill_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0, 
+                         limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), name=units, 
+                         labels=function(x) format(x, big.mark=",", scientific=FALSE))+
     theme(plot.background = element_rect(fill = "transparent", color = NA), 
-          panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+          panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), 
+          axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
+          legend.text=element_text(size=12, color="black"),
+          legend.title=element_text(size=12, color="black"),
+          legend.key.height = unit(0.1, "npc"))
   return(plotOut)
 }
 
@@ -13,8 +19,15 @@ monoColorMap <- function(xShp, fillVal, plotTitle, units){
   plotOut <- ggplot(xShp, aes(fill = !!sym(fillVal)))+
     geom_sf() +
     ggtitle(plotTitle) +
-    scale_fill_gradient(low = "white", high = "darkblue", limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), name=units)+
-    theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(face = "bold", hjust = 0.5, size = 18))
+    scale_fill_gradient(low = "white", high = "darkblue", 
+                        limit = c(min(xShp[[fillVal]], na.rm = TRUE), max(xShp[[fillVal]], na.rm = TRUE)), 
+                        name=units, labels=function(x) format(x, big.mark=",", scientific=F))+
+    theme(plot.background = element_rect(fill = "transparent", color = NA), panel.background = element_blank(), 
+          panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), 
+          plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
+          legend.text=element_text(size=12, color="black"),
+          legend.title=element_text(size=12, color="black"),
+          legend.key.height = unit(0.1, "npc"))
   return(plotOut)
 }
 
@@ -81,5 +94,5 @@ makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
           legend.title=element_text(size=14),
           legend.text=element_text(size=12))+
-    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]]))
+    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=0.9*max(outdata[[yvars]]))
 }
