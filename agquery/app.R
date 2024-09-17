@@ -50,7 +50,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                 fluidRow(style="background-color:#cadafa;",
                          column(4, align='center', HTML("<br><img src=moa_logo.png width='300'></img>")),
                          column(4, fluidRow(HTML("<h1 style='text-align:center; font-weight:900;'>Cambodia Agricultural Survey Policy & Data Explorer</h1>")),
-                                   fluidRow(HTML("<p style='text-align:center;'>(Version 0.8)</p>"))),
+                                   fluidRow(HTML("<p style='text-align:center;'>(Version 0.1-Beta)</p>"))),
                          column(4, align='center', HTML("<br><image src=cam_flag.png width='200'></img>")),
                          ),
                 fluidRow(style="background-color:#cadafa;", br()),
@@ -103,23 +103,23 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                     includeHTML('www/Instructions_50x30_D2.html')
                            ),
                            
-                           tabPanel("Policy Goals", icon=icon("landmark-dome"),
+                           tabPanel("Policy Goals and Instruments", icon=icon("landmark-dome"),
                                     
                                     fluidRow(HTML('<p><h3>Policy Instruments by Subsector</h3></p>
-                             <p>This table presents policy instruments (tax/subsidy, regulatory, information) in support of a particular goal, and the expected effect on market price, quantity, quality and timeliness, followed by outcome indicators and relevant evidence where available. The predicted changes in price and quantity assume competitive markets and do not consider intermediaries.</p><br>')
+                             <p>This table presents policy instruments (tax/subsidy, regulatory, information) in support of a particular goal, and the expected most direct effect on market price, quantity, quality and timeliness, followed by CAS indicators and relevant evidence where available. The predicted changes in price and quantity assume competitive markets and do not consider intermediaries.</p><br>')
                                     #downloadButton('downloadPathways',
                                     #                 label='Download Policy Pathways',
                                     #                 icon=icon('file-csv'))
                                     ),
-                                    fluidRow(HTML('<p><i>This reference set of indicators may be extended and revised by suitably trained user through revisions to the source Excel file '), 
+                                    fluidRow(HTML('<p><i>This reference set of indicators may be extended and revised by suitably trained users through revisions to the source Excel file '), 
                                              downloadLink('downloadPathways', label='here.'),
                                              HTML('See User Guide.</i></p><br>')),
                              fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
                            ),
                            
-                           tabPanel("Policy Pathway Indicators", icon=icon("magnifying-glass-chart"),
+                           tabPanel("Indicator Maps and Statistics", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
-                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained user by editing the source Excel files, including '), 
+                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '), 
                                              downloadLink('indicsDL1', label='the pathways table,'),  #this would be easier with modules
                                              downloadLink('indicsDL2', label='the indidicator list,'),
                                              downloadLink('indicsDL3', label='and/or the linking sheet.'),
@@ -159,8 +159,8 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                     
                            ),
                            
-                           tabPanel("Indicator Relationships", icon=icon("chart-line"),
-                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained user by editing the source Excel files, including '), 
+                           tabPanel("Indicator Correlations", icon=icon("chart-line"),
+                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '), 
                                              downloadLink('relsDL1', label='the pathways table,'), 
                                              downloadLink('relsDL2', label='the indidicator list,'),
                                              downloadLink('relsDL3', label='and/or the linking sheet.'),
@@ -813,12 +813,13 @@ if(exists("pathwaysDT")){
 #)
   
 path_tabs <- lapply(pathway_names[pathway_names=="Improve domestic poultry production & consumption"], function(x){ #ALT: TEMP CODE TO REMOVE LIVESTOCK TAB
-  pathwaysDT_out <- datatable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`, -Instrument),
+  pathwaysDT_out <- datatable(pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`, -Instrument) %>% rename(Instrument=Implementation), #ALT: TEMP RENAME PENDING PERMANENT DECISION HERE
                               filter=list(position='top', clear=F),
                               rownames=F,
                               escape=F,
                               options=list(columnDefs=list(list(className="dt-center", #targets=c('P','Q', 'Quality'))),
-                                                                targets=c('Producer unit costs', 'Final prod price', 'Final prod Q', 'Prod Quality'))),
+                                                                targets=c('Producer unit costs', 'Final prod price', 'Final prod Q', 'Prod Quality')),
+                                                           list(width='20%', targets=7)),
                                            scrollX=T,
                                            pageLength=10,
                                            lengthMenu=c(2,5,10),

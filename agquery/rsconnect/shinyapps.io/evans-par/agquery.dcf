@@ -5,9 +5,9 @@ account: evans-par
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 10377852
-bundleId: 9109759
+bundleId: 9113237
 url: https://evans-par.shinyapps.io/agquery/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: Updating AgQuery.docx
+ignoredFiles: .RData|.Rprofile|Updating AgQuery.docx
