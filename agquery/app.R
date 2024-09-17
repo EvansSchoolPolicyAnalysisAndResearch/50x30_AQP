@@ -104,22 +104,22 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                            ),
                            
                            tabPanel("Policy Goals and Instruments", icon=icon("landmark-dome"),
-                                    
+
                                     fluidRow(HTML('<p><h3>Policy Instruments by Subsector</h3></p>
                              <p>This table presents policy instruments (tax/subsidy, regulatory, information) in support of a particular goal, and the expected most direct effect on market price, quantity, quality and timeliness, followed by CAS indicators and relevant evidence where available. The predicted changes in price and quantity assume competitive markets and do not consider intermediaries.</p><br>')
                                     #downloadButton('downloadPathways',
                                     #                 label='Download Policy Pathways',
                                     #                 icon=icon('file-csv'))
                                     ),
-                                    fluidRow(HTML('<p><i>This reference set of indicators may be extended and revised by suitably trained users through revisions to the source Excel file '), 
+                                    fluidRow(HTML('<p><i>This reference set of indicators may be extended and revised by suitably trained users through revisions to the source Excel file '),
                                              downloadLink('downloadPathways', label='here.'),
                                              HTML('See User Guide.</i></p><br>')),
                              fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
                            ),
-                           
+
                            tabPanel("Indicator Maps and Statistics", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
-                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '), 
+                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '),
                                              downloadLink('indicsDL1', label='the pathways table,'),  #this would be easier with modules
                                              downloadLink('indicsDL2', label='the indidicator list,'),
                                              downloadLink('indicsDL3', label='and/or the linking sheet.'),
@@ -131,12 +131,6 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                              column(4),
                                              column(6, conditionalPanel(condition="input.policiesBox1!='None'", uiOutput("trendVarChoose"))
                                              )),
-                                    #fluidRow(column(4, conditionalPanel(condition="input.policiesBox1!='None'",
-                                    #                                               downloadButton('downloadSummary',
-                                    #                                                              label='Download Table Data',
-                                    #                                                              icon=icon('file-csv')))
-                                    #                )
-                                    #         ),
                                     fluidRow(column(6, dataTableOutput('trendsTable'),
                                                     conditionalPanel(condition="input.policiesBox1!='None'",
                                                                      downloadButton('downloadSummary',
@@ -147,7 +141,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                     plotOutput('trendMap'),
                                                     uiOutput("plotsErr"))
                                     ),
-                                    
+
                                     fluidRow(column(12, uiOutput("droppedVars"))),
                                     fluidRow(column(6, bsCollapse(
                                       bsCollapsePanel("Detailed Information",
@@ -156,40 +150,40 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                                      label='Download Table Data',
                                                                      icon=icon('file-csv')))
                                     ))),
-                                    
+
                            ),
                            
                            tabPanel("Indicator Correlations", icon=icon("chart-line"),
-                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '), 
-                                             downloadLink('relsDL1', label='the pathways table,'), 
+                                    fluidRow(HTML('<p><i>The indicators summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '),
+                                             downloadLink('relsDL1', label='the pathways table,'),
                                              downloadLink('relsDL2', label='the indidicator list,'),
                                              downloadLink('relsDL3', label='and/or the linking sheet.'),
                                              HTML('See User Guide.</i></p><br>')),
                                     fluidRow(column(4,uiOutput("explorerErr"))),
-                                    fluidRow(column(6, uiOutput('dataPolicBox'))), 
+                                    fluidRow(column(5, uiOutput('dataPolicBox'))),
                                     conditionalPanel(condition="input.policiesBox2!='None'",
                                                      fluidRow(column(8, uiOutput('dataPathBox'))),
-                                                     fluidRow(column(6, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year))), 
-                                                              column(6,actionButton('makeHeatMap',"Show Heatmap"))),
-                                                     fluidRow(column(6, wellPanel(style="background-color: #ededed; border-color: #9c9c9c;",
-                                                                                  
-                                                                                  fluidRow(column(6, align='center', uiOutput('indicsBox')),
-                                                                                           column(6, align='center', uiOutput('corrsBox'))),
+                                                     fluidRow(column(4, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year))),
+                                                              column(8,actionButton('makeHeatMap',"Show Heatmap"))),
+                                                     fluidRow(column(4, wellPanel(style="background-color: #ededed; border-color: #9c9c9c; padding=10;",
+                                                                                  fluidRow(column(6, uiOutput('indicsBox')),
+                                                                                           column(6, uiOutput('corrsBox'))),
                                                                                   fluidRow(column(6, align='center', uiOutput('indicsDesc')), column(6, align='center', uiOutput('corrsDesc'))),
                                                                                   hr(),
-                                                                                  fluidRow(checkboxInput('yChk', 'Omit 0s from Indicator')),
+                                                                                  fluidRow(checkboxInput('yChk', 'Omit 0s from Y Variable')),
                                                                                   fluidRow(radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid"))),
                                                                                   fluidRow(uiOutput("groupsBtn")),
-                                                                                  fluidRow(actionButton('submitBtn', "Compare Variables")), 
+                                                                                  fluidRow(actionButton('submitBtn', "Compare Variables")),
+                                                                                  fluidRow(HTML("&nbsp;")),
                                                                                   fluidRow(downloadButton('downloadRawShort', 'Download Selected Raw Data',icon=icon('file-csv')),
-                                                                                  downloadButton('downloadRawLong', 'Download All Listed Raw Data', icon=icon('file-csv')))
-                                                                                  )
-                                                                                  ),
-                                                              column(6, 
-                                                                     #plotOutput('corrPlot'),
-                                                                     plotlyOutput('heatMap'))),
-                                                     br(),
-                                                     br(),
+                                                                                           downloadButton('downloadRawLong', 'Download All Listed Raw Data', icon=icon('file-csv')))
+                                                     )
+                                                     ),
+                                                     column(8,
+                                                            #plotOutput('corrPlot'),
+                                                            plotlyOutput('heatMap'))),
+                                                     fluidRow(HTML("&nbsp;")),
+                                                     fluidRow(HTML("&nbsp;")),
                                                      fluidRow(column(6, uiOutput('indicHeader')) ,column(6, uiOutput('corrHeader'))),
                                                      fluidRow(column(6, plotOutput('indicatorHist')), column(6, plotOutput('corrHist'))),
                                                      fluidRow(column(6, plotOutput('indicatorMap')), column(6, plotOutput('corrMap'))),
@@ -200,8 +194,8 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                            tabPanel("Secondary Data Sources", icon=icon("database"),
                                     fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the </p>"),
                                     downloadLink("secSourcesDL", "associated spreadsheet.")),
-                                    fluidRow(DTOutput('secsources')) 
-                          ),
+                                    fluidRow(DTOutput('secsources'))
+                          )
                 )
 
 )
@@ -312,8 +306,8 @@ server <- function(input, output, session) {
   #                #column(6, align='center', selectInput('corrsIn', HTML('<b>Select Correlate</b>'), choices=indics, size=length(indics), selectize=F),
   
   updateBoxes <- function(indics){
-    output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Indicator</b>"), choices=indics, size=length(indics), selectize=F)) 
-    output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select Correlate</b>'), choices=indics, size=length(indics), selectize=F))
+    output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Y Variable</b>"), choices=indics)) #, size=length(indics) , selectize=F)) 
+    output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select X Variable</b>'), choices=indics)) #, size=length(indics), selectize=F))
     groups_sub <- groups_list %>% filter(level=="All" | level==input$policiesBox2)
     output$groupsBtn <- renderUI(radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
   }
@@ -559,8 +553,109 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$submitBtn, {
-    updatePlots(maps=T)
-    
+    #updatePlots(maps=T)
+    data_files <- getFiles(indicator_list, dataset_list, c(input$indicsIn, input$corrsIn)) %>% filter(year==input$yearBtn) #To fix, probably roll year into getFiles function. 
+    all_data <- getData(data_files, xvars=input$indicsIn, yvars=input$corrsIn, adm_level=input$disAgg_admin, aggs_list=input$groupsChk, source_call="explorer", drop_0s = input$yChk)
+    if(any(all_data!="")){
+      #else if(tab=="trend"){
+      #ALT - might be easier than what we do now with the maps in a separate area. Maybe build out later.
+      #}
+      mapdata <- all_data$mapdata
+      outdata <- all_data$tempdata #Note to go back and fix the naming here.
+      outdata <- na.omit(outdata)
+      if(nrow(outdata)==0){
+        showNotification("Error: No non-n/a observations in dataset", type="error") 
+      } else { 
+        
+        xvars = input$corrsIn
+        yvars = input$indicsIn
+        if(!all(c(xvars, yvars) %in% names(outdata))){
+          showNotification("Error: one or both variables is missing from the dataset. Did you capitalize everything the same way?")
+        } else {
+          output$indicHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
+                                                      , indicator_list$labelName[indicator_list$shortName==input$indicsIn])))
+          output$corrHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
+                                                     , indicator_list$labelName[indicator_list$shortName==input$corrsIn])))
+          adm_level <- input$disAgg_admin
+          varslist <- c(xvars, yvars)
+          bins <- ifelse(adm_level=="province", 6, 30)
+          #heatmapdata <- getData()$tempheatmapdata
+          #outdata <- heatmapdata %>% select(all_of(c(xvars,yvars)))
+          xlab <- indicator_list$labelName[indicator_list$shortName==xvars]
+          ylab <- indicator_list$labelName[indicator_list$shortName==yvars]
+          
+          corrAxis <- indicator_list$axisName[indicator_list$shortName==xvars]
+          indicAxis <- indicator_list$axisName[indicator_list$shortName==yvars]
+          
+          res <- eval(parse_expr(sprintf("with(outdata, cor.test(%s, %s))", xvars, yvars)))
+          
+          if(res$p.value <= 0.01){ 
+            adj="<span style='color: #44ce1b;'>very high</span>"
+          } else if(res$p.value <= 0.05) {
+            adj="<span style='color: #bbdb44;'>high</span>"
+          } else if(res$p.value <= 0.1) {
+            adj="<span style='color: #f7e379;'>moderate</span>"
+          }  else if(res$p.value <= 0.2) {
+            adj="<span style='color: #f2a134;'>low</span>"
+          } else {
+            adj = "<span style='color: #e51f1f;'>no</span>"
+          }
+          
+          res_out <- sprintf("<span style='font-size: 20px;'>There is %s%% (%s%% - %s%%) correlation between <span style='color: #0a2167;'><b>%s</b></span> and <br><span style='color: #0a2167;'><b>%s</b></span>. There is %s confidence in this result.</span>", 
+                             round(res$estimate[[1]]*100, 1), round(res$conf.int[[1]]*100, 1), round(res$conf.int[[2]]*100, 1),
+                             xlab, ylab, adj
+          )
+          
+          if(input$groupsChk==""){
+            #function(outdata, yvars, bins, indicAxis, titleLab){
+            corrHist <- makeHist(outdata, xvars, bins, corrAxis,  xlab)
+            indicatorHist <- makeHist(outdata,yvars,bins,indicAxis, ylab)
+            scatterPlot <- makeScatter(outdata, xvars, yvars, xlab, ylab, res_out)
+          } else {
+            aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
+            if(!is.factor(outdata[[aggs_list]])){
+              flevels = groups_list[which(groups_list$varName==aggs_list),]$Levels %>% str_split(., ",") %>% unlist()
+              flabels = groups_list[which(groups_list$varName==aggs_list),]$Labels %>% str_split(., ",") %>% unlist()
+              outdata[[aggs_list]] <- factor(outdata[[aggs_list]], levels=flevels, labels=flabels)
+            }
+            #makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, aggs_lab)
+            corrHist <- makeHistGrps(outdata, xvars, bins, aggs_list, corrAxis, xlab, aggs_lab)
+            indicatorHist <- makeHistGrps(outdata,yvars,bins,aggs_list,indicAxis, ylab, aggs_lab)
+            scatterPlot <- makeScatterGrps(outdata,xvars,yvars,aggs_list,xlab,ylab,aggs_lab, res_out)
+          }
+            corrTitle <- paste("Map of", indicator_list$labelName[indicator_list$shortName == xvars], "by Province")
+            corrUnits <- indicator_list$units[indicator_list$shortName==xvars]
+            
+            indicTitle <- paste("Map of", indicator_list$labelName[indicator_list$shortName == yvars], "by Province")
+            indicUnits <- indicator_list$units[indicator_list$shortName==yvars]
+            
+            if(is.numeric(mapdata$province)){
+              mapdata <- merge(khm_shp, mapdata, by="province")
+            } else {
+              mapdata <- merge(khm_shp, mapdata, by.x="ADM1_EN", by.y="province")
+            }
+            
+            if((min(na.omit(mapdata[[xvars]])) < 0) & (max(na.omit(mapdata[[xvars]])) > 0)){ 
+              corrMap <- biColorMap(mapdata, xvars, corrTitle, corrUnits) 
+            } else {
+              corrMap <- monoColorMap(mapdata, xvars, corrTitle, corrUnits)
+            }
+            
+            if(min(na.omit(mapdata[[yvars]])) < 0 & max(na.omit(mapdata[[yvars]])) > 0){
+              indicatorMap <- biColorMap(mapdata, yvars, indicTitle, indicUnits) 
+            } else {
+              indicatorMap <- monoColorMap(mapdata, yvars, indicTitle, indicUnits)
+            }
+          
+          
+          output$indicatorHist <- renderPlot(indicatorHist)
+          output$corrHist <- renderPlot(corrHist)
+          output$scatterPlot <- renderPlot(scatterPlot)
+          #output$plotInterp <- renderUI(HTML(res_out))
+          
+        }
+      }
+    }
   })
   
  
@@ -574,18 +669,20 @@ server <- function(input, output, session) {
         indics_out <- unlist(indics_out)
         indics_out <- data.frame(shortName=indics_out)
         indics_out <- merge(indics_out, indicator_list, by="shortName")
-      data_files_select <- indics_out %>% 
-        select(file) %>% 
-        distinct() %>%
-        unlist() #Using tolower here helps filter out differences in capitalization 
+      data_files <- getFiles(indicator_list, dataset_list, indics_out$shortName) %>% filter(year==input$yearBtn)
+      #data_files_select <- indics_out %>% 
+      #  select(file) %>% 
+      #  distinct() %>%
+      #  unlist() #Using tolower here helps filter out differences in capitalization 
       #survey_pref <- indics_out$survey[indics_out$year==input$yearBtn] # TO FIX; this line no longer does anything.
-      data_files <- lapply(data_files_select, FUN=function(x){dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(x)))]}) %>% unique() %>% unlist()  #Drop duplicates if they're somehow in there.
+      #data_files <- lapply(data_files_select, FUN=function(x){dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(x)))]}) %>% unique() %>% unlist()  #Drop duplicates if they're somehow in there.
       #data_files <- dataset_list %>% select(which(str_to_lower(dataset_list) %in% str_to_lower(data_files_select)))
       #data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
-      data_files <- as.data.frame(data_files)
-      names(data_files) <- "file.name"
-      data_files$year <- str_extract(data_files$file.name, "[0-9]{4}") #Might be unnecessary 
-      data_files <- filter(data_files, year==input$yearBtn)
+      #data_files <- as.data.frame(data_files)
+      #names(data_files) <- "file.name"
+      #data_files$year <- str_extract(data_files$file.name, "[0-9]{4}") #Might be unnecessary 
+      #data_files <- filter(data_files, year==input$yearBtn)
+      
       for(file in data_files$file.name){
         #infile <- list.files("Data", sprintf("%s_%s_%s", survey_pref, input$yearBtn, file), ignore.case=T, full.names=T) #this differs from the other file loading subroutine in getData - should probably make them consistent.
         #if(length(infile)!=0){
@@ -839,6 +936,8 @@ output$path_table <- renderUI({
   output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
 }
 
+
+#ALT: DEPRECATED
 updatePlots <- function(tab="data", maps=T){
   
   if(tab=="data"){ 

@@ -1,14 +1,16 @@
 getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear){
-  if(pathway!=0){ 
+  if(pathway!="0"){ 
     indics_out <- pathway_link %>% filter(goalName==policy, pathwayID==pathway) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
     
   } else {
     indics_out <- pathway_link %>% filter(goalName==policy) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
   }
-  indics_out <- merge(indics_out, indic_inventory %>% filter(as.numeric(year)==obsyear), by="shortName")
+  indics_out <- merge(indics_out, indic_inventory %>% filter(as.numeric(year)==obsyear), by="shortName") %>% select(shortName, labelName) %>% distinct()
+  #indics_out <- merge(indics_out, indicator_list, by="shortName")
   indics <- as.list(indics_out$shortName)
   names(indics) <- indics_out$labelName 
-  indics <- unique(indics)
+
+  return(indics)
 }
 
 getFiles <- function(indicator_list, dataset_list, indicators){ #Small helper function to get the files formatted for getData
@@ -22,9 +24,9 @@ getFiles <- function(indicator_list, dataset_list, indicators){ #Small helper fu
   return(data_files)
 }
 
-getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list=NULL, source_call="none", drop_0s=F){
+getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", source_call="none", drop_0s=F){
   varslist <- c(xvars, yvars)
-  aggs_list <- c(aggs_list, "year")
+  aggs_list <- c(aggs_list[nzchar(aggs_list)], "year") 
   years <- files$year %>% unique()
   out_flag <- F
   exit <- F

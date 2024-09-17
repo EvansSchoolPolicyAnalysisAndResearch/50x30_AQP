@@ -30,13 +30,14 @@ for(year in years){
     outdf$file <- str_extract(x, "_([aA-zZ]+).csv", group=1)
     return(outdf)
   })
-  names <- do.call("rbind", names) %>% distinct()
+  names <- do.call("rbind", names)
   names$year <- year
+  names <- distinct(names)
   #names <- unlist(names) %>% unique()
   if(!exists("indic_inventory")){
     indic_inventory <- names
   } else {
-    indic_inventory <- rbind(indic_inventory, names)
+    indic_inventory <- bind_rows(indic_inventory, names)
   }
  }
 
