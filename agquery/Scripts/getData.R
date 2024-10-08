@@ -91,7 +91,7 @@ getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", so
         select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
       
       #TODO: Fix this w/r/t the trends page. 
-      if(drop_0s){
+      if(drop_0s==T){
         df <- df %>% filter(!!sym(yvars)!=0)
       }
       
@@ -170,6 +170,7 @@ getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", so
             
             mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
               summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=weight, na.rm=T)))
+            #n_obs <- 
             
             if(!exists("mapdata")){
               mapdata <- mapdata_temp 
