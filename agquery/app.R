@@ -133,23 +133,24 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                      fluidRow(column(6, dataTableOutput('trendsTable'),
                                                                      downloadButton('downloadSummary',
                                                                                     label='Download Table Data',
-                                                                                    icon=icon('file-csv'))),
+                                                                                    icon=icon('file-csv')),
+                                                                     br(),
+                                                                     bsCollapse(
+                                                                       bsCollapsePanel("Detailed Information",
+                                                                                       dataTableOutput('flagsTable'),
+                                                                                       downloadButton('downloadFlags',
+                                                                                                      label='Download Table Data',
+                                                                                                      icon=icon('file-csv'))))),
                                              column(6,
                                                     plotOutput('currMap'),
                                                     plotOutput('trendMap'),
                                                     #plotOutput('obsMap'),
-                                                    plotOutput('timePlot'),
+                                                    plotlyOutput('timePlot'),
                                                     uiOutput("plotsErr"))),
 
                                     fluidRow(column(12, uiOutput("droppedVars"))),
-                                    fluidRow(column(6, bsCollapse(
-                                      bsCollapsePanel("Detailed Information",
-                                                      dataTableOutput('flagsTable'),
-                                                      downloadButton('downloadFlags',
-                                                                     label='Download Table Data',
-                                                                     icon=icon('file-csv')))
-                                    ))))
-
+                                    #fluidRow(column(6, ))
+                                    )
                            ),
                            
                            tabPanel("Variable Correlations", icon=icon("chart-line"),
@@ -350,42 +351,40 @@ server <- function(input, output, session) {
   
   #data_table_out <- observe({makeDataTable(input$policiesBox1, indicatorCategories, indicator_list, dataset_list)})
   
-   observeEvent(input$policiesBox1, {
-     if(input$policiesBox1!="None" & is.list(policy_path)){
-     inputChk <- is.null(input$pathwaysIn1)
-       #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
-       #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
-       #names(pathway_list) <- c("All", pathway_sub$Pathway)
-       output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]]))
-         shinyjs::disable('pathwaysIn1')
-         shinyjs::disable('policiesBox1')
-         showNotification("Loading, please wait")
-         data_table_out <<- makeDataTable(input$policiesBox1, indicatorCategories, indicator_list, dataset_list) #Need to change some names here
-         
-         shinyjs::enable('pathwaysIn1')
-         shinyjs::enable('policiesBox1')
-         updateVarTable()
-   }
+    observeEvent(input$policiesBox1, {
+      if(input$policiesBox1!="None" & is.list(policy_path)){
+      inputChk <- is.null(input$pathwaysIn1)
+        #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
+        #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
+        #names(pathway_list) <- c("All", pathway_sub$Pathway)
+        output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]]))
+        shinyjs::disable('pathwaysIn1')
+          shinyjs::disable('policiesBox1')
+          shinyjs::disable('totsBtns')
+          showNotification("Loading, please wait")
+          data_table_out <<- makeDataTable(input$policiesBox1, indicatorCategories, indicator_list, dataset_list) #Need to change some names here
+          
+          shinyjs::enable('pathwaysIn1')
+          shinyjs::enable('policiesBox1')
+          shinyjs::enable('totsBtns')
+          updateVarTable()
+    }
+    }, ignoreInit=T)
+   
+   observeEvent(input$pathwaysIn1, {
+     updateVarTable()
    }, ignoreInit=T)
    
-   #observeEvent(input$pathwaysIn1, {
-  #   updateVarTable()
-  # }, ignoreInit=T)
-
-  # observeEvent(input$pathwaysIn1, {
-  #   shinyjs::disable('pathwaysIn1')
-  #   shinyjs::disable('policiesBox1')
-  #   showNotification("Loading, please wait")
-  #   updateTrends() # TO DO: Find a way to avoid recalculating this every time
-  #   shinyjs::enable('pathwaysIn1')
-  #   shinyjs::enable('policiesBox1')
-  # }) 
+   observeEvent(input$totsBtns, {
+     updateVarTable()
+   }, ignoreInit=T)
    
    #ALT NOTE TO ADD ERROR HANDLING HERE.
- output$msgText <- renderUI(HTML("<h3>Variable Summary Table</h3><br><p><i>This table presents household-level averages or totals of all CAS respondents.</i></p>"))
+ output$msgText <- renderUI(HTML("<h3>Variable Summary Table</h3><br><p><i>This table presents household-level averages or national totals of all CAS respondents who participated in activities related to the policy goal.</i></p>"))
   
  makeDataTable <- function(policiesIn, indicatorCategories, indicator_list, dataset_list){
- #makeDataTable <- reactive({ 
+   if(input$policiesBox1!="None" & is.list(policy_path)){
+   policiesIn <- input$policiesBox1
    indics_out <- indicatorCategories %>% filter(goalName==policiesIn) %>% select(shortName) %>% distinct() %>% unlist()
     indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] %>% unique() #TO DO: Include some cleaning code in the startup script 
     denoms <- getDenoms(indics_out, indicator_list)
@@ -402,77 +401,68 @@ server <- function(input, output, session) {
         
         #Still need to making the naming less stupid here.
         data_out <- data$outdata
-        
-        #if(totsBtns=="Means") { 
-        #  data_out <- data$nat_means
-        #} else {
-        #  data_out <- data$nat_tots
-        #}
-        
-        #values_source <- input$totsBtns
-        
-        #indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
-        #data_table <- data.frame(shortName=indics_out) #TODO: Simplify
-        #flag_table <- data_table #make a copy for metadata.
-        #flag_table[[paste0(min(data_out$year), " N obs")]] <- NA
-        #flag_table[[paste0(max(data_out$year), " N obs")]] <- NA
         flag_table <- data_out %>% pivot_wider(id_cols="shortName", names_from="year", values_from="Obs", names_glue="{year} N obs")
-        
-        flag_table <- merge(flag_table, indicator_list %>% select(shortName, labelName, flag_text), by="shortName")
+        flag_table <- merge(indicator_list %>% select(shortName, labelName, flag_text), flag_table, by="shortName")
         
         data_table <- merge(data_out, indicator_list %>% select(shortName, labelName, units), by="shortName")
-        data_table <- data_table %>% select(shortName, labelName, year, units, matches(input$totsBtns))
+        flag_table <- flag_table %>% rename(Variable=labelName, Notes=flag_text) %>% relocate(Notes, .after=last_col())
+        
+        return(list(data_table=data_table, flag_table=flag_table))
+  
+      }
+    }
+   }
+ }
+ 
+ filterFlagTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list){
+   if(pathwayTarget!=0){
+     indics_out <- pathway_link %>% filter(pathwayID==pathwayTarget) %>% select(shortName) %>% distinct()
+     dt_out <- inner_join(dt_out, indics_out, by="shortName")
+   } 
+   return(dt_out)
+ }
+        
+ 
+ filterVarTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list, stat){
+   if(pathwayTarget!=0){
+     indics_out <- pathway_link %>% filter(pathwayID==pathwayTarget) %>% select(shortName) %>% distinct()
+     dt_out <- inner_join(dt_out, indics_out, by="shortName")
+   } 
+   dt_out <- dt_out %>% select(shortName, labelName, year, units, matches(stat))
+   if(stat=="Total"){
+     dt_out <- dt_out %>% filter(units!="ratio") #Exclude ratios from totals because they're already counted in a different indicator.
+   }
+   for(i in 1:nrow(dt_out)){
+     poprow <- dt_out[i,]
+     if(stat=="Total" & poprow$units=="boolean") {
+       poprow$units <- "N households"
+     }
+     if(poprow$units=="kg" & poprow[[stat]] > 1000){
+       poprow[[stat]] <- poprow[[stat]]/1000
+       poprow$units <- "Tonnes"
+     } else if(poprow[[stat]] > 1000000) {
+       poprow$units <- paste(poprow$units, " (MM)")
+       poprow[[stat]] <- poprow[[stat]]/1000000
+     }
+     dt_out[i,] <- poprow
+   }
+   dt_out <- dt_out %>% filter(year==min(dt_out$year) | year==max(dt_out$year)) %>%
+     pivot_wider(id_cols=c("shortName", "labelName","units"), names_from="year", values_from=stat, names_glue="{year} {.value}") %>%
+     rename(Variable=labelName, Units=units)
+   
+   dt_out <- data.frame(dt_out)
+   names(dt_out) <- str_replace_all(names(dt_out), "X", "")
+   names(dt_out) <- str_replace_all(names(dt_out), "[.]", " ")
+   dt_out$Trend <- signif((dt_out[,5]-dt_out[,4])/dt_out[,4], 4)
+   dt_out[,4:5] <- format(signif(dt_out[,4:5], 4), big.mark=',', justify="right", scientific=F, digits=4, nsmall=0, drop0trailing=T)
+  
+   return(dt_out)
+}
+ 
+ 
+        #data_table <- data_table %>% select(shortName, labelName, year, units, matches(input$totsBtns))
         
        
-        data_table <- data_table %>% filter(year==min(data_table$year) | year==max(data_table$year)) %>%
-            pivot_wider(id_cols=c("shortName", "labelName","units"), names_from="year", values_from=input$totsBtns, names_glue="{year} {.value}") %>%
-          rename(Variable=labelName, Units=units)
-        
-        
-        #data_table$Units <- ""
-        #data_table[[paste0(min(data_out$year), " Mean")]] <- NA #Column 4
-        #data_table[[paste0(max(data_out$year), " Mean")]] <- NA #Column 5
-        #data_table$`Annual Change` <- NA #Column 6
-        #data_table$`Long Term Trend` <- NA #Column 7
-        
-        #for(var in indics_out){
-        #  sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
-        #  if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
-        #    next
-        #  } else {
-        #    data_table$Units[data_table$shortName==var] <- indicator_list$units[indicator_list$shortName==var]
-        #    if(length(unique(sub_data$year))<2){
-        #      year <- unique(sub_data$year)
-        #      data_table[[paste0(year, " Mean")]][data_table$shortName==var] <- signif(inject(with(sub_data,weighted.mean(!!sym(var), weight))),4)
-        #      flag_table[[paste0(year, " N obs")]][flag_table$shortName==var] <- nrow(sub_data)
-        #      data_table[data_table$shortName==var, 6] <- "N/A"
-        #    } else if(length(unique(sub_data$year>=2))) {
-        #      prevYear <- max(sub_data$year[sub_data$year!=max(sub_data$year)]) 
-        #      min_mean <- inject(with(sub_data %>% filter(year==prevYear), weighted.mean(!!sym(var), weight)))
-        #      max_mean <- inject(with(sub_data %>% filter(year==max(sub_data$year)), weighted.mean(!!sym(var), weight)))
-        #      min_n <- nrow(sub_data %>% filter(year==prevYear))
-        #      max_n <- nrow(sub_data %>% filter(year==max(sub_data$year)))
-        #      if(min_mean==0){
-        #        if(max_mean > 0){
-        #          chg = Inf
-        #        } else {
-        #          chg = -Inf
-        #        }
-        #      } else {
-        #        chg=signif((max_mean-min_mean)/min_mean, 2)
-        #      }
-        #      
-        #      data_table[data_table$shortName==var, 4] <- signif(min_mean,4)
-        #      data_table[data_table$shortName==var, 5] <- signif(max_mean,4)
-        #      flag_table[[paste0(min(data_out$year), " N obs")]][flag_table$shortName==var] <- min_n
-        #      flag_table[[paste0(max(data_out$year), " N obs")]][flag_table$shortName==var] <- max_n
-        #      data_table[data_table$shortName==var, 6] <- chg
-        #    }
-            # 
-        data_table <- data.frame(data_table)
-        names(data_table) <- str_replace_all(names(data_table), "X", "")
-        names(data_table) <- str_replace_all(names(data_table), ".", " ")
-        data_table$Trend <- signif((data_table[,5]-data_table[,4])/data_table[,4], 4)
         
             # I'll fix this later. 
         
@@ -492,7 +482,7 @@ server <- function(input, output, session) {
         #
         #if(all(is.na(data_table$`Long Term Trend`))){
         #  data_table <- data_table %>% select(-`Long Term Trend`)
-          pct_col <- 5 #because shortname gets dropped; this is dumb
+          #pct_col <- 5 #because shortname gets dropped; this is dumb
         #} else {
         #  pct_cols <- c(5,6)
         #}
@@ -500,33 +490,33 @@ server <- function(input, output, session) {
         #trendVarList <- as.list(c("0", data_table$shortName))
         #names(trendVarList) <- c("Select...", data_table$labelName)
         #data_table <- data_table %>% rename(Variable=labelName)
-        flag_table <- flag_table %>% rename(Variable=labelName, Notes=flag_text) %>% relocate(Notes, .after=last_col())
         
         #data_table_out <<- data_table #Save this to the global environment to make it accessible to the download handler. 
         #flag_table_out <<- flag_table 
         #odd workaround because format isn't working with index selection
         
         
-        data_table[,4:5] <- format(data_table[,4:5], big.mark=',', scientific=F, digits=4, nsmall=0, drop0trailing=T)
+        #data_table[,4:5] <- format(signif(data_table[,4:5], 4), big.mark=',', justify="right", scientific=F, digits=4, nsmall=0, drop0trailing=T)
         # dt_names_adj <- names(data_table)[which(str_detect(names(data_table), input$totsBtns))] 
         # for(dtname in dt_names_adj) {
         #   data_table[[dtname]] <- format(data_table[[dtname]], big.mark=',', scientific=F, digits=4, nsmall=0, drop0trailing=T)
         # }
         # #output$trendsTable <- renderDataTable(data_table)
-        return(list(data_table=data_table, flag_table=flag_table, pct_cols=pct_col))
-      }
+        #return(list(data_table=data_table, flag_table=flag_table, pct_cols=pct_col))
+      #}
     
-    }
-  }
+    #}
+   #}
+  #}
 
-  filterVarTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list){
-    if(pathwayTarget==0){
-      return(dt_out)
-    } else {
-    indics_out <- pathway_link %>% filter(pathwayID==pathwayTarget) %>% select(shortName) %>% distinct()
-    return(indics_out <- merge(indics_out, dt_out, by="shortName"))
-    }
-  }
+  #filterVarTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list){
+  #  if(pathwayTarget==0){
+  #    return(dt_out)
+  #  } else {
+  #  indics_out <- pathway_link %>% filter(pathwayID==pathwayTarget) %>% select(shortName) %>% distinct()
+  #  return(indics_out <- merge(indics_out, dt_out, by="shortName"))
+  #  }
+  #}
   
   updateVarTable <- function(){
     pathwaysIn <- if(is.null(input$pathwaysIn1)){
@@ -534,20 +524,20 @@ server <- function(input, output, session) {
     } else {
       input$pathwaysIn1
     }
+    filtered_tab <- filterVarTable(data_table_out$data_table, pathway_link, pathwaysIn, indicator_list, input$totsBtns)
   output$trendsTable <- renderDataTable(
-     DT::datatable(filterVarTable(data_table_out$data_table, pathway_link, pathwaysIn, indicator_list) %>% select(-shortName), 
+     DT::datatable(filtered_tab %>% select(-shortName), 
                    options=list(searching=F, pageLength=15, dom='tip'), rownames=F)  %>%
-                                          formatPercentage(data_table_out$pct_cols)
+                                          formatPercentage(5) #Hard coded, to fix
      )
   output$flagsTable <- renderDataTable(
     DT::datatable(
-        filterVarTable(data_table_out$flag_table, pathway_link, pathwaysIn, indicator_list) %>% select(-shortName), 
+        filterFlagTable(data_table_out$flag_table, pathway_link, pathwaysIn, indicator_list) %>% select(-shortName), 
         options=list(searching=F, pageLength=15), rownames=F)
   )
   output$trendVarChoose <- renderUI({
-    dt_out <- filterVarTable(data_table_out$data_table, pathway_link, pathwaysIn, indicator_list) 
-    trendVarList <- as.list(c("0", dt_out$shortName))
-    names(trendVarList) <- c("Select...", dt_out$Variable)
+    trendVarList <- as.list(c("0", filtered_tab$shortName))
+    names(trendVarList) <- c("Select...", filtered_tab$Variable)
    selectInput('trendIn', "Choose a variable to map:", choices=trendVarList)
   })
 }
@@ -564,20 +554,7 @@ server <- function(input, output, session) {
       tempdata <- getData(data_files, xvars=input$trendIn, denoms=denoms, adm_level=adm_level_in, source_call="trendmaps")
       
       if(is.list(tempdata)){ #To do: better error handling
-        data_out <- tempdata$outdata %>% select(all_of(adm_level_in, "year", input$totsBtns)) #Find a way to kill mapdata?
-        
-        # if(totsBtns=="Means"){
-        # data_out <- tempdata$means_out 
-        # nat_out <- tempdata$nats_out
-        # } else {
-        #   data_out <- tempdata$tots_out
-        #   nat_out <- tempdata$tots_out %>% group_by(year) %>% summarize(across(where(is.numeric), sum)) #Include disaggregates later?
-        # }
-        
-        #data_out$province_num <- tryCatch(as.numeric(data_out$province), error=function(e){
-        #  return(data_out %>% mutate(province=as.numeric(factor(province))))
-        #})
-        
+        data_out <- tempdata$outdata %>% select(all_of(c(adm_level_in, "year", input$totsBtns))) #Find a way to kill mapdata?
         n_row <- nrow(data_out) 
         data_out <- na.omit(data_out)
         data_out <- data_out[data_out$province!="",]
@@ -592,7 +569,10 @@ server <- function(input, output, session) {
           df_max_year=data_out %>% filter(year==max_year)
           diff <- data_out %>% pivot_wider(names_from=year, values_from=input$totsBtns)
           diff[,4] <- diff[,3]-diff[,2]
+          #Messy, to fix
           names(diff)[[4]] <- input$trendIn
+          names(df_max_year)[[3]] <- input$trendIn
+          names(data_out)[[3]] <- input$trendIn
           #diff$province_num <- df_max_year$province_num
           #Temp fix because province variable keeps changing
           if(is.numeric(df_max_year$province)){
@@ -605,12 +585,14 @@ server <- function(input, output, session) {
             
           }
           
-          currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values"), indicator_list$units[indicator_list$shortName==input$trendIn])
+          
+          
+          currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " ", input$totsBtns), indicator_list$units[indicator_list$shortName==input$trendIn])
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
-          timePlot <- timeSeriesPlot(data_out, input$trendIn)
+          timePlot <- timeSeriesPlot(data_table_out$data_table, input$trendIn, input$totsBtns)
           output$currMap <- renderPlot(currMap)
           output$trendMap <- renderPlot(trendMap)
-          #output$timePlot <- renderPlotly(timePlot)
+          output$timePlot <- renderPlotly(timePlot)
         } else {
           showNotification("No trends to show for selected variable", type="warning")
         }
@@ -642,13 +624,17 @@ server <- function(input, output, session) {
     showNotification("Processing...")
     data_files <- getFiles(indicator_list, dataset_list, c(input$indicsIn, input$corrsIn)) %>% filter(year==input$yearBtn) #To fix, probably roll year into getFiles function. 
     aggs_list <- input$groupsChk #ALT Note: Right now this is an unnecessary step, but if we ever end up needing to have multiple disaggregation criteria, it's probably better to do it this way.
-    all_data <- getData(data_files, xvars=input$corrsIn, yvars=input$indicsIn, adm_level=input$disAgg_admin, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
+    denoms <- getDenoms(c(input$corrsIn, input$indicsIn), indicator_list)
+    adm_level <- input$disAgg_admin
+    all_data <- getData(data_files, xvars=input$corrsIn, yvars=input$indicsIn, denoms=denoms, adm_level=adm_level, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
     if(any(all_data!="")){
       #else if(tab=="trend"){
       #ALT - might be easier than what we do now with the maps in a separate area. Maybe build out later.
       #}
       mapdata <- all_data$mapdata
-      outdata <- all_data$means_out #Note to go back and fix the naming here.
+      outdata <- all_data$outdata 
+      outdata <- outdata %>% select(c(any_of(c(adm_level, aggs_list)), shortName, Mean)) %>% 
+        pivot_wider(names_from="shortName", values_from="Mean")
       outdata <- na.omit(outdata)
       if(nrow(outdata)==0){
         showNotification("Error: No non-n/a observations in dataset", type="error") 
@@ -663,7 +649,7 @@ server <- function(input, output, session) {
                                                       , indicator_list$labelName[indicator_list$shortName==input$indicsIn])))
           output$corrHeader <- renderUI(HTML(sprintf('<div style="border: 1px solid #ddd; padding: 9px; margin-bottom: 0px; line-height: 1.2; text-align: center; border-radius: 3px;"> %s </div>'
                                                      , indicator_list$labelName[indicator_list$shortName==input$corrsIn])))
-          adm_level <- input$disAgg_admin
+          
           varslist <- c(xvars, yvars)
           bins <- ifelse(adm_level=="province", 6, 30)
           #heatmapdata <- getData()$tempheatmapdata

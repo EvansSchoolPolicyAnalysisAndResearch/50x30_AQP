@@ -114,13 +114,16 @@ reportChart <- function(outdata, xvars, yvars, xlab, ylab){
     labs(x=xlab, y=ylab)
 }
 
-timeSeriesPlot <- function(outdata, yvars){
-  ggplot(outdata, aes(x=year, y=!!sym(yvars)))+
+timeSeriesPlot <- function(outdata, yvars, statname){
+  outdata <- outdata %>% filter(shortName==yvars)
+  lab <- unique(outdata$labelName)
+  ggplot(outdata, aes(x=year, y=!!sym(statname)))+
     geom_point()+
     geom_line(linewidth=1)+
     scale_y_continuous(labels=scales::comma)+
     theme_minimal()+
     theme(legend.position="none")+
     theme(panel.grid.minor=element_blank())+
-    scale_x_continuous(breaks=scales::breaks_pretty())
+    scale_x_continuous(breaks=scales::breaks_pretty())+
+    labs(x="",y=lab[[1]])
 }
