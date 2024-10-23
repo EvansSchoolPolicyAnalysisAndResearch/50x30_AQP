@@ -125,6 +125,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                     fluidRow(column(4, selectInput('policiesBox1', "Select a policy goal", choices=c("None", goalNames)))),
                                     conditionalPanel(condition="input.policiesBox1!='None'", 
                                                      fluidRow(column(4, uiOutput('pathwaysBox'))),
+                                                     fluidRow(column(4, radioGroupButtons('totsBtns', label="Choose Statistic to Present", choices=c("Mean","Total")))),
                                                      fluidRow(column(5, uiOutput('msgText')),
                                                               column(1),
                                                               column(6,  uiOutput("trendVarChoose"))
@@ -136,7 +137,8 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                              column(6,
                                                     plotOutput('currMap'),
                                                     plotOutput('trendMap'),
-                                                    plotOutput('obsMap'),
+                                                    #plotOutput('obsMap'),
+                                                    plotOutput('timePlot'),
                                                     uiOutput("plotsErr"))),
 
                                     fluidRow(column(12, uiOutput("droppedVars"))),
@@ -188,6 +190,25 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                      fluidRow(uiOutput('plotInterp'))
                                     )
                            ),
+                           # tabPanel("Reporting: Fast", icon=icon("newspaper"),
+                           #          fluidRow(selectInput("lsChoose", choices=c("Chickens","Pigs","Cattle","Buffalo")), actionButton("newRept", "Generate Report")),
+                           #          fluidRow(plotOutput("rep1plot"), plotOutput("rep1map")),
+                           #          fluidRow(plotOutput("rep2plot"), plotOutput("rep2map")),
+                           #          fluidRow(plotOutput("rep3plot"), plotOutput("rep3map")),
+                           #          fluidRow(plotOutput("rep4plot"), plotOutput("rep4map"))
+                           # ),
+                           # tabPanel("Reporting: Pretty", icon=icon("newspaper"),
+                           #          fluidRow(verbatimTextOutput("Placeholder")),
+                           #          valueBox(title="Livestock Ownership Rate, Among Agricultural Holdings", showcase=textOutput("vb1text")),
+                           #          valueBox(title="Livestock Ownership Rate, Among Livestock-raising holdings", showcase=textOutput("vb2text")),
+                           #          valueBox(title="Percentage of Holdings Raising Livestock Among Agricultural Households", showcase=plotOutput("vb3plot")),
+                           #          valueBox(title="Percentage of Holdings Raising Livestock Among Livestock Households", showcase=plotOutput("vb4plot"))
+                           #          
+                           #          #fluidRow(valueBox(title="Livestock Production Rates", 
+                           #          #                  value=textOutput("vb1Text"),
+                           #          #                  showcase=plotlyOutput("repPlot1")), 
+                           #          #         plotOutput("vb1_map"))
+                           #          ),
                            tabPanel("Secondary Data Sources", icon=icon("database"),
                                     fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the "),
                                     downloadLink("secSourcesDL", "associated spreadsheet."), HTML("</p>")),
@@ -251,10 +272,7 @@ server <- function(input, output, session) {
       layout(title = "Correlation Heatmap", margin = list(t = 60), height=1000)
     return(heatMap)
   }
-  
-  denom_wt_mean <- function(){
-    # TO DO
-  }
+
   
   cor.test.p <- function(x){
     FUN <- function(x, y) cor.test(x, y)[["p.value"]]
@@ -267,13 +285,22 @@ server <- function(input, output, session) {
     z
   }
   
-  
-  #output$dataPolicBox <- renderUI({if(exists("goalNames")){ 
-  #  selectInput('policiesBox2', "Select the Policy Priority:", choices=c("None", goalNames)) 
-  #} else {
-  #  selectInput('policiesBox2', "Select the Policy Priority:", choices="None")
-  #}
-  #})
+  observeEvent(input$newRept, {
+    lsVars <- c("num_",
+                "peak_num_",
+                "vax_pct_",
+                "sale_price_")
+    #aggs_list <- if(length(input$repGroups)>0) input$repGroups else ""
+    
+    
+    data_out <- getData(lsvars)
+    
+    means_out <- data_out$means_out 
+    totals_out <- data_out$totals_out 
+    
+    #output$vb3plot <- 
+    
+  })
   
   output$secsources <- renderDT(ext_data, escape=F, options=list(dom="t"), rownames=F)
   
@@ -355,99 +382,138 @@ server <- function(input, output, session) {
   # }) 
    
    #ALT NOTE TO ADD ERROR HANDLING HERE.
- output$msgText <- renderUI(HTML("<h3>Variable Summary Table</h3><br><p><i>This table presents household-level averages of all CAS respondents.</i></p>"))
+ output$msgText <- renderUI(HTML("<h3>Variable Summary Table</h3><br><p><i>This table presents household-level averages or totals of all CAS respondents.</i></p>"))
   
-  makeDataTable <- function(policiesIn, indicatorCategories, indicator_list, dataset_list){
-    indics_out <- indicatorCategories %>% filter(goalName==policiesIn) %>% select(shortName) %>% distinct() %>% unlist()
+ makeDataTable <- function(policiesIn, indicatorCategories, indicator_list, dataset_list){
+ #makeDataTable <- reactive({ 
+   indics_out <- indicatorCategories %>% filter(goalName==policiesIn) %>% select(shortName) %>% distinct() %>% unlist()
     indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] %>% unique() #TO DO: Include some cleaning code in the startup script 
+    denoms <- getDenoms(indics_out, indicator_list)
+    data_files <- getFiles(indicator_list, dataset_list, c(indics_out, denoms$denominator))
     
-    data_files <- getFiles(indicator_list, dataset_list, indics_out)
     if(nrow(data_files)==0){
       showNotification("No data files related to the selected pathway were found", type="error")
     } else {
-      data_out <- getData(data_files, indics_out, source_call="pathwaysIn1")
-      if(is.list(data_out)){
-        if(is.list(data_out$droppedVars)){
+      data <- getData(files=data_files, xvars=indics_out, denoms=denoms, adm_level=NA, source_call="pathwaysIn1")
+      if(is.list(data)){
+        if(is.list(data$droppedVars)){
           #output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
         }
-        data_out <- data_out$tempdata
-        indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
-        data_table <- data.frame(shortName=indics_out) #TODO: Simplify
-        flag_table <- data_table #make a copy for metadata.
-        flag_table[[paste0(min(data_out$year), " N obs")]] <- NA
-        flag_table[[paste0(max(data_out$year), " N obs")]] <- NA
-        flag_table <- merge(data_table, indicator_list %>% select(shortName, labelName, flag_text))
-        data_table <- merge(data_table, indicator_list %>% select(shortName, labelName), by="shortName")
-        data_table$Units <- ""
-        data_table[[paste0(min(data_out$year), " Mean")]] <- NA #Column 4
-        data_table[[paste0(max(data_out$year), " Mean")]] <- NA #Column 5
-        data_table$`Annual Change` <- NA #Column 6
-        data_table$`Long Term Trend` <- NA #Column 7
-        for(var in indics_out){
-          sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
-          if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
-            next
-          } else {
-            data_table$Units[data_table$shortName==var] <- indicator_list$units[indicator_list$shortName==var]
-            if(length(unique(sub_data$year))<2){
-              year <- unique(sub_data$year)
-              data_table[[paste0(year, " Mean")]][data_table$shortName==var] <- signif(inject(with(sub_data,weighted.mean(!!sym(var), weight))),4)
-              flag_table[[paste0(year, " N obs")]][flag_table$shortName==var] <- nrow(sub_data)
-              data_table[data_table$shortName==var, 6] <- "N/A"
-            } else if(length(unique(sub_data$year>=2))) {
-              prevYear <- max(sub_data$year[sub_data$year!=max(sub_data$year)]) 
-              min_mean <- inject(with(sub_data %>% filter(year==prevYear), weighted.mean(!!sym(var), weight)))
-              max_mean <- inject(with(sub_data %>% filter(year==max(sub_data$year)), weighted.mean(!!sym(var), weight)))
-              min_n <- nrow(sub_data %>% filter(year==prevYear))
-              max_n <- nrow(sub_data %>% filter(year==max(sub_data$year)))
-              if(min_mean==0){
-                if(max_mean > 0){
-                  chg = Inf
-                } else {
-                  chg = -Inf
-                }
-              } else {
-                chg=signif((max_mean-min_mean)/min_mean, 2)
-              }
-              
-              data_table[data_table$shortName==var, 4] <- signif(min_mean,4)
-              data_table[data_table$shortName==var, 5] <- signif(max_mean,4)
-              flag_table[[paste0(min(data_out$year), " N obs")]][flag_table$shortName==var] <- min_n
-              flag_table[[paste0(max(data_out$year), " N obs")]][flag_table$shortName==var] <- max_n
-              data_table[data_table$shortName==var, 6] <- chg
-            }
-            reg_data <- sub_data %>% na.omit() %>% group_by(year) %>% summarize(mean=weighted.mean(!!sym(var), weight))
-            reg_data$mean <- with(reg_data, log(mean+0.5*min(mean[mean>0])))
-            if(length(unique(reg_data$year))>2){ #Future releases should change this to >2; currently here for testing
-              reg_res <- tryCatch(lm(mean~year, data=reg_data), error=function(e){return("")})
-              if(is.list(reg_res)){
-                pct_diff <- round((exp(reg_res$coefficients[[2]])-1),3)
-                if(!is.na(pct_diff)){
-                  data_table[data_table$shortName==var, 7] <- pct_diff
-                }
-              }
-            }
-          }
-        }
+        
+        #Still need to making the naming less stupid here.
+        data_out <- data$outdata
+        
+        #if(totsBtns=="Means") { 
+        #  data_out <- data$nat_means
+        #} else {
+        #  data_out <- data$nat_tots
+        #}
+        
+        #values_source <- input$totsBtns
+        
+        #indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
+        #data_table <- data.frame(shortName=indics_out) #TODO: Simplify
+        #flag_table <- data_table #make a copy for metadata.
+        #flag_table[[paste0(min(data_out$year), " N obs")]] <- NA
+        #flag_table[[paste0(max(data_out$year), " N obs")]] <- NA
+        flag_table <- data_out %>% pivot_wider(id_cols="shortName", names_from="year", values_from="Obs", names_glue="{year} N obs")
+        
+        flag_table <- merge(flag_table, indicator_list %>% select(shortName, labelName, flag_text), by="shortName")
+        
+        data_table <- merge(data_out, indicator_list %>% select(shortName, labelName, units), by="shortName")
+        data_table <- data_table %>% select(shortName, labelName, year, units, matches(input$totsBtns))
+        
+       
+        data_table <- data_table %>% filter(year==min(data_table$year) | year==max(data_table$year)) %>%
+            pivot_wider(id_cols=c("shortName", "labelName","units"), names_from="year", values_from=input$totsBtns, names_glue="{year} {.value}") %>%
+          rename(Variable=labelName, Units=units)
+        
+        
+        #data_table$Units <- ""
+        #data_table[[paste0(min(data_out$year), " Mean")]] <- NA #Column 4
+        #data_table[[paste0(max(data_out$year), " Mean")]] <- NA #Column 5
+        #data_table$`Annual Change` <- NA #Column 6
+        #data_table$`Long Term Trend` <- NA #Column 7
+        
+        #for(var in indics_out){
+        #  sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
+        #  if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
+        #    next
+        #  } else {
+        #    data_table$Units[data_table$shortName==var] <- indicator_list$units[indicator_list$shortName==var]
+        #    if(length(unique(sub_data$year))<2){
+        #      year <- unique(sub_data$year)
+        #      data_table[[paste0(year, " Mean")]][data_table$shortName==var] <- signif(inject(with(sub_data,weighted.mean(!!sym(var), weight))),4)
+        #      flag_table[[paste0(year, " N obs")]][flag_table$shortName==var] <- nrow(sub_data)
+        #      data_table[data_table$shortName==var, 6] <- "N/A"
+        #    } else if(length(unique(sub_data$year>=2))) {
+        #      prevYear <- max(sub_data$year[sub_data$year!=max(sub_data$year)]) 
+        #      min_mean <- inject(with(sub_data %>% filter(year==prevYear), weighted.mean(!!sym(var), weight)))
+        #      max_mean <- inject(with(sub_data %>% filter(year==max(sub_data$year)), weighted.mean(!!sym(var), weight)))
+        #      min_n <- nrow(sub_data %>% filter(year==prevYear))
+        #      max_n <- nrow(sub_data %>% filter(year==max(sub_data$year)))
+        #      if(min_mean==0){
+        #        if(max_mean > 0){
+        #          chg = Inf
+        #        } else {
+        #          chg = -Inf
+        #        }
+        #      } else {
+        #        chg=signif((max_mean-min_mean)/min_mean, 2)
+        #      }
+        #      
+        #      data_table[data_table$shortName==var, 4] <- signif(min_mean,4)
+        #      data_table[data_table$shortName==var, 5] <- signif(max_mean,4)
+        #      flag_table[[paste0(min(data_out$year), " N obs")]][flag_table$shortName==var] <- min_n
+        #      flag_table[[paste0(max(data_out$year), " N obs")]][flag_table$shortName==var] <- max_n
+        #      data_table[data_table$shortName==var, 6] <- chg
+        #    }
+            # 
+        data_table <- data.frame(data_table)
+        names(data_table) <- str_replace_all(names(data_table), "X", "")
+        names(data_table) <- str_replace_all(names(data_table), ".", " ")
+        data_table$Trend <- signif((data_table[,5]-data_table[,4])/data_table[,4], 4)
+        
+            # I'll fix this later. 
+        
+            # reg_data <- sub_data %>% na.omit() %>% group_by(year) %>% summarize(mean=weighted.mean(!!sym(var), weight))
+            # reg_data$mean <- with(reg_data, log(mean+0.5*min(mean[mean>0])))
+            # if(length(unique(reg_data$year))>2){ #Future releases should change this to >2; currently here for testing
+            #   reg_res <- tryCatch(lm(mean~year, data=reg_data), error=function(e){return("")})
+            #   if(is.list(reg_res)){
+            #     pct_diff <- round((exp(reg_res$coefficients[[2]])-1),3)
+            #     if(!is.na(pct_diff)){
+            #       data_table[data_table$shortName==var, 7] <- pct_diff
+            #     }
+            #   }
+            # }
+          #}
+        #}
         #
-        if(all(is.na(data_table$`Long Term Trend`))){
-          data_table <- data_table %>% select(-`Long Term Trend`)
-          pct_cols <- 5
-        } else {
-          pct_cols <- c(5,6)
-        }
+        #if(all(is.na(data_table$`Long Term Trend`))){
+        #  data_table <- data_table %>% select(-`Long Term Trend`)
+          pct_col <- 5 #because shortname gets dropped; this is dumb
+        #} else {
+        #  pct_cols <- c(5,6)
+        #}
         
         #trendVarList <- as.list(c("0", data_table$shortName))
         #names(trendVarList) <- c("Select...", data_table$labelName)
-        data_table <- data_table %>% rename(Variable=labelName)
+        #data_table <- data_table %>% rename(Variable=labelName)
         flag_table <- flag_table %>% rename(Variable=labelName, Notes=flag_text) %>% relocate(Notes, .after=last_col())
         
         #data_table_out <<- data_table #Save this to the global environment to make it accessible to the download handler. 
         #flag_table_out <<- flag_table 
+        #odd workaround because format isn't working with index selection
+        
         
         data_table[,4:5] <- format(data_table[,4:5], big.mark=',', scientific=F, digits=4, nsmall=0, drop0trailing=T)
-        #output$trendsTable <- renderDataTable(data_table)
-        return(list(data_table=data_table, flag_table=flag_table, pct_cols=pct_cols))
+        # dt_names_adj <- names(data_table)[which(str_detect(names(data_table), input$totsBtns))] 
+        # for(dtname in dt_names_adj) {
+        #   data_table[[dtname]] <- format(data_table[[dtname]], big.mark=',', scientific=F, digits=4, nsmall=0, drop0trailing=T)
+        # }
+        # #output$trendsTable <- renderDataTable(data_table)
+        return(list(data_table=data_table, flag_table=flag_table, pct_cols=pct_col))
       }
     
     }
@@ -486,161 +552,32 @@ server <- function(input, output, session) {
   })
 }
 
-  # 
-  # updateTrends <- function(){
-  #   #if(input$policiesBox1=="None"){
-  #   #  output$msgText <- renderUI(HTML("<h4>Select a policy priority above to get started</h4>"))
-  #   #} else {
-  #     
-  #     #updateSelectInput(session, "policiesBox2", selected=input$policiesBox1)
-  #     #TODO: Long term it makes more sense to have a single file for this operation; the central challenge is the fact that users will probably want to view indicators without having a pathway in mind.
-  #     if(input$pathwaysIn1==0){
-  #       indics_out <- indicatorCategories %>% filter(goalName==input$policiesBox1) %>% select(shortName) %>% distinct() %>% unlist()
-  #     } else {
-  #       indics_out <- pathway_link %>% filter(pathwayID==input$pathwaysIn1) %>% select(shortName) %>% distinct() %>% unlist()
-  #     } 
-  #     indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] %>% unique() #TO DO: Include some cleaning code in the startup script 
-  #     #data_files <- as.data.frame(dataset_list[str_detect(str_to_lower(dataset_list), str_to_lower(input$policiesBox1))]) #Might need to store this as a global later. 
-  #     #Need to be more consistent in tracking case
-  #     
-  #     data_files <- getFiles(indicator_list, dataset_list, indics_out)
-  #     if(nrow(data_files)==0){
-  #       showNotification("No data files related to the selected pathway were found", type="error")
-  #     } else {
-  #     
-  #     #This would be more efficient if it were reactive values and we just had to filter it at this point, but this function gets used in two places 
-  #     data_out <- getData(data_files, indics_out, source_call="pathwaysIn1")
-  #     
-  #     if(is.list(data_out)){
-  #       if(is.list(data_out$droppedVars)){
-  #         output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
-  #       }
-  #       data_out <- data_out$tempdata
-  #       indics_out <- names(data_out)[which(names(data_out) %in% indics_out)] #filter out any variables that weren't processed
-  #       data_table <- data.frame(shortName=indics_out) #TODO: Simplify
-  #       flag_table <- data_table #make a copy for metadata.
-  #       flag_table[[paste0(min(data_out$year), " N obs")]] <- NA
-  #       flag_table[[paste0(max(data_out$year), " N obs")]] <- NA
-  #       flag_table <- merge(data_table, indicator_list %>% select(shortName, labelName, flag_text))
-  #       data_table <- merge(data_table, indicator_list %>% select(shortName, labelName), by="shortName")
-  #       data_table$Units <- ""
-  #       data_table[[paste0(min(data_out$year), " Mean")]] <- NA
-  #       #data_table[[paste0(min(data_out$year), " N obs")]] <- NA #Moved these to the metadata table. 
-  #       data_table[[paste0(max(data_out$year), " Mean")]] <- NA
-  #       #data_table[[paste0(max(data_out$year), " N obs")]] <- NA
-  #       data_table$Trend <- NA
-  #       data_table$`Long Term Trend` <- NA
-  #       for(var in indics_out){
-  #         sub_data <- data_out %>% select(all_of(c(var, "year", "weight"))) %>% na.omit()
-  #         if(nrow(sub_data)==0 | !is.numeric(sub_data[[var]])){
-  #           next
-  #         } else {
-  #           data_table$Units[data_table$shortName==var] <- indicator_list$units[indicator_list$shortName==var]
-  #           if(length(unique(sub_data$year))<2){
-  #             year <- unique(sub_data$year)
-  #             data_table[[paste0(year, " Mean")]][data_table$shortName==var] <- signif(inject(with(sub_data,weighted.mean(!!sym(var), weight))),4)
-  #             flag_table[[paste0(year, " N obs")]][flag_table$shortName==var] <- nrow(sub_data)
-  #             data_table$Trend[data_table$shortName==var] <- "N/A"
-  #           } else if(length(unique(sub_data$year>=2))) {
-  #             prevYear <- max(sub_data$year[sub_data$year!=max(sub_data$year)]) 
-  #             min_mean <- inject(with(sub_data %>% filter(year==prevYear), weighted.mean(!!sym(var), weight)))
-  #             max_mean <- inject(with(sub_data %>% filter(year==max(sub_data$year)), weighted.mean(!!sym(var), weight)))
-  #             min_n <- nrow(sub_data %>% filter(year==prevYear))
-  #             max_n <- nrow(sub_data %>% filter(year==max(sub_data$year)))
-  #             #if(min_mean==0){ 
-  #             #  if(max_mean > 0){
-  #             #    chg = "+Inf"
-  #             #  } else if(max_mean < 0) {
-  #             #    chg="-Inf"
-  #             #  } else {
-  #             #    chg="⮕ 0%"
-  #             #  }
-  #             #} else {  
-  #             #  diff=signif((max_mean-min_mean)/min_mean*100, 2)
-  #             #  
-  #             #  if(diff>5){
-  #             #    dir_arrow <- "⬆ "
-  #             #  } else if(diff < -5) {
-  #             #    dir_arrow <- "⬇ "
-  #             #  } else {
-  #             #    dir_arrow <- "⮕ "
-  #             #  }
-  #             #  
-  #             #  chg=paste0(dir_arrow, diff, "%")  
-  #             #}
-  #             
-  #             if(min_mean==0){
-  #               if(max_mean > 0){
-  #                 chg = Inf
-  #               } else {
-  #                 chg = -Inf
-  #               }
-  #             } else {
-  #               chg=signif((max_mean-min_mean)/min_mean, 2)
-  #             }
-  #             
-  #             data_table[[paste0(min(data_out$year), " Mean")]][data_table$shortName==var] <- signif(min_mean,4)
-  #             data_table[[paste0(max(data_out$year), " Mean")]][data_table$shortName==var] <- signif(max_mean,4)
-  #             flag_table[[paste0(min(data_out$year), " N obs")]][flag_table$shortName==var] <- min_n
-  #             flag_table[[paste0(max(data_out$year), " N obs")]][flag_table$shortName==var] <- max_n
-  #             data_table$Trend[data_table$shortName==var] <- chg
-  #           }
-  #           reg_data <- sub_data %>% na.omit() %>% group_by(year) %>% summarize(mean=weighted.mean(!!sym(var), weight))
-  #           reg_data$mean <- with(reg_data, log(mean+0.5*min(mean[mean>0])))
-  #           if(length(unique(reg_data$year>=2))){ #Future releases should change this to >2; currently here for testing
-  #             reg_res <- tryCatch(lm(mean~year, data=reg_data), error=function(e){return("")})
-  #             if(is.list(reg_res)){
-  #               pct_diff <- round((exp(reg_res$coefficients[[2]])-1),3)
-  #               if(!is.na(pct_diff)){
-  #                 data_table$`Long Term Trend`[data_table$shortName==var] <- pct_diff
-  #               }
-  #             }
-  #           }
-  #         }
-  #       }
-  #       output$msgText <- renderUI(HTML("<h3>Variable Summary Table</h3><br><p><i>This table presents household-level averages of all CAS respondents.</i></p>"))
-  #       if(all(data_table$`Long Term Trend`=="")){
-  #         data_table <- data_table %>% select(-`Long Term Trend`)
-  #         pct_cols <- 5
-  #       } else {
-  #         pct_cols <- c(5,6)
-  #       }
-  #       
-  #       trendVarList <- as.list(c("0", data_table$shortName))
-  #       names(trendVarList) <- c("Select...", data_table$labelName)
-  #       data_table <- data_table %>% rename(Variable=labelName) %>% select(-shortName) 
-  #       flag_table <- flag_table %>% rename(Variable=labelName, Notes=flag_text) %>% select(-shortName) %>% relocate(Notes, .after=last_col())
-  #       
-  #       data_table_out <<- data_table #Save this to the global environment to make it accessible to the download handler. 
-  #       flag_table_out <<- flag_table 
-  #       
-  #       data_table[,3:4] <- format(data_table[,3:4], big.mark=',', scientific=F, digits=4, nsmall=0, drop0trailing=T)
-  #       output$trendsTable <- renderDataTable(DT::datatable(data_table, options=list(searching=F, pageLength=15, dom='tip'), rownames=F)  %>% 
-  #                                               formatPercentage(pct_cols))
-  #       output$flagsTable <- renderDataTable(flag_table, options=list(searching=F, pageLength=15), rownames=F) 
-  #       output$trendVarChoose <- renderUI(selectInput('trendIn', "Choose a variable to map:", choices=trendVarList))
-  #       #output$trendsTable <- renderDataTable(data_table)
-  #     }
-  #     }
-  #   }
-  # }
-  
   observeEvent(input$trendIn, { #probably a future efficiency update to do here.
     if(input$trendIn!="0"){
       showNotification("Processing, please wait")
       #session$sendCustomMessage("disableButton", "start_proc")
       shinyjs::disable('trendIn')
+      adm_level_in="province" #Adjustable
       
+      denoms <- getDenoms(input$trendIn, indicator_list)
       data_files <- getFiles(indicator_list, dataset_list, input$trendIn) #AT: There's probably a simpler way to pack all of this into the getData function but that's a do later item. 
-      data_out <- getData(data_files, xvars=input$trendIn, adm_level="province", source_call="trendmaps")
+      tempdata <- getData(data_files, xvars=input$trendIn, denoms=denoms, adm_level=adm_level_in, source_call="trendmaps")
       
-      if(is.list(data_out)){ #To do: better error handling
-        map_data <- data_out$mapdata 
-        data_out <- data_out$tempdata
+      if(is.list(tempdata)){ #To do: better error handling
+        data_out <- tempdata$outdata %>% select(all_of(adm_level_in, "year", input$totsBtns)) #Find a way to kill mapdata?
+        
+        # if(totsBtns=="Means"){
+        # data_out <- tempdata$means_out 
+        # nat_out <- tempdata$nats_out
+        # } else {
+        #   data_out <- tempdata$tots_out
+        #   nat_out <- tempdata$tots_out %>% group_by(year) %>% summarize(across(where(is.numeric), sum)) #Include disaggregates later?
+        # }
         
         #data_out$province_num <- tryCatch(as.numeric(data_out$province), error=function(e){
         #  return(data_out %>% mutate(province=as.numeric(factor(province))))
         #})
+        
         n_row <- nrow(data_out) 
         data_out <- na.omit(data_out)
         data_out <- data_out[data_out$province!="",]
@@ -653,7 +590,7 @@ server <- function(input, output, session) {
         if(min_year!=max_year){
           df_min_year=data_out %>% filter(year==min_year)
           df_max_year=data_out %>% filter(year==max_year)
-          diff <- data_out %>% pivot_wider(names_from=year, values_from=input$trendIn)
+          diff <- data_out %>% pivot_wider(names_from=year, values_from=input$totsBtns)
           diff[,4] <- diff[,3]-diff[,2]
           names(diff)[[4]] <- input$trendIn
           #diff$province_num <- df_max_year$province_num
@@ -670,8 +607,10 @@ server <- function(input, output, session) {
           
           currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " Values"), indicator_list$units[indicator_list$shortName==input$trendIn])
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
+          timePlot <- timeSeriesPlot(data_out, input$trendIn)
           output$currMap <- renderPlot(currMap)
           output$trendMap <- renderPlot(trendMap)
+          #output$timePlot <- renderPlotly(timePlot)
         } else {
           showNotification("No trends to show for selected variable", type="warning")
         }
@@ -709,7 +648,7 @@ server <- function(input, output, session) {
       #ALT - might be easier than what we do now with the maps in a separate area. Maybe build out later.
       #}
       mapdata <- all_data$mapdata
-      outdata <- all_data$tempdata #Note to go back and fix the naming here.
+      outdata <- all_data$means_out #Note to go back and fix the naming here.
       outdata <- na.omit(outdata)
       if(nrow(outdata)==0){
         showNotification("Error: No non-n/a observations in dataset", type="error") 

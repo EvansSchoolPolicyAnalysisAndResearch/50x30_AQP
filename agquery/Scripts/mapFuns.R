@@ -102,3 +102,25 @@ makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
     scale_y_continuous(labels=scales::comma)+
     scale_x_continuous(labels=scales::comma)
 }
+
+reportChart <- function(outdata, xvars, yvars, xlab, ylab){
+  short_yvars <- signif(outdata[[yvars]], 3)
+  ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars)))+
+    geom_col(stat="identity", fill="darkblue", color="white")+
+    geom_text(aes(label=short_yvars), nudge_y=-0.03, color="white")
+    coord_flip()+
+    theme_minimal()+
+    theme(panel.grid.major=element_blank(), panel_grid_minor=element_blank())+
+    labs(x=xlab, y=ylab)
+}
+
+timeSeriesPlot <- function(outdata, yvars){
+  ggplot(outdata, aes(x=year, y=!!sym(yvars)))+
+    geom_point()+
+    geom_line(linewidth=1)+
+    scale_y_continuous(labels=scales::comma)+
+    theme_minimal()+
+    theme(legend.position="none")+
+    theme(panel.grid.minor=element_blank())+
+    scale_x_continuous(breaks=scales::breaks_pretty())
+}
