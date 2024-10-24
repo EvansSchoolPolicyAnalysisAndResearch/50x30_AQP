@@ -43,7 +43,8 @@ makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, a
           axis.title = element_text(hjust = 0.5, size = 14), 
           axis.ticks = element_blank(), 
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
-          axis.text = element_text(size=12))
+          axis.text = element_text(size=12))+
+    scale_x_continuous(labels=scales::comma)
 }
 
 makeHist <- function(outdata, yvars, bins, indicAxis, titleLab){
@@ -57,7 +58,8 @@ makeHist <- function(outdata, yvars, bins, indicAxis, titleLab){
           axis.title = element_text(hjust = 0.5, size = 14), 
           axis.ticks = element_blank(), 
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
-          axis.text=element_text(size=12))
+          axis.text=element_text(size=12))+
+    scale_x_continuous(labels=scales::comma)
 }
 
 
@@ -76,7 +78,9 @@ makeScatterGrps <- function(outdata, xvars, yvars, aggs_list, xlab, ylab, aggs_l
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
           legend.title=element_text(size=14),
           legend.text=element_text(size=12))+
-    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]])) 
+    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=max(outdata[[yvars]]))+
+    scale_y_continuous(labels=scales::comma)+
+    scale_x_continuous(labels=scales::comma)
 }
 
 makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
@@ -94,5 +98,32 @@ makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
           legend.title=element_text(size=14),
           legend.text=element_text(size=12))+
-    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=0.9*max(outdata[[yvars]]))
+    annotate(geom="richtext", label=annot, x=(max(outdata[[xvars]])+min(outdata[[xvars]]))/2, y=0.9*max(outdata[[yvars]]))+
+    scale_y_continuous(labels=scales::comma)+
+    scale_x_continuous(labels=scales::comma)
+}
+
+reportChart <- function(outdata, xvars, yvars, xlab, ylab){
+  short_yvars <- signif(outdata[[yvars]], 3)
+  ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars)))+
+    geom_col(stat="identity", fill="darkblue", color="white")+
+    geom_text(aes(label=short_yvars), nudge_y=-0.03, color="white")
+    coord_flip()+
+    theme_minimal()+
+    theme(panel.grid.major=element_blank(), panel_grid_minor=element_blank())+
+    labs(x=xlab, y=ylab)
+}
+
+timeSeriesPlot <- function(outdata, yvars, statname){
+  outdata <- outdata %>% filter(shortName==yvars)
+  lab <- unique(outdata$labelName)
+  ggplot(outdata, aes(x=year, y=!!sym(statname)))+
+    geom_point()+
+    geom_line(linewidth=1)+
+    scale_y_continuous(labels=scales::comma)+
+    theme_minimal()+
+    theme(legend.position="none")+
+    theme(panel.grid.minor=element_blank())+
+    scale_x_continuous(breaks=scales::breaks_pretty())+
+    labs(x="",y=lab[[1]])
 }

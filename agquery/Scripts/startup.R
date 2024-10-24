@@ -6,20 +6,24 @@ root_dir <- ""
 #LOADING IN AND VALIDATING SPREADSHEETS
 #Some of this could probably be cached for faster startup
 
-indicatorCategories <- tryCatch(read.xlsx("Update/indicatorCategories.xlsx"),
-                                error=function(e) {
-                                  return(F)
-                                }) 
-if(is.list(indicatorCategories)){
-  if(("shortName" %in% names(indicatorCategories)) & ncol(indicatorCategories) > 1) {
-    indicatorCategories <- indicatorCategories %>% 
-      melt() %>% 
-      filter(value==1) %>% 
-      select(-value) %>% 
-      rename(goalName=variable)
-    goalNames <- str_to_title(unique(indicatorCategories$goalName))
-  }
-}
+# indicatorCategories <- tryCatch(read.xlsx("Update/indicatorCategories.xlsx"),
+#                                 error=function(e) {
+#                                   return(F)
+#                                 }) 
+# if(is.list(indicatorCategories)){
+#   if(("shortName" %in% names(indicatorCategories)) & ncol(indicatorCategories) > 1) {
+#     indicatorCategories <- indicatorCategories %>% 
+#       melt() %>% 
+#       filter(value==1) %>% 
+#       select(-value) %>% 
+#       rename(goalName=variable)
+#     goalNames <- str_to_title(unique(indicatorCategories$goalName))
+#   } else {
+#     goalNames <- ""
+#   }
+# }
+
+#Dropping the indicator categories spreadsheet for efficiency
 
 dataset_list <- list.files("Data", pattern="*.csv")
 years <- lapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) %>% unique()
@@ -70,6 +74,9 @@ if(is.list(pathway_link)){
   colnm_link <- c("pathwayID", "goalName","shortName")
   if(any(!(colnm_link %in% names(pathway_link)))){
     pathway_link <- F
+  } else {
+    goalNames <- str_to_title(unique(pathway_link$goalName))
+    indicatorCategories <- pathway_link %>% select(goalName, shortName) %>% distinct()
   }
 }
 
@@ -88,20 +95,20 @@ if(is.list(groups_list)){
 policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
                         error=function(e){return(F)}) #Need to add name enforcement to prevent crashes on targeted styles
 if(is.list(policy_path)){
-  if(is.list(pathway_link)){
-    if(is.list(indicator_list)){
-      available_indics <- merge(pathway_link, indicator_list, by="shortName")
-      available_indics <- available_indics %>% group_by(pathwayID) %>% 
-        mutate(Available.CAS.Indicators=paste0(labelName, collapse="<br>")) %>%
-        select(pathwayID, Available.CAS.Indicators) %>% distinct()
-    } else {
-    available_indics <- pathway_link %>% group_by(pathwayID) %>%
-      mutate(Available.CAS.Indicators=paste0(shortName, collapse="<br>")) %>%
-      select(pathwayID, Available.CAS.Indicators)
-    }
-    policy_path <- merge(policy_path, available_indics, by="pathwayID")
-    policy_path <- policy_path %>% relocate(Available.CAS.Indicators, .before=Evidence)
-  }
+  #if(is.list(pathway_link)){
+  #  if(is.list(indicator_list)){
+  #    available_indics <- merge(pathway_link, indicator_list, by="shortName")
+  #    available_indics <- available_indics %>% group_by(pathwayID) %>% 
+  #      mutate(Available.CAS.Indicators=paste0(labelName, collapse="<br>")) %>%
+  #      select(pathwayID, Available.CAS.Indicators) %>% distinct()
+  #  } else {
+  #  available_indics <- pathway_link %>% group_by(pathwayID) %>%
+  #    mutate(Available.CAS.Indicators=paste0(shortName, collapse="<br>")) %>%
+  #    select(pathwayID, Available.CAS.Indicators)
+  #  }
+  #  policy_path <- merge(policy_path, available_indics, by="pathwayID")
+  #  policy_path <- policy_path %>% relocate(Available.CAS.Indicators, .before=Evidence)
+#}
   pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
   #pathwaysDT$Available.CAS.Indicators <- gsub(pattern="\n", replacement="<br>", x=pathwaysDT$Available.CAS.Indicators)
 
@@ -135,6 +142,7 @@ if(is.list(ext_data)){
     ext_data <- F
   } else {
     ext_data$Location <- lapply(ext_data$Location, FUN=function(x){sprintf("<a href=%s>%s</a>", x,x)})
+    names(ext_data) <- str_replace_all(names(ext_data), "\\.", " ")
   }
 }
 

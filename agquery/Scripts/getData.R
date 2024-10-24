@@ -9,9 +9,13 @@ getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pat
   #indics_out <- merge(indics_out, indicator_list, by="shortName")
   indics <- as.list(indics_out$shortName)
   names(indics) <- indics_out$labelName 
-
   return(indics)
 }
+
+getDenoms <- function(indics, indicator_list){
+  indicator_list %>% filter(shortName %in% indics) %>% select(shortName, denominator) %>% na.omit()
+}
+
 
 getFiles <- function(indicator_list, dataset_list, indicators){ #Small helper function to get the files formatted for getData
   data_files_select <- indicator_list[which(indicator_list$shortName %in% indicators),] %>% select(file) %>% distinct() %>% unlist() #TODO: Clean this up
@@ -24,8 +28,8 @@ getFiles <- function(indicator_list, dataset_list, indicators){ #Small helper fu
   return(data_files)
 }
 
-getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", source_call="none", drop_0s=F){
-  varslist <- c(xvars, yvars)
+getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", aggs_list="", source_call="none", drop_0s=F){
+  varslist <- c(xvars, yvars, if(!is.null(denoms)) denoms$denominator)
   aggs_list <- c(aggs_list[nzchar(aggs_list)], "year") 
   years <- files$year %>% unique()
   out_flag <- F
@@ -59,7 +63,7 @@ getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", so
           showNotification("Error in merging weights file: ID column not found. Unweighted averages will be shown.", type="error")
           df$weight <- 1
         } else {
-        df <- merge(df, weights, by=mergeNames)
+          df <- merge(df, weights, by=mergeNames)
         }
         rm(weights)
       }
@@ -83,15 +87,15 @@ getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", so
         }
       }
     }
-    varslist_short <- names(df)[which(names(df) %in% varslist)]
+    #Fix denominator issues. This is super messy.
+    varslist_short <- names(df)[which(names(df) %in% c(xvars,yvars))]
     if(length(varslist_short)==0){
       showNotification(paste("No variables for the selected policy priority were found in", survey))
     } else {
       df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
-        select(all_of(c("hhid","province", varslist_short, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
+        select(all_of(c("hhid","province", varslist_short, if(!is.null(denoms)) denoms$denominator, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
       
-      #TODO: Fix this w/r/t the trends page. 
-      if(drop_0s){
+      if(drop_0s==T){
         df <- df %>% filter(!!sym(yvars)!=0)
       }
       
@@ -108,7 +112,7 @@ getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", so
       }
       if(length(varslist_short)==0){ 
         if(source_call!="trendmaps"){
-        showNotification(paste("Error: Data file", file, "is empty or only contains variables not listed in indicators_list"), type="error")
+          showNotification(paste("Error: Data file", file, "is empty or only contains variables not listed in indicators_list"), type="error")
         }
       } else {
         for(currVar in varslist_short){
@@ -119,103 +123,96 @@ getData <- function(files, xvars, yvars=NULL, adm_level="hhid", aggs_list="", so
             df[[currVar]] <- as.numeric(df[[currVar]])
           }
           
+          
           var_unit <- subset(indicator_list, shortName %in% currVar)$units[[1]] #Should only be 1 list item
           #var_continuous <- max(c("count","ratio", "boolean") %in% var_unit)==0 #I don't think this is necessary because we don't have custom Winsorization limits in the interface
           #if(var_continuous==T) { 
-            l_wins_threshold <- (indicator_list$wins_limit[[which(indicator_list$shortName %in% currVar)]])/100
-            u_wins_threshold <- 1-l_wins_threshold
-            
-            if(!is.numeric(l_wins_threshold)) { #I.e., spreadsheet cell was empty or boxes were somehow made blank
-              l_wins_threshold <- 0
-            }
-            if(!is.numeric(u_wins_threshold)){
-              u_wins_threshold <- 1
-            }
-            
-            #Use zeros in the spreadsheet for vars that you don't want to winsorize
-            lim <- quantile(df[[currVar]],probs=c(l_wins_threshold, u_wins_threshold), na.rm=T)
-            df[[currVar]][df[[currVar]] < lim[1]] <- lim[1] 
-            df[[currVar]][df[[currVar]] > lim[2]] <- lim[2] 
+          l_wins_threshold <- (indicator_list$wins_limit[[which(indicator_list$shortName %in% currVar)]])/100
+          u_wins_threshold <- 1-l_wins_threshold
+          
+          if(!is.numeric(l_wins_threshold)) { #I.e., spreadsheet cell was empty or boxes were somehow made blank
+            l_wins_threshold <- 0
+          }
+          if(!is.numeric(u_wins_threshold)){
+            u_wins_threshold <- 1
+          }
+          
+          #Use zeros in the spreadsheet for vars that you don't want to winsorize
+          lim <- quantile(df[[currVar]],probs=c(l_wins_threshold, u_wins_threshold), na.rm=T)
+          df[[currVar]][df[[currVar]] < lim[1]] <- lim[1] 
+          df[[currVar]][df[[currVar]] > lim[2]] <- lim[2] 
           #}
+          
         }
         if(exists("df", mode="list")){
           if(!nrow(df)==0){  
-            
-            
-            #Long term: Might need to find a different way to handle this.
-            #if(adm_level!="hhid"){
-            #  outdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level))) %>% distinct()
-            #  for(currVar in varslist_short){
-            #    tempdata <- subsetdata %>% select(all_of(c(aggs_list, adm_level, currVar, "weight"))) %>%
-            #      group_by(!!!syms(c(aggs_list, adm_level))) %>% 
-            #      na.omit() %>%
-            #      summarize_at(value=weighted.mean(!!sym(currVar), weight))
-            #    names(tempdata)[names(tempdata)=="value"] <- currVar
-            if(adm_level=="hhid"){
-              if(!exists('outdata')){
-                outdata <- df
+            #Doing this down here to avoid messing up household data export, although hhdata might or might not have denoms at this point. 
+            for(currVar in varslist_short){
+              if(!is.null(denoms)){
+                df[[paste0("weight.", currVar)]] <- if(any(currVar %in% denoms$shortName)){
+                  denominator <- denoms$denominator[which(denoms$shortName==currVar)]
+                  df$weight*df[[denominator]]
+                } else {
+                  df$weight
+                }
               } else { 
-                outdata <- bind_rows(outdata, df)
+                df[[paste0("weight.", currVar)]] <- df$weight
               }
+              
+              
+              names(df)[names(df)==currVar] <- paste0("value.", currVar)
+            }
+            #If denoms are also target variables, they'll be safe behind "value" and "weight"
+            df <- df %>% select(-any_of(c(denoms$denominator, "weight"))) %>% 
+              pivot_longer(cols=starts_with(c("value", "weight")), names_to=c(".value","shortName"), names_sep="[.]") 
+            #can combine these once mapdata problem is solved. 
+            if(adm_level %in% "hhid"){
+              outdf <- df %>% select(-weight) %>% rename(Mean=value) #Kludge but that's how it's coming back - fix later.
+              if(!exists('outdata')){
+                outdata <- outdf
+              } else { 
+                outdata <- bind_rows(outdata, outdf)
+              } 
             } else {
               tempdata <- df %>% 
-                group_by(!!!syms(c(adm_level, aggs_list))) %>% 
-                summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T)))
-              if(!exists('outdata')){
-                outdata <- tempdata
-              } else { 
+                group_by(!!!syms(na.omit(c(adm_level, aggs_list, "shortName")))) %>%   #Na omit is awkward but that's how we get the national stats
+                summarize(Mean=weighted.mean(value, w=weight, na.rm=T), Total=sum(value*weight, na.rm=T), Obs=sum(!is.na(value)))
+              
+              if(exists("outdata")){ 
                 outdata <- bind_rows(outdata, tempdata) 
-              } 
+              } else {
+                outdata <- tempdata
+              }
             }
             
-            mapdata_temp <- df %>% group_by(province, year) %>% #there's still a major efficiency issue here. 
-              summarize(across(all_of(varslist_short), ~weighted.mean(.x, w=weight, na.rm=T)))
+            # mapdata_temp <- df %>% group_by(province, year, shortName) %>% #there's still a major efficiency issue here. #Also this hard coding needs to be undone.
+            #  summarize(Mean=weighted.mean(value, w=weight, na.rm=T), Total=sum(value*weight, na.rm=T), Obs=sum(!is.na(value))) %>%
+            # pivot_wider(id_cols=c("province", "year"), names_from=shortName, values_from=c("Mean", "Total", "Obs"))
+            # 
+            
+            mapdata_temp <- df %>% group_by(province, year, shortName) %>%
+              summarize(Mean=weighted.mean(value, w=weight, na.rm=T)) %>% 
+              pivot_wider(id_cols=c("province", "year"), names_from=shortName, values_from="Mean")
             
             if(!exists("mapdata")){
-              mapdata <- mapdata_temp 
+              mapdata <- mapdata_temp
             } else {
               mapdata <- bind_rows(mapdata, mapdata_temp)
             }
             
-            #if(length(aggs_list==1)) #I.e., aggs_list only contains year
-            #pivotbyvars <- c('province', 'name')
-            #groupbyvars <- c('province', varslist_short, "weight", aggs_list)
-            #groupbyvars <- groupbyvars[nzchar(groupbyvars)]
-            #if(source_call!="trends"){ #Minor kludge because we're getting a pivot longer error here if there's variables missing.
-            #mapdata_temp <- subsetdata  %>% select(all_of(groupbyvars)) %>% 
-            #  na.omit() %>% 
-            #  pivot_longer(., varslist_short) %>% 
-            #  group_by(across(all_of(pivotbyvars))) %>% 
-            #  summarize(across(all_of(varslist_short), ~ weighted.mean(.x, w=weight, na.rm=T))) %>%
-            #  pivot_wider()
-            #mapdata$province_num <- as.numeric(mapdata$province)
-            #xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
-            #if(exists("mapdata_temp")){
-            #  mapdata <- mapdata_temp
-            #} else {
-            #  mapdata <- bind_rows(mapdata_temp)
-            #}
-            #} else {
-            #  return(list(tempdata=outdata))
-            #}
-            
-            #  mapdata$province_num <- as.numeric(mapdata$province)
-            #  xShp <- merge(khm_shp, mapdata, by.x="province", by.y="province_num", all.x=T)
-            #  return(xShp)
             rm(df)
           }
         }
       }
     }
   }
-  #if(exists("dropped_vars")){
-  #  output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
-  #}
+  
   if(!exists("droppedVars")){
     droppedVars <- ""
   }
   if(exists("outdata")){
-    return(list(tempdata=outdata, mapdata=mapdata, droppedVars=droppedVars)) #really need to fix the names here.
+    #return(list(means_out=means_out, totals_out=totals_out, nat_means=nat_means, nat_tots=nat_tots, outdata=outdata, mapdata=mapdata, droppedVars=droppedVars)) #really need to fix the names here.
+    return(list(outdata = outdata, mapdata=mapdata))
   } else {
     return("")
   }
