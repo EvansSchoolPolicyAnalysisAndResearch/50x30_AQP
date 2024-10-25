@@ -1,14 +1,23 @@
-getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear){
+getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear, cats=F){
   if(pathway!="0"){ 
-    indics_out <- pathway_link %>% filter(goalName==policy, pathwayID==pathway) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
+    indics_out <- pathway_link %>% filter(goalName==policy, pathwayID==pathway) %>% merge(., indicator_list, by="shortName") 
     
   } else {
-    indics_out <- pathway_link %>% filter(goalName==policy) %>% merge(., indicator_list, by="shortName") #Almost certainly a better way to do this.
+    indics_out <- pathway_link %>% filter(goalName==policy) %>% merge(., indicator_list, by="shortName")
   }
+  if(cats==T){
+    indics_out <- merge(indics_out, indic_inventory %>% filter(as.numeric(year)==obsyear), by="shortName") %>% select(shortName, category, labelName) %>% distinct()  %>% arrange(category)
+    indics <- lapply(unique(indics_out$category), FUN=function(x){
+      sub_indics <- indics_out %>% filter(category==x)
+      temp_indics <- as.list(sub_indics$shortName)
+      names(temp_indics) <- sub_indics$labelName
+    })
+    names(indics) <- unique(indics_out$category)
+  } else {
   indics_out <- merge(indics_out, indic_inventory %>% filter(as.numeric(year)==obsyear), by="shortName") %>% select(shortName, labelName) %>% distinct()
-  #indics_out <- merge(indics_out, indicator_list, by="shortName")
   indics <- as.list(indics_out$shortName)
   names(indics) <- indics_out$labelName 
+  }
   return(indics)
 }
 

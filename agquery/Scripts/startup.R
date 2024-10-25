@@ -95,23 +95,7 @@ if(is.list(groups_list)){
 policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
                         error=function(e){return(F)}) #Need to add name enforcement to prevent crashes on targeted styles
 if(is.list(policy_path)){
-  #if(is.list(pathway_link)){
-  #  if(is.list(indicator_list)){
-  #    available_indics <- merge(pathway_link, indicator_list, by="shortName")
-  #    available_indics <- available_indics %>% group_by(pathwayID) %>% 
-  #      mutate(Available.CAS.Indicators=paste0(labelName, collapse="<br>")) %>%
-  #      select(pathwayID, Available.CAS.Indicators) %>% distinct()
-  #  } else {
-  #  available_indics <- pathway_link %>% group_by(pathwayID) %>%
-  #    mutate(Available.CAS.Indicators=paste0(shortName, collapse="<br>")) %>%
-  #    select(pathwayID, Available.CAS.Indicators)
-  #  }
-  #  policy_path <- merge(policy_path, available_indics, by="pathwayID")
-  #  policy_path <- policy_path %>% relocate(Available.CAS.Indicators, .before=Evidence)
-#}
   pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
-  #pathwaysDT$Available.CAS.Indicators <- gsub(pattern="\n", replacement="<br>", x=pathwaysDT$Available.CAS.Indicators)
-
   pathway_names <- unique(policy_path$Policy.Goal)
   short_Pathways <- unique(policy_path$goalName)
   names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
@@ -147,12 +131,6 @@ if(is.list(ext_data)){
 }
 
 #TODO - probably best to have all of these as CSV. Either way, we need consistency
-
-
-
-
-
-
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
 khm_shp$ADM1_EN[khm_shp$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
 #Implement fuzzy matching later?

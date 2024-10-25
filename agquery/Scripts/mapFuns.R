@@ -104,14 +104,19 @@ makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
 }
 
 reportChart <- function(outdata, xvars, yvars, xlab, ylab){
+  outdata <- arrange(outdata, !!sym(yvars))
+  groupcats <- outdata[[xvars]]
+  outdata[[xvars]] <- factor(outdata[[xvars]], levels=groupcats, labels=groupcats)
   short_yvars <- signif(outdata[[yvars]], 3)
+  
   ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars)))+
-    geom_col(stat="identity", fill="darkblue", color="white")+
-    geom_text(aes(label=short_yvars), nudge_y=-0.03, color="white")
+    geom_col(fill="darkblue")+
+    geom_text(aes(label=short_yvars), nudge_y=-0.2, color="white")+
     coord_flip()+
     theme_minimal()+
-    theme(panel.grid.major=element_blank(), panel_grid_minor=element_blank())+
-    labs(x=xlab, y=ylab)
+    theme(panel.grid.major=element_blank(), axis.text=element_text(size=14))+
+    labs(x=xlab, y=ylab)+
+    scale_y_continuous(labels=scales::comma)
 }
 
 timeSeriesPlot <- function(outdata, yvars, statname){
@@ -122,8 +127,7 @@ timeSeriesPlot <- function(outdata, yvars, statname){
     geom_line(linewidth=1)+
     scale_y_continuous(labels=scales::comma)+
     theme_minimal()+
-    theme(legend.position="none")+
-    theme(panel.grid.minor=element_blank())+
+    theme(legend.position="none", panel.grid.minor.x=element_blank(), panel.grid.minor.y=element_blank(), axis.text=element_text(size=12))+
     scale_x_continuous(breaks=scales::breaks_pretty())+
     labs(x="",y=lab[[1]])
 }
