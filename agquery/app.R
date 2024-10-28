@@ -48,9 +48,9 @@ options(shiny.useragg = TRUE)
 ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
                 base_font = bslib::font_google("Open Sans")), 
                 fluidRow(style="background-color:#cadafa;",
-                         column(1),
+                         
                          column(2, align='center', HTML("<br><img src=moa_logo.png width='200'></img>")),
-                         column(2, fluidRow(HTML("<h2 style='text-align:center; font-weight:900;'>Cambodia Agricultural Survey Policy & Data Explorer</h2>")),
+                         column(3, fluidRow(HTML("<h3 style='text-align:center; font-weight:900;'>Cambodia Agricultural Survey Policy & Data Explorer</h3>")),
                                    fluidRow(HTML("<p style='text-align:center;'>(Version 0.1-Beta)</p>"))),
                          column(2, align='center', HTML("<br><image src=cam_flag.png width='150'></img>")),
                          column(5)
@@ -198,10 +198,10 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                                                   fluidRow(radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid"))),
                                                                                   fluidRow(uiOutput("groupsBtn")),
                                                                                   fluidRow(actionButton('submitBtn', "Compare Variables")),
-                                                                                  fluidRow(HTML("&nbsp;")),
+                                                                                  fluidRow(hr()),
                                                                                   fluidRow(downloadButton('downloadRawShort', 'Download Selected Raw Data',icon=icon('file-csv')),
                                                                                            downloadButton('downloadRawLong', 'Download All Listed Raw Data', icon=icon('file-csv'))),
-                                                                                  fluidRow(HTML('<font size=8><i>Note: clicking "Download Selected Raw Data" will download only the "X" and "Y" variables chosen in the box above. "Download All Listed Raw Data" will intead download all. The data will be summarized based on the choices to omit 0s, group based at the province or household level, and grouped according to the selected grouping variable.</i></font>'))
+                                                                                  fluidRow(column(8, HTML('<p style="font-size:8px"><i>Note: clicking "Download Selected Raw Data" will download only the "X" and "Y" variables chosen in the box above. "Download All Listed Raw Data" will intead download all. The data will be summarized based on the choices to omit 0s, group based at the province or household level, and grouped according to the selected grouping variable.</i></p>')))
                                                      )
                                                      ),
                                                      column(8,
@@ -392,16 +392,17 @@ server <- function(input, output, session) {
           shinyjs::enable('pathwaysIn1')
           shinyjs::enable('policiesBox1')
           shinyjs::enable('totsBtns')
-          updateVarTable()
+          #updateVarTable <- function(pathwaysIn1=NULL, policiesIn1, obsyear, totsBtns)
+          updateVarTable(input$pathwaysIn1, input$policiesBox1, unique(indic_inventory$year), input$totsBtns)
     }
     }, ignoreInit=T)
    
    observeEvent(input$pathwaysIn1, {
-     updateVarTable()
+     updateVarTable(input$pathwaysIn1, input$policiesBox1, unique(indic_inventory$year), input$totsBtns)
    }, ignoreInit=T)
    
    observeEvent(input$totsBtns, {
-     updateVarTable()
+     updateVarTable(input$pathwaysIn1, input$policiesBox1, unique(indic_inventory$year), input$totsBtns)
    }, ignoreInit=T)
    
    #ALT NOTE TO ADD ERROR HANDLING HERE.
@@ -544,13 +545,13 @@ server <- function(input, output, session) {
   #  }
   #}
   
-  updateVarTable <- function(){
-    pathwaysIn <- if(is.null(input$pathwaysIn1)){
-      0
+  updateVarTable <- function(pathwaysIn1=NULL, policiesIn1, obsyear, totsBtns){
+    pathwaysIn <- if(is.null(pathwaysIn1)){
+      "0"
     } else {
-      input$pathwaysIn1
+      pathwaysIn1
     }
-    filtered_tab <- filterVarTable(data_table_out$data_table, pathway_link, pathwaysIn, indicator_list, input$totsBtns)
+    filtered_tab <- filterVarTable(data_table_out$data_table, pathway_link, pathwaysIn, indicator_list, totsBtns)
   output$trendsTable <- renderDataTable(
      DT::datatable(filtered_tab %>% select(-shortName), 
                    options=list(searching=F, pageLength=15, dom='tip'), rownames=F)  %>%
@@ -562,8 +563,11 @@ server <- function(input, output, session) {
         options=list(searching=F, pageLength=15), rownames=F)
   )
   output$trendVarChoose <- renderUI({
-    trendVarList <- as.list(c("0", filtered_tab$shortName))
-    names(trendVarList) <- c("Select...", filtered_tab$Variable)
+    trendVarList <- getIndics(pathway_link, indicator_list, indic_inventory, policiesIn1, pathwaysIn, obsyear, cats=T)
+    trendVarList <- c("0", trendVarList)
+    names(trendVarList)[[1]] <- "Select..."
+    #trendVarList <- as.list(c("0", filtered_tab$shortName))
+    #names(trendVarList) <- c("Select...", filtered_tab$Variable)
    selectInput('trendIn', "Choose a variable to map:", choices=trendVarList)
   })
 }
