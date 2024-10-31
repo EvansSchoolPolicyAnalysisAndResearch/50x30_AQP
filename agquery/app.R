@@ -42,24 +42,40 @@ thematic_shiny(
   qualitative = c("#440154FF",  "#21908CFF", "#3B528BFF", "#5DC863FF", "#FDE725FF")
 )
 options(shiny.useragg = TRUE)
+ 
+# body {
+#   font-family: "Open Sans";
+#   font-size: 14px;
+#   line-height: 1.42857;
+#   color: #6275A2;
+#     background-color: #fff;
 
 
-
-ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
+ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
                 base_font = bslib::font_google("Open Sans")), 
                 fluidRow(style="background-color:#cadafa;",
                          
                          column(2, align='center', HTML("<br><img src=moa_logo.png width='200'></img>")),
-                         column(3, fluidRow(HTML("<h3 style='text-align:center; font-weight:900;'>Cambodia Agricultural Survey Policy & Data Explorer</h3>")),
+                         column(3, fluidRow(HTML("&nbsp;<br><h4 style='text-align:center; font-weight:900;'>Cambodia Agricultural Survey Policy & Data Explorer</h4>")),
                                    fluidRow(HTML("<p style='text-align:center;'>(Version 0.1-Beta)</p>"))),
                          column(2, align='center', HTML("<br><image src=cam_flag.png width='150'></img>")),
                          column(5)
                          ),
                 fluidRow(style="background-color:#cadafa;", br()),
 
-                navbarPage(title="", theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528B", info="#474481", primary = "#440154FF",
+                navbarPage(title="", theme=bslib::bs_theme(version="5", preset='pulse',  #bg = "white", fg = "#3B528B", info="#474481", primary = "#440154FF",
                                                            base_font = bslib::font_google("Open Sans")),
-                           tabPanel("About", icon=icon("signs-post"), column(1),column(8, 
+                          header=
+                             tags$style(HTML(
+                               '
+                               .selectize-input.items.full.has-options.has-items {font-size: 1.0em}
+                               .shiny-input-select {font-size: 1.0em}
+                               .radio-group-buttons {font-size: 1.0em}
+                               .btn.btn-default.shiny-download-link {--bs-btn-line-height: 0.8; font-size:1.0em}
+                               .btn.btn-default.action-button {--bs-btn-line-height: 1.0; font-size:1.0em}
+                                '
+                             )),
+                           tabPanel("About", icon=icon("signs-post"), column(1), column(8, 
                                                                                        #To do: move this to a separate file.
                                                                                        #wellPanel(HTML(
                                                                                        #  "<p>The Cambodia Agricultural Survey data explorer provides tools for exploring policy instruments to achieve agricultural development goals and connecting those instruments to information available in the CAS surveys. Export report-ready graphs and raw data for follow-up analyses. Inputs and interface elements are also user-modifiable for a custom data analysis environment.</p>"
@@ -68,7 +84,8 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                                                        #hr(),
                                                                                        fluidRow(
                                                                                          #column(8, 
-                                                                                         HTML(paste('<table><tr><td><h3>Purpose</h3>',
+                                                                                         HTML(paste('<div style="font-size: 0.8em; margin: 20 0 0 0;">',
+                                                                                                    '<table><tr><td><h3>Purpose</h3>',
                                                                                                     '<p>The Data Explorer supports decisionmaking, progress tracking, and hypothesis testing related to the <a href="https://mfaic.gov.kh/files/uploads/1XK1LW4MCTK9/EN%20PENTAGONAL%20STRATEGY%20-%20PHASE%20I.pdf">Pentagonal Strategy</a>\'s goals of implementing the <a href="https://data.opendevelopmentcambodia.net/library_record/national-agricultural-development-policy-2022-2023">National Agricultural Development Policy</a> and <a href="https://faolex.fao.org/docs/pdf/cam219302.pdf">Cambodia Agro-Industrial Development Strategic Plan</a>, which aim to increase domestic commercial livestock production and the domestic agricultural products processing industries.</a></p></td></tr>',
                                                                                                     '<tr><td align="center"><img src="Tikz_figure_2.png" width=450></img></td></tr>',
                                                                                                     '<tr><td><p>In collaboration with app maintainers, the users are able to view, analyze, and create figures related to household production of crops and livestock that can be used to understand trends in small-scale farmer contributions to national supply and the economic conditions small-scale producers face. Variables in the survey are grouped according to policy themes for ease of navigation.</p>',
@@ -113,7 +130,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                                                                     '<p> University of Washington, Evans Policy Analysis and Research (EPAR) (2024). Cambodia Agricultural Survey Policy & Data Explorer. v0.1. DOI: <a href="https://doi.org/10.6069/GPPQ-2X85">https://doi.org/10.6069/GPPQ-2X85</a>',
                                                                                                     '<br><br>',
                                                                                                     "<img src='evans2.jpg' width='30%' align='center'></img>",
-                                                                                                    "<br>&nbsp;"
+                                                                                                    "<br>&nbsp;</div>"
                                                                                          )
                                                                                          
                                                                                          )
@@ -123,7 +140,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                            ),
                            
                            tabPanel("Policy Goals and Instruments", icon=icon("landmark-dome"),
-
+                                    HTML('<div style="font-size: 0.8em; margin: 20 0 0 0;">'),
                                     fluidRow(HTML('<p><h3>Policy Instruments by Goal</h3></p>
                              <p>This table presents policy instruments (tax/subsidy, regulatory, information) in support of a particular goal, and the expected most direct effect on market price, quantity, quality and timeliness, followed by CAS variables and relevant evidence where available. The predicted changes in price and quantity assume competitive markets and do not consider intermediaries.</p><br>')
                                     #downloadButton('downloadPathways',
@@ -133,11 +150,13 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                     fluidRow(HTML('<p><i>This reference set of variables may be extended and revised by suitably trained users through revisions to the source Excel file '),
                                              downloadLink('downloadPathways', label='here.'),
                                              HTML('See User Guide.</i></p><br>')),
-                             fluidRow(uiOutput("path_table"), uiOutput("path_tbl_err"))
+                             fluidRow(column(12, uiOutput("path_table"), uiOutput("path_tbl_err"))),
+                             HTML('</div>')
                            ),
 
                            tabPanel("Variable Maps and Statistics", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
+                                    HTML('<div style="font-size: 0.8em;">'),
                                     fluidRow(HTML('<p><i>The variables summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '),
                                              downloadLink('indicsDL1', label='the pathways table,'),  #this would be easier with modules
                                              downloadLink('indicsDL2', label='the indidicator list,'),
@@ -148,7 +167,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                     fluidRow(column(4, selectInput('policiesBox1', "Select a policy goal", choices=c("None", goalNames)))),
                                     conditionalPanel(condition="input.policiesBox1!='None'", 
                                                      fluidRow(column(4, uiOutput('pathwaysBox'))),
-                                                     fluidRow(column(4, radioGroupButtons('totsBtns', label="Choose Statistic to Present", choices=c("Mean","Total")))),
+                                                     fluidRow(column(4, radioGroupButtons('totsBtns', label="Choose Statistic to Present", choices=c("Mean","Total"), size='sm'))),
                                                      fluidRow(column(5, uiOutput('msgText')),
                                                               column(1),
                                                               column(6,  uiOutput("trendVarChoose"))
@@ -158,8 +177,10 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                                                     label='Download Table Data',
                                                                                     icon=icon('file-csv')),
                                                                      HTML("<br><hr><br>"),
-                                                                     bsCollapse(
-                                                                       bsCollapsePanel("Detailed Information",
+                                                                     #bsCollapse(
+                                                                      # bsCollapsePanel("Detailed Information",
+                                                                     accordion(open=F,
+                                                                       accordion_panel("Detailed Information", 
                                                                                        dataTableOutput('flagsTable'),
                                                                                        downloadButton('downloadFlags',
                                                                                                       label='Download Table Data',
@@ -169,15 +190,16 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                     plotOutput('trendMap'),
                                                     #plotOutput('obsMap'),
                                                     plotlyOutput('timePlot'),
-                                                    plotOutput('provPlot'),
+                                                    #plotOutput('provPlot'),
                                                     uiOutput("plotsErr"))),
 
                                     fluidRow(column(12, uiOutput("droppedVars"))),
-                                    #fluidRow(column(6, ))
+                                    HTML("</div>")
                                     )
                            ),
                            
                            tabPanel("Variable Correlations", icon=icon("chart-line"),
+                                    HTML('<div style="font-size: 0.8em">'),
                                     fluidRow(HTML('<p><i>The variables summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '),
                                              downloadLink('relsDL1', label='the pathways table,'),
                                              downloadLink('relsDL2', label='the indidicator list,'),
@@ -187,8 +209,8 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                     fluidRow(column(5, selectInput('policiesBox2', "Select a policy goal", choices=c("None", goalNames)))),
                                     conditionalPanel(condition="input.policiesBox2!='None'",
                                                      fluidRow(column(8, uiOutput('dataPathBox'))),
-                                                     fluidRow(column(4, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year))),
-                                                              column(8,actionButton('makeHeatMap',"Show Heatmap"))),
+                                                     fluidRow(column(4, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year), size='sm')),
+                                                              column(8, br(), actionButton('makeHeatMap',"Show Heatmap"))),
                                                      fluidRow(column(4, wellPanel(style="background-color: #ededed; border-color: #9c9c9c; padding=10;",
                                                                                   fluidRow(column(6, uiOutput('indicsBox')),
                                                                                            column(6, uiOutput('corrsBox'))),
@@ -196,11 +218,15 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                                                   hr(),
                                                                                   fluidRow(checkboxInput('yChk', 'Omit 0s from Y Variable')),
                                                                                   fluidRow(radioButtons("disAgg_admin", HTML("<b>Select Administrative Level</b>"), choiceNames=c("Province","Household"), choiceValues=c("province", "hhid"))),
-                                                                                  fluidRow(uiOutput("groupsBtn")),
+                                                                                  fluidRow(column(10, uiOutput("groupsBtn"))),
                                                                                   fluidRow(actionButton('submitBtn', "Compare Variables")),
-                                                                                  fluidRow(hr()),
-                                                                                  fluidRow(downloadButton('downloadRawShort', 'Download Selected Raw Data',icon=icon('file-csv')),
-                                                                                           downloadButton('downloadRawLong', 'Download All Listed Raw Data', icon=icon('file-csv'))),
+                                                                                  hr(),
+                                                                                  fluidRow(HTML("<b>Download Data</b>")),
+                                                                                  br(),
+                                                                                  fluidRow(column(6, downloadButton('downloadRawShort', 'Download Selected Raw Data',icon=icon('file-csv'))),
+                                                                                           column(6, downloadButton('downloadRawLong', 'Download All Listed Raw Data', icon=icon('file-csv')))
+                                                                                           ),
+                                                                                  br(),
                                                                                   fluidRow(column(8, HTML('<p style="font-size:8px"><i>Note: clicking "Download Selected Raw Data" will download only the "X" and "Y" variables chosen in the box above. "Download All Listed Raw Data" will intead download all. The data will be summarized based on the choices to omit 0s, group based at the province or household level, and grouped according to the selected grouping variable.</i></p>')))
                                                      )
                                                      ),
@@ -214,31 +240,83 @@ ui <- fluidPage(theme=bslib::bs_theme(version="3", bg = "white", fg = "#3B528BFF
                                                      fluidRow(column(6, plotOutput('indicatorMap')), column(6, plotOutput('corrMap'))),
                                                      fluidRow(plotOutput('scatterPlot')),
                                                      fluidRow(uiOutput('plotInterp'))
-                                    )
+                                    ),
+                                    HTML('</div>')
                            ),
-                           # tabPanel("Reporting: Fast", icon=icon("newspaper"),
-                           #          fluidRow(selectInput("lsChoose", choices=c("Chickens","Pigs","Cattle","Buffalo")), actionButton("newRept", "Generate Report")),
-                           #          fluidRow(plotOutput("rep1plot"), plotOutput("rep1map")),
-                           #          fluidRow(plotOutput("rep2plot"), plotOutput("rep2map")),
-                           #          fluidRow(plotOutput("rep3plot"), plotOutput("rep3map")),
-                           #          fluidRow(plotOutput("rep4plot"), plotOutput("rep4map"))
-                           # ),
-                           # tabPanel("Reporting: Pretty", icon=icon("newspaper"),
-                           #          fluidRow(verbatimTextOutput("Placeholder")),
-                           #          valueBox(title="Livestock Ownership Rate, Among Agricultural Holdings", showcase=textOutput("vb1text")),
-                           #          valueBox(title="Livestock Ownership Rate, Among Livestock-raising holdings", showcase=textOutput("vb2text")),
-                           #          valueBox(title="Percentage of Holdings Raising Livestock Among Agricultural Households", showcase=plotOutput("vb3plot")),
-                           #          valueBox(title="Percentage of Holdings Raising Livestock Among Livestock Households", showcase=plotOutput("vb4plot"))
-                           #          
-                           #          #fluidRow(valueBox(title="Livestock Production Rates", 
-                           #          #                  value=textOutput("vb1Text"),
-                           #          #                  showcase=plotlyOutput("repPlot1")), 
-                           #          #         plotOutput("vb1_map"))
-                           #          ),
+                           
+                           #Percent of ag holdings raising %animal%
+                           #Percent of ls holdings raising %animal%
+                           #Percent of FHH holdings raising %animal% + map
+                           #Percent of holdings with vocational/technical training
+                           #Percent of holdings with formal association
+                           #Percent of holdings with informal association. 
+                           
+                           
+                           tabPanel("Validation", icon=icon("question"),
+                                    HTML('<div style="font-size: 0.8em">'),
+                                    shinyjs::useShinyjs(),
+                                    fluidRow(column(4, selectInput('powerBiVars', "Choose Variable", choices=c("fhh", 
+                                                                                                               "raised_Poultry", 
+                                                                                                               "raised_Cattle", 
+                                                                                                               "raised_Buffalo",
+                                                                                                               "raised_Pigs", 
+                                                                                                               "raised_Livestock", 
+                                                                                                               "ag_comm", 
+                                                                                                               "ag_assoc", 
+                                                                                                               "ag_extension",
+                                                                                                               "num_Cattle",
+                                                                                                               "num_Pigs",
+                                                                                                               "num_Buffalo",
+                                                                                                               "live_sale_rate_Cattle",
+                                                                                                               "live_sale_rate_Pigs",
+                                                                                                               "live_sale_rate_Buffalo",
+                                                                                                               "sale_price_obs_Cattle",
+                                                                                                               "sale_price_obs_Pigs",
+                                                                                                               "sale_price_obs_Buffalo",
+                                                                                                               "prod_value_Cattle",
+                                                                                                               "prod_value_Pigs",
+                                                                                                               "prod_value_Buffalo"
+                                                                                                               )
+                                                                   )
+                                                    )
+                                             ),
+                                    #fluidRow(column(4, uiOutput('lstype'))),
+                                    fluidRow(column(4, selectInput('popVars', 'Select Sample Population',
+                                                                   choices=c("ag_hh", 
+                                                                             "raised_Livestock", 
+                                                                             "raised_Poultry", 
+                                                                             "raised_Cattle", 
+                                                                             "raised_Livestock", 
+                                                                             "raised_Buffalo", 
+                                                                             "raised_Pigs", 
+                                                                             "fhh", 
+                                                                             "ag_comm",
+                                                                             "ag_assoc",
+                                                                             "ag_extension")
+                                                                   )
+                                                    )
+                                             ),
+                                    fluidRow(column(4, radioGroupButtons('yearBtn2', label="Survey Year", choices=year_list, selected=max(instrument_list$year), size='sm'))),
+                                             fluidRow(column(4, radioGroupButtons('totsBtns2', label="Choose Statistic to Graph", choices=c("Mean","Total","Obs"), size='sm'))),
+                                             fluidRow(column(4, actionButton("goBut", "Go"))),
+                                             br(),
+                                             hr(),
+                                             br(),
+                                             fluidRow(column(4, uiOutput('vBoxOut'))), 
+                                             fluidRow(column(6, dataTableOutput('trendsTable2')),
+                                                      column(6, plotOutput('provPlot2'))
+                                    ),
+                                    HTML('</div>')
+                            ),
+
+                                   
+                  
                            tabPanel("Secondary Data Sources", icon=icon("database"),
+                                    HTML('<div style="font-size: 0.8em">'),
                                     fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the "),
                                     downloadLink("secSourcesDL", "associated spreadsheet."), HTML("</p>")),
-                                    fluidRow(DTOutput('secsources'))
+                                    fluidRow(DTOutput('secsources')),
+                                    HTML('</div>')
                           )
                           #tabPanel("User Guide", icon=icon("readme"),
                           #         includeHTML('www/Instructions_50x30_D2.html')
@@ -311,22 +389,24 @@ server <- function(input, output, session) {
     z
   }
   
-  observeEvent(input$newRept, {
-    lsVars <- c("num_",
-                "peak_num_",
-                "vax_pct_",
-                "sale_price_")
-    #aggs_list <- if(length(input$repGroups)>0) input$repGroups else ""
-    
-    
-    data_out <- getData(lsvars)
-    
-    means_out <- data_out$means_out 
-    totals_out <- data_out$totals_out 
-    
-    #output$vb3plot <- 
-    
-  })
+  # observeEvent(input$newRept, {
+  #   lsVars <- c("num_",
+  #               "peak_num_",
+  #               "vax_pct_",
+  #               "sale_price_")
+  #   #aggs_list <- if(length(input$repGroups)>0) input$repGroups else ""
+  #   
+  #   
+  #   data_out <- getData(lsvars)
+  #   
+  #   means_out <- data_out$means_out 
+  #   totals_out <- data_out$totals_out 
+  #   
+  #   #output$vb3plot <- 
+  #   
+  # })
+  
+  
   
   output$secsources <- renderDT(ext_data, escape=F, options=list(dom="t"), rownames=F)
   
@@ -370,7 +450,7 @@ server <- function(input, output, session) {
     output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Y Variable</b>"), choices=indics)) #, size=length(indics) , selectize=F)) 
     output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select X Variable</b>'), choices=indics)) #, size=length(indics), selectize=F))
     groups_sub <- groups_list %>% filter(level=="All" | level==input$policiesBox2)
-    output$groupsBtn <- renderUI(radioButtons("groupsChk", "Selecting Grouping Variable", choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
+    output$groupsBtn <- renderUI(radioButtons("groupsChk", HTML("<b>Selecting Grouping Variable</b>"), choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
   }
 
   
@@ -406,7 +486,7 @@ server <- function(input, output, session) {
    }, ignoreInit=T)
    
    #ALT NOTE TO ADD ERROR HANDLING HERE.
- output$msgText <- renderUI(HTML("<h3>Variable Summary Table</h3><br><p><i>This table presents household-level averages or national totals of all CAS respondents who participated in activities related to the policy goal.</i></p>"))
+ output$msgText <- renderUI(HTML("<h4>Variable Summary Table</h4><br><p><i>This table presents household-level averages or national totals of all CAS respondents who participated in activities related to the policy goal.</i></p>"))
   
  makeDataTable <- function(policiesIn, indicatorCategories, indicator_list, dataset_list){
    if(input$policiesBox1!="None" & is.list(policy_path)){
@@ -616,15 +696,13 @@ server <- function(input, output, session) {
           }
           
           
-        
-          provPlot <- reportChart(xShp_currMap, "ADM1_EN", input$trendIn, "", indicator_list$labelName[indicator_list$shortName == input$trendIn])
           currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " ", input$totsBtns), indicator_list$units[indicator_list$shortName==input$trendIn])
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
           timePlot <- timeSeriesPlot(data_table_out$data_table, input$trendIn, input$totsBtns)
           output$currMap <- renderPlot(currMap)
           output$trendMap <- renderPlot(trendMap)
           output$timePlot <- renderPlotly(timePlot)
-          output$provPlot <- renderPlot(provPlot)
+          #output$provPlot <- renderPlot(provPlot)
         } else {
           showNotification("No trends to show for selected variable", type="warning")
         }
@@ -1028,6 +1106,51 @@ output$path_table <- renderUI({
   output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
 }
 
+
+observeEvent(input$goBut, {
+  #Percent of ag holdings raising %animal%
+  #Percent of ls holdings raising %animal%
+  #Percent of FHH holdings raising %animal% + map
+  #Percent of holdings raising %animal% with vocational/technical training
+  #Percent of holdings raising %animal% with formal association
+  #Percent of holdings raising %animal% with informal association. 
+
+  # data_files <- getFiles(indicator_list, dataset_list, c(input$indicsIn, input$corrsIn)) %>% filter(year==input$yearBtn) #To fix, probably roll year into getFiles function.
+  # aggs_list <- input$groupsChk #ALT Note: Right now this is an unnecessary step, but if we ever end up needing to have multiple disaggregation criteria, it's probably better to do it this way.
+  # denoms <- getDenoms(c(input$corrsIn, input$indicsIn), indicator_list)
+  # adm_level <- input$disAgg_admin
+  # all_data <- getData(data_files, xvars=input$corrsIn, yvars=input$indicsIn, denoms=denoms, adm_level=adm_level, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
+  # 
+  #varIn <- paste0(input$powerBiVars, input$lstype)
+  varIn <- input$powerBiVars
+  plotStat <- input$totsBtns2
+  popVar <- input$popVars
+  denoms <- getDenoms(varIn, indicator_list)
+  datafiles <- getFiles(indicator_list, dataset_list, c(varIn, popVar)) %>% filter(year==input$yearBtn2)
+  data_out <- getFiltData(files=datafiles, xvars=varIn, denoms=denoms, filter=input$popVars, adm_level="province")
+  if(any(is.list(data_out))){
+   
+  vType <- indicator_list %>% filter(shortName==varIn) %>% select(units)
+  if(any(vType %in% "boolean")){
+    vBoxVal <- renderText(paste0(signif(data_out$natdata$Mean[[1]],2)*100, "%", " of ", popVar)) #Should only have 1 value
+    vBoxShow <- renderText(paste(format(data_out$natdata$Total[[1]], big.mark=","), "hhs total", varIn))
+    #vBoxName <- renderText(paste(input$powerBiVars, "hhs among", input$popVars))
+    output$vBoxOut <- renderUI(value_box(title="National Summary", showcase=bsicons::bs_icon("house"), value=vBoxVal, p(vBoxShow))) #, p(vBoxName)))
+  } else {
+    vBoxVal <- renderText(paste0(signif(data_out$natdata$Mean[[1]],2), " average")) #Should only have 1 value
+    vBoxShow <- renderText(paste(format(data_out$natdata$Total[[1]], big.mark=","), "total", input$powerBiVars, "in", popVar))
+    #vBoxName <- renderText(paste(input$powerBiVars, "hhs among", input$popVars))
+    output$vBoxOut <- renderUI(value_box(title="National Summary", showcase=bsicons::bs_icon("house"), value=vBoxVal, p(vBoxShow))) #, p(vBoxName)))
+  }
+  
+  #xShp_currMap <- merge(khm_shp, data_out$mapdata, by="province", all.x=T)
+  merged_tab <- merge(data_out$outdata, khm_shp, by="province", all.x=T) %>% select(all_of(c("ADM1_EN", "Mean", "Total", "Obs"))) %>% mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) %>% rename(Province=ADM1_EN)
+  
+  output$trendsTable2 <- DT::renderDT(merged_tab, rownames=F) 
+  provPlot <- reportChart(merged_tab, "Province", plotStat, "", paste(varIn, "among", popVar))
+  output$provPlot2 <- renderPlot(provPlot, height=600)
+  }
+})
 
 }
 

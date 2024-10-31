@@ -111,7 +111,7 @@ reportChart <- function(outdata, xvars, yvars, xlab, ylab){
   
   ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars)))+
     geom_col(fill="darkblue")+
-    geom_text(aes(label=short_yvars), nudge_y=-0.2, color="white")+
+    geom_text(aes(label=short_yvars), nudge_y=-0.03, color="white", size=14, size.unit='pt')+
     coord_flip()+
     theme_minimal()+
     theme(panel.grid.major=element_blank(), axis.text=element_text(size=14))+

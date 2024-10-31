@@ -134,3 +134,5 @@ if(is.list(ext_data)){
 khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
 khm_shp$ADM1_EN[khm_shp$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
 #Implement fuzzy matching later?
+
+khm_zones <- st_read(paste0(root_dir, "Spatial/cam_prov_zones.shp"), quiet=T)
