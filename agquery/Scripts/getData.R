@@ -248,7 +248,7 @@ getFiltData <- function(files, xvars, yvars=NULL, denoms=NULL, aggs_list="", fil
                           break
                         }) #can simplify using full paths in list.files
       if(exists("df", mode="list")){
-        df <- merge(df, df_in, by=c("hhid", "province"))
+        df <- merge(df, df_in, by="hhid", all.x=T, all.y=T)
       } else {
         df <- df_in
       }
@@ -299,7 +299,7 @@ getFiltData <- function(files, xvars, yvars=NULL, denoms=NULL, aggs_list="", fil
       showNotification(paste("No variables for the selected policy priority were found in", survey))
     } else {
       df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
-        select(all_of(c("hhid","province", varslist_short, if(!is.null(denoms)) denoms$denominator, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
+        select(all_of(c("hhid",adm_level, varslist_short, if(!is.null(denoms)) denoms$denominator, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
       
   
       for(currVar in varslist_short) {
@@ -406,16 +406,16 @@ getFiltData <- function(files, xvars, yvars=NULL, denoms=NULL, aggs_list="", fil
             # pivot_wider(id_cols=c("province", "year"), names_from=shortName, values_from=c("Mean", "Total", "Obs"))
             # 
             
-            mapdata_temp <- df %>% group_by(province, year, shortName) %>%
-              summarize(Mean=weighted.mean(value, w=weight, na.rm=T)) %>%
-              mutate(Mean=signif(Mean,4)) %>%
-              pivot_wider(id_cols=c("province", "year"), names_from=shortName, values_from="Mean")
+            #mapdata_temp <- df %>% group_by(province, year, shortName) %>%
+            #  summarize(Mean=weighted.mean(value, w=weight, na.rm=T)) %>%
+            #  mutate(Mean=signif(Mean,4)) %>%
+            #  pivot_wider(id_cols=c("province", "year"), names_from=shortName, values_from="Mean")
             
-            if(!exists("mapdata")){
-              mapdata <- mapdata_temp
-            } else {
-              mapdata <- bind_rows(mapdata, mapdata_temp)
-            }
+            #if(!exists("mapdata")){
+            #  mapdata <- mapdata_temp
+            #} else {
+            #  mapdata <- bind_rows(mapdata, mapdata_temp)
+            #}
             
             rm(df)
           }
@@ -429,7 +429,8 @@ getFiltData <- function(files, xvars, yvars=NULL, denoms=NULL, aggs_list="", fil
   }
   if(exists("outdata")){
     #return(list(means_out=means_out, totals_out=totals_out, nat_means=nat_means, nat_tots=nat_tots, outdata=outdata, mapdata=mapdata, droppedVars=droppedVars)) #really need to fix the names here.
-    return(list(outdata = outdata, mapdata=mapdata, natdata=nat_out))
+    #return(list(outdata = outdata, mapdata=mapdata, natdata=nat_out))
+    return(list(outdata = outdata, natdata=nat_out))
   } else {
     return("")
   }

@@ -26,7 +26,7 @@ root_dir <- ""
 #Dropping the indicator categories spreadsheet for efficiency
 
 dataset_list <- list.files("Data", pattern="*.csv")
-years <- lapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) %>% unique()
+years <- lapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) %>% unique() %>% na.omit()
 for(year in years){
   names <- lapply(dataset_list[which(str_detect(dataset_list, year))], function(x){
     dat <- read.csv(paste0("Data/",x), nrows=1)

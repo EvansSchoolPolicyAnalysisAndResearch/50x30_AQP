@@ -106,12 +106,18 @@ makeScatter <- function(outdata, xvars, yvars, xlab, ylab, annot){
 reportChart <- function(outdata, xvars, yvars, xlab, ylab){
   outdata <- arrange(outdata, !!sym(yvars))
   groupcats <- outdata[[xvars]]
-  outdata[[xvars]] <- factor(outdata[[xvars]], levels=groupcats, labels=groupcats)
+  outdata[[xvars]] <- factor(outdata[[xvars]], levels=groupcats)
   short_yvars <- signif(outdata[[yvars]], 3)
-  
+  if(max(outdata[[yvars]]) <= 1) {
+    nudge <- 0.025
+  } else if(max(outdata[[yvars]]) <= 100000) {
+    nudge <- 0.2
+  } else {
+    nudge <- 1
+  }
   ggplot(outdata, aes(x=!!sym(xvars), y=!!sym(yvars)))+
     geom_col(fill="darkblue")+
-    geom_text(aes(label=short_yvars), nudge_y=-0.03, color="white", size=14, size.unit='pt')+
+    geom_text(aes(label=short_yvars), nudge_y=nudge, color="darkblue", size=14, size.unit='pt')+
     coord_flip()+
     theme_minimal()+
     theme(panel.grid.major=element_blank(), axis.text=element_text(size=14))+

@@ -84,7 +84,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                                                        #hr(),
                                                                                        fluidRow(
                                                                                          #column(8, 
-                                                                                         HTML(paste('<div style="font-size: 0.8em; margin: 20 0 0 0;">',
+                                                                                         HTML(paste('<div style="font-size: 0.9em; margin: 20 0 0 0;">',
                                                                                                     '<table><tr><td><h3>Purpose</h3>',
                                                                                                     '<p>The Data Explorer supports decisionmaking, progress tracking, and hypothesis testing related to the <a href="https://mfaic.gov.kh/files/uploads/1XK1LW4MCTK9/EN%20PENTAGONAL%20STRATEGY%20-%20PHASE%20I.pdf">Pentagonal Strategy</a>\'s goals of implementing the <a href="https://data.opendevelopmentcambodia.net/library_record/national-agricultural-development-policy-2022-2023">National Agricultural Development Policy</a> and <a href="https://faolex.fao.org/docs/pdf/cam219302.pdf">Cambodia Agro-Industrial Development Strategic Plan</a>, which aim to increase domestic commercial livestock production and the domestic agricultural products processing industries.</a></p></td></tr>',
                                                                                                     '<tr><td align="center"><img src="Tikz_figure_2.png" width=450></img></td></tr>',
@@ -140,7 +140,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                            ),
                            
                            tabPanel("Policy Goals and Instruments", icon=icon("landmark-dome"),
-                                    HTML('<div style="font-size: 0.8em; margin: 20 0 0 0;">'),
+                                    HTML('<div style="font-size: 0.9em; margin: 20 0 0 0;">'),
                                     fluidRow(HTML('<p><h3>Policy Instruments by Goal</h3></p>
                              <p>This table presents policy instruments (tax/subsidy, regulatory, information) in support of a particular goal, and the expected most direct effect on market price, quantity, quality and timeliness, followed by CAS variables and relevant evidence where available. The predicted changes in price and quantity assume competitive markets and do not consider intermediaries.</p><br>')
                                     #downloadButton('downloadPathways',
@@ -156,7 +156,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
 
                            tabPanel("Variable Maps and Statistics", icon=icon("magnifying-glass-chart"),
                                     shinyjs::useShinyjs(),
-                                    HTML('<div style="font-size: 0.8em;">'),
+                                    HTML('<div style="font-size: 0.9em;">'),
                                     fluidRow(HTML('<p><i>The variables summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '),
                                              downloadLink('indicsDL1', label='the pathways table,'),  #this would be easier with modules
                                              downloadLink('indicsDL2', label='the indidicator list,'),
@@ -199,7 +199,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                            ),
                            
                            tabPanel("Variable Correlations", icon=icon("chart-line"),
-                                    HTML('<div style="font-size: 0.8em">'),
+                                    HTML('<div style="font-size: 0.9em">'),
                                     fluidRow(HTML('<p><i>The variables summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '),
                                              downloadLink('relsDL1', label='the pathways table,'),
                                              downloadLink('relsDL2', label='the indidicator list,'),
@@ -253,7 +253,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                            
                            
                            tabPanel("Validation", icon=icon("question"),
-                                    HTML('<div style="font-size: 0.8em">'),
+                                    HTML('<div style="font-size: 0.9em">'),
                                     shinyjs::useShinyjs(),
                                     fluidRow(column(4, selectInput('powerBiVars', "Choose Variable", choices=c("fhh", 
                                                                                                                "raised_Poultry", 
@@ -264,12 +264,13 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                                                                                "ag_comm", 
                                                                                                                "ag_assoc", 
                                                                                                                "ag_extension",
+                                                                                                               "num_Chickens",
                                                                                                                "num_Cattle",
                                                                                                                "num_Pigs",
                                                                                                                "num_Buffalo",
-                                                                                                               "live_sale_rate_Cattle",
-                                                                                                               "live_sale_rate_Pigs",
-                                                                                                               "live_sale_rate_Buffalo",
+                                                                                                               "sale_rate_Cattle",
+                                                                                                               "sale_rate_Pigs",
+                                                                                                               "sale_rate_Buffalo",
                                                                                                                "sale_price_obs_Cattle",
                                                                                                                "sale_price_obs_Pigs",
                                                                                                                "sale_price_obs_Buffalo",
@@ -297,6 +298,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                     )
                                              ),
                                     fluidRow(column(4, radioGroupButtons('yearBtn2', label="Survey Year", choices=year_list, selected=max(instrument_list$year), size='sm'))),
+                                             fluidRow(column(4, radioGroupButtons("admBtn2", label="Choose Geographic Aggregation", choiceNames=c("Province","Zone"), choiceValues=c("province","zone"), size='sm'))),
                                              fluidRow(column(4, radioGroupButtons('totsBtns2', label="Choose Statistic to Graph", choices=c("Mean","Total","Obs"), size='sm'))),
                                              fluidRow(column(4, actionButton("goBut", "Go"))),
                                              br(),
@@ -312,7 +314,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                    
                   
                            tabPanel("Secondary Data Sources", icon=icon("database"),
-                                    HTML('<div style="font-size: 0.8em">'),
+                                    HTML('<div style="font-size: 0.9em">'),
                                     fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the "),
                                     downloadLink("secSourcesDL", "associated spreadsheet."), HTML("</p>")),
                                     fluidRow(DTOutput('secsources')),
@@ -1125,9 +1127,10 @@ observeEvent(input$goBut, {
   varIn <- input$powerBiVars
   plotStat <- input$totsBtns2
   popVar <- input$popVars
+  adm_level <- input$admBtn2
   denoms <- getDenoms(varIn, indicator_list)
   datafiles <- getFiles(indicator_list, dataset_list, c(varIn, popVar)) %>% filter(year==input$yearBtn2)
-  data_out <- getFiltData(files=datafiles, xvars=varIn, denoms=denoms, filter=input$popVars, adm_level="province")
+  data_out <- getFiltData(files=datafiles, xvars=varIn, denoms=denoms, filter=input$popVars, adm_level=adm_level)
   if(any(is.list(data_out))){
    
   vType <- indicator_list %>% filter(shortName==varIn) %>% select(units)
@@ -1142,12 +1145,34 @@ observeEvent(input$goBut, {
     #vBoxName <- renderText(paste(input$powerBiVars, "hhs among", input$popVars))
     output$vBoxOut <- renderUI(value_box(title="National Summary", showcase=bsicons::bs_icon("house"), value=vBoxVal, p(vBoxShow))) #, p(vBoxName)))
   }
+  if(max(data_out$outdata$Total) > 1000000000) {
+    data_out$outdata$Total <- data_out$outdata$Total/1000000000 %>% round(., digits=4)
+    bns <- T
+  } else if(max(data_out$outdata$Total) > 1000000){
+    data_out$outdata$Total <- data_out$outdata$Total/1000000 %>% round(., digits=4)
+    mns <- T
+    bns <- F
+  } else {
+    mns <- F
+    bns <- F
+  }
   
   #xShp_currMap <- merge(khm_shp, data_out$mapdata, by="province", all.x=T)
-  merged_tab <- merge(data_out$outdata, khm_shp, by="province", all.x=T) %>% select(all_of(c("ADM1_EN", "Mean", "Total", "Obs"))) %>% mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) %>% rename(Province=ADM1_EN)
+  if(adm_level=="province"){
+    merged_tab <- merge(na.omit(data_out$outdata), khm_shp, by="province", all.x=T) %>% select(all_of(c("ADM1_EN", "Mean", "Total", "Obs"))) %>% mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) %>% rename(Province=ADM1_EN)
+    provPlot <- reportChart(merged_tab, "Province", plotStat, "", paste(varIn, "among", popVar))
+  } else {
+    merged_tab <- merge(na.omit(data_out$outdata), khm_zones, by.x="zone", by.y="Group_1", all.x=T) %>% select(all_of(c("zone", "Mean", "Total", "Obs"))) %>% mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) %>% rename(Zone=zone) #issue with zone being a reserved name?
+    provPlot <- reportChart(merged_tab, "Zone", plotStat, "", paste(varIn, "among", popVar))
+  }
   
-  output$trendsTable2 <- DT::renderDT(merged_tab, rownames=F) 
-  provPlot <- reportChart(merged_tab, "Province", plotStat, "", paste(varIn, "among", popVar))
+  if(bns==T){
+    names(merged_tab)[names(merged_tab)=="Total"] <- "Total (BN)"
+  } else if(mns==T){
+    names(merged_tab)[names(merged_tab)=="Total"] <- "Total (MM)"
+  }
+  merged_tab$Total <- format(merged_tab$Total, big.mark=",")
+  output$trendsTable2 <- DT::renderDT(merged_tab, rownames=F)
   output$provPlot2 <- renderPlot(provPlot, height=600)
   }
 })
