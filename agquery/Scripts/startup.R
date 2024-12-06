@@ -26,7 +26,7 @@ root_dir <- ""
 #Dropping the indicator categories spreadsheet for efficiency
 
 dataset_list <- list.files("Data", pattern="*.csv")
-years <- lapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) %>% unique() %>% na.omit()
+years <- sapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) %>% unique() %>% na.omit()
 for(year in years){
   names <- lapply(dataset_list[which(str_detect(dataset_list, year))], function(x){
     dat <- read.csv(paste0("Data/",x), nrows=1)
@@ -43,7 +43,7 @@ for(year in years){
   } else {
     indic_inventory <- bind_rows(indic_inventory, names)
   }
- }
+}
 
 instrument_list <- tryCatch(readxl::read_xlsx("Update/instrument_list.xlsx"),
                             error=function(e){return(F)})
@@ -103,6 +103,7 @@ if(is.list(policy_path)){
   polic_Names <- lapply(short_Pathways, FUN=function(x){
     policy_path_sub <- policy_path %>% filter(goalName==x)
     inst_names <- unique(policy_path_sub$Instrument)
+   
     temp_list <- lapply(inst_names, FUN=function(y){
       tempnames <- policy_path_sub$Implementation[policy_path_sub$Instrument==y]
       tempvals <- as.list(policy_path_sub$pathwayID[policy_path_sub$Instrument==y])
@@ -112,9 +113,25 @@ if(is.list(policy_path)){
     })
     names(temp_list) <- inst_names
     temp_list <- c(list(`All Instruments`=0), temp_list)
+    temp_list <- temp_list[nzchar(names(temp_list))]
     return(temp_list)
   })
   names(polic_Names) <- short_Pathways
+}
+
+source_data <- tryCatch(readxl::read_xlsx("Update/evidence_list.xlsx"),
+                        error=function(e){return(F)})
+
+if(is.list(source_data)){
+  names(source_data) <- c("Policy Goal", "Evidence") # ALT temp kludge till I can make this more robust
+  source_data$Evidence <- sapply(source_data$Evidence, FUN=function(x){
+    oldstring <- str_extract(x, "(http[^, \\n]+)",  group=1)
+    if(!is.na(oldstring)){
+    newstring <- sprintf("<a href=%s, target='_blank' rel='noreferrer noopener'>Link</a>", oldstring)
+    x <- gsub(oldstring, newstring, x)
+    }
+    return(x)
+  })
 }
 
 ext_data <- tryCatch(read.csv("Update/Secondary_Sources.csv"), 
@@ -125,14 +142,15 @@ if(is.list(ext_data)){
   if(any(!(colnm_ext %in% names(ext_data)))){
     ext_data <- F
   } else {
-    ext_data$Location <- lapply(ext_data$Location, FUN=function(x){sprintf("<a href=%s>%s</a>", x,x)})
+    ext_data$Location <- lapply(ext_data$Location, FUN=function(x){sprintf("<a href=%s, target='_blank' rel='noreferrer noopener'>%s</a>", x,x)})
     names(ext_data) <- str_replace_all(names(ext_data), "\\.", " ")
   }
 }
 
 #TODO - probably best to have all of these as CSV. Either way, we need consistency
-khm_shp <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
-khm_shp$ADM1_EN[khm_shp$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
+khm_province <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
+khm_province$ADM1_EN[khm_province$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
 #Implement fuzzy matching later?
 
-khm_zones <- st_read(paste0(root_dir, "Spatial/cam_prov_zones.shp"), quiet=T)
+
+khm_zone <- st_read(paste0(root_dir, "Spatial/cam_prov_zones.shp"), quiet=T)

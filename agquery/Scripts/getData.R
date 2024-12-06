@@ -1,3 +1,40 @@
+wbDataPrep <- function(filename) {
+  read.csv(paste0("Extdata/",filename), skip=4) |> 
+    pivot_longer(cols=starts_with("X"), 
+                 names_to="year", 
+                 values_to = "val", 
+                 names_prefix="X", 
+                 values_drop_na=T) |> 
+    mutate(year = as.numeric(year)) |> 
+    filter((Country.Name=="Cambodia" | Country.Name=="Viet Nam" | Country.Name=="Thailand") & year>2000)
+}
+
+wbDataNames <- function(filename){
+  data_row <- read.csv(paste0("Extdata/",filename), skip=4)[1,]
+  indicname <- data_row$Indicator.Name
+  units <- gsub(".*\\((.*)\\).*", "\\1", indicname)
+  title <- gsub("(.*)(\\(.*\\)).*", "\\1", indicname)
+  subtitle <- data_row$Indicator.Code
+  return(list(units=units, title=title, subtitle=subtitle))
+}
+
+wbTrend <- function(wbData, depth){
+  indicName <- wbData$Indicator.Name[[1]]
+  recVal <- wbData |> filter(year==max(wbData$year))
+  recVal <- recVal$val[[1]]
+  oldVal <- wbData |> filter(year==max(wbData$year)-depth)
+  oldVal <- oldVal$val[[1]]
+  interp <- (recVal - oldVal)/oldVal/depth
+  dir <- if(interp>0) "Up" else "Down"
+  trend <- sprintf("%s %.1f%% per year since %i", dir, interp*100, max(wbData$year-depth))
+  if(str_detect(indicName, "%")){
+    recValOut <- paste0(signif(recVal,2),"%")
+  } else {
+    recValOut <- format(recVal,big.mark=",")
+  }
+  return(list(recVal=recValOut, trend=trend))
+}
+
 getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear, cats=F){
   if(pathway!="0"){ 
     indics_out <- pathway_link %>% filter(goalName==policy, pathwayID==pathway) %>% merge(., indicator_list, by="shortName") 
@@ -55,7 +92,7 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
                           break
                         }) #can simplify using full paths in list.files
       if(exists("df", mode="list")){
-        df <- merge(df, df_in, by=c("hhid", "province"))
+        df <- merge(df, df_in, by=c("hhid", "province", "zone")) #To fix
       } else {
         df <- df_in
       }
@@ -103,8 +140,8 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
       showNotification(paste("No variables for the selected policy priority were found in", survey))
     } else {
       df <- df %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
-        select(all_of(c("hhid","province", varslist_short, if(!is.null(denoms)) denoms$denominator, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
-      
+        #select(all_of(c("hhid", if(!is.na(adm_level)) adm_level, varslist_short, if(!is.null(denoms)) denoms$denominator, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
+        select(all_of(c(if(!is.na(adm_level)) adm_level, if(isTRUE(adm_level=="hhid")) "province", if(!is.null(denoms)) denoms$denominator, varslist_short, "weight", aggs_list))) #To fix.
       if(drop_0s==T){
         df <- df %>% filter(!!sym(yvars)!=0)
       }
@@ -199,11 +236,18 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
             #  summarize(Mean=weighted.mean(value, w=weight, na.rm=T), Total=sum(value*weight, na.rm=T), Obs=sum(!is.na(value))) %>%
             # pivot_wider(id_cols=c("province", "year"), names_from=shortName, values_from=c("Mean", "Total", "Obs"))
             # 
-            
+        
+            if(adm_level %in% "hhid" | adm_level %in% "province"){
             mapdata_temp <- df %>% group_by(province, year, shortName) %>%
               summarize(Mean=weighted.mean(value, w=weight, na.rm=T)) %>% 
               pivot_wider(id_cols=c("province", "year"), names_from=shortName, values_from="Mean")
-            
+            } else if(adm_level %in% "zone") {
+              mapdata_temp <- df |> group_by(zone, year, shortName) |> 
+                summarize(Mean=weighted.mean(value, w=weight, na.rm=T)) |>
+                pivot_wider(id_cols=c('zone', 'year'), names_from=shortName, values_from="Mean")
+            } else {
+              mapdata_temp <- df #Kludge: there's no need to include mapdata if we're doing national summaries (e.g. adm_level is na), but we need to add a way to handle if missing.
+            }
             if(!exists("mapdata")){
               mapdata <- mapdata_temp
             } else {

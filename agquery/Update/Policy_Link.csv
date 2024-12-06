@@ -329,3 +329,14 @@ pathwayID,goalName,shortName
 0,Livestock,trt_int_parasite_Cattle
 0,Livestock,trt_vax_spending_Cattle
 0,Livestock,vax_pct_Cattle
+39,Cashews,cashew
+39,Cashews,area_cashew_harvested
+39,Cashews,area_cashew_planted
+39,Cashews,qty_cashew_own_use
+39,Cashews,qty_cashew_sale
+39,Cashews,qty_cashew_gift
+39,Cashews,qty_cashew_pay
+39,Cashews,qty_cashew_feed
+39,Cashews,qty_cashew_seed
+39,Cashews,qty_cashew_lost
+39,Cashews,qty_cashew_processed
