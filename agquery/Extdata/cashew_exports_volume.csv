@@ -1,0 +1,24 @@
+year,qty,dataset,cmdCode,item,unit
+2019,600,CAC,,,tonnes
+2020,950,CAC,,,tonnes
+2021,1100,CAC,,,tonnes
+2022,670,CAC,,,tonnes
+2023,656,CAC,,,tonnes
+2019,3.4074612,UN-COMTRADE,080131,"Cashew nuts, in shell",tonnes
+2019,.37495636,UN-COMTRADE,080132,"Cashew nuts, shelled",tonnes
+2020,4.417413150000001,UN-COMTRADE,080131,"Cashew nuts, in shell",tonnes
+2020,.47013571,UN-COMTRADE,080132,"Cashew nuts, shelled",tonnes
+2021,1.529534,UN-COMTRADE,080131,"Cashew nuts, in shell",tonnes
+2021,1.20594256,UN-COMTRADE,080132,"Cashew nuts, shelled",tonnes
+2022,8.98104294,UN-COMTRADE,080131,"Cashew nuts, in shell",tonnes
+2022,.8210122,UN-COMTRADE,080132,"Cashew nuts, shelled",tonnes
+2023,259.089784,UN-COMTRADE,080131,"Cashew nuts, in shell",tonnes
+2023,.6548089,UN-COMTRADE,080132,"Cashew nuts, shelled",tonnes
+2019,3.261559963226318,FAOSTAT,,"Cashew nuts, in shell",tonnes
+2020,4.187250137329102,FAOSTAT,,"Cashew nuts, in shell",tonnes
+2021,1.529530048370361,FAOSTAT,,"Cashew nuts, in shell",tonnes
+2022,8.980620384216309,FAOSTAT,,"Cashew nuts, in shell",tonnes
+2019,.3749600052833557,FAOSTAT,,"Cashew nuts, shelled",tonnes
+2020,.4701400101184845,FAOSTAT,,"Cashew nuts, shelled",tonnes
+2021,1.205939888954163,FAOSTAT,,"Cashew nuts, shelled",tonnes
+2022,.7282100319862366,FAOSTAT,,"Cashew nuts, shelled",tonnes
