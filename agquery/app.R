@@ -1690,7 +1690,7 @@ server <- function(input, output, session) {
     })
   }
   if(length(vbs)>0){
-    output$valueBoxes <- renderUI(layout_column_wrap(width=1/3, !!!vbs)) 
+    output$valueBoxes <- renderUI(layout_column_wrap(width=1/2, !!!vbs)) 
     }
   
   
