@@ -76,6 +76,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                '
                                .selectize-input.items.full.has-options.has-items {font-size: 1.0em}
                                .shiny-input-select {font-size: 1.0em}
+                               .selectize-input {font-size: 1.0em}
                                .radio-group-buttons {font-size: 1.0em}
                                .btn.btn-default.shiny-download-link {--bs-btn-line-height: 0.8; font-size:1.0em}
                                .btn.btn-default.action-button {--bs-btn-line-height: 1.0; font-size:1.0em}
@@ -90,7 +91,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                fluidRow(column(1), column(8,
                                                                           HTML(paste('<div style="font-size: 0.9em; margin: 20 0 0 0;">',
                                                                                      '<table><tr><td><h3>Purpose</h3>',
-                                                                                     '<p>The Data Explorer supports progress tracking, reporting, and hypothesis testing to facilitate decision making related to the <a href="https://mfaic.gov.kh/files/uploads/1XK1LW4MCTK9/EN%20PENTAGONAL%20STRATEGY%20-%20PHASE%20I.pdf">Cambodian Government\'s 2023 Pentagonal Strategy</a>\'s goals, including modernization, increasing productivity in priority crops and domestic livestock, strengthening extension services, and increasing agricultural products processing industries, furthering implementation of the <a href="https://data.opendevelopmentcambodia.net/library_record/national-agricultural-development-policy-2022-2023">National Agricultural Development Policy</a> and <a href="https://faolex.fao.org/docs/pdf/cam219302.pdf">Cambodia Agro-Industrial Development Strategic Plan</a>, which aim to increase domestic commercial livestock production and the domestic agricultural products processing industries.</a></p></td></tr>',
+                                                                                     '<p>The Data Explorer supports progress tracking, reporting, and hypothesis testing to facilitate decision making related to the <a href="https://mfaic.gov.kh/files/uploads/1XK1LW4MCTK9/EN%20PENTAGONAL%20STRATEGY%20-%20PHASE%20I.pdf">Cambodian Government\'s 2023 Pentagonal Strategy</a>\'s goals, including modernization, increasing productivity in priority crops and domestic livestock, strengthening extension services, and increasing agricultural products processing industries, furthering implementation of the <a href="https://data.opendevelopmentcambodia.net/library_record/national-agricultural-development-policy-2022-2023", target="_blank">National Agricultural Development Policy</a> and <a href="https://faolex.fao.org/docs/pdf/cam219302.pdf", target="_blank">Cambodia Agro-Industrial Development Strategic Plan</a>, which aim to increase domestic commercial livestock production and the domestic agricultural products processing industries.</a></p></td></tr>',
                                                                                      '<tr><td align="center"><img src="Tikz_figure_2.png" width=450></img></td></tr>',
                                                                                      '<tr><td><p>In collaboration with app maintainers, the users are able to view, analyze, and create figures related to household production of crops and livestock that can be used to understand trends in small-scale producer contributions to national supply and the economic conditions small-scale producers face. Variables in the survey are grouped according to policy themes for ease of navigation.</p>',
                                                                                      '</td></tr>',
@@ -125,13 +126,13 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                                                      '</ul>',
                                                                                      '<br>',
                                                                                      '<h3>Code and Data Availability</h3>',
-                                                                                     '<ul><li>The Stata code used to process the data is publicly available at (Git Repository TBD).</li><li>The app source code and related files can be downloaded at (Git repository TBD)</li>',
-                                                                                     '<li>The raw data for the Cambodia Agricultural Survey survey are located at <a href="https://nada.nis.gov.kh/index.php/catalog/36">https://nada.nis.gov.kh/index.php/catalog/36</a>.</li></ul>',
+                                                                                     '<ul><li>The Stata code used to process the data is publicly available at (Git Repository TBD).</li><li>The app source code and related files can be downloaded at <a href="https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP", target="_blank">https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP</a></li>',
+                                                                                     '<li>The raw data for the Cambodia Agricultural Survey survey are located at <a href="https://nada.nis.gov.kh/index.php/catalog/36", target="_blank">https://nada.nis.gov.kh/index.php/catalog/36</a>.</li></ul>',
                                                                                      '<h3>Inquire</h3>',
                                                                                      '<p>This tool is maintained by <i>responsible party</i> who has <i>contact info</i>.</p><br>',
                                                                                      '<h3>Citation</h3>',
                                                                                      '<p>If you use this app for scholarly research or modify it for alternative uses, please use this attribution: </p>',
-                                                                                     '<p> University of Washington, Evans Policy Analysis and Research (EPAR) (2024). Cambodia Agricultural Survey Policy & Data Explorer. v0.2. DOI: <a href="https://doi.org/10.6069/GPPQ-2X85">https://doi.org/10.6069/GPPQ-2X85</a>',
+                                                                                     '<p> University of Washington, Evans Policy Analysis and Research (EPAR) (2024). Cambodia Agricultural Survey Policy & Data Explorer. v0.2. DOI: <a href="https://doi.org/10.6069/GPPQ-2X85", target="_blank">https://doi.org/10.6069/GPPQ-2X85</a>',
                                                                                      '<br><br>',
                                                                                      "<img src='evans2.jpg' width='30%' align='center'></img>",
                                                                                      "<br>&nbsp;</div>"
@@ -267,12 +268,14 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                                                                                          label='Download Table Data',
                                                                                                                          icon=icon('file-csv'))))),
                                                                          column(6,
-                                                                                fluidRow(plotOutput('currMap')), 
+                                                                                fluidRow(uiOutput('naVals'),
+                                                                                  plotOutput('currMap')), 
                                                                                 fluidRow(column(10),column(2,     
                                                                                                            uiOutput('dlCurrMapOut')
                                                                                                            #downloadButton('dlcurrMap', label="", icon=icon('file-arrow-down'))
                                                                                 )),
                                                                                 fluidRow(plotOutput('trendMap'), 
+                                                                                         uiOutput('noTrend')
                                                                                          #downloadButton('dltrendMap', label="", icon=icon('file-arrow-down'))
                                                                                 ),
                                                                                 #plotOutput('obsMap'),
@@ -741,23 +744,6 @@ server <- function(input, output, session) {
     z
   }
   
-  # observeEvent(input$newRept, {
-  #   lsVars <- c("num_",
-  #               "peak_num_",
-  #               "vax_pct_",
-  #               "sale_price_")
-  #   #aggs_list <- if(length(input$repGroups)>0) input$repGroups else ""
-  #   
-  #   
-  #   data_out <- getData(lsvars)
-  #   
-  #   means_out <- data_out$means_out 
-  #   totals_out <- data_out$totals_out 
-  #   
-  #   #output$vb3plot <- 
-  #   
-  # })
-  
   
   
   output$secsources <- renderDT(ext_data, escape=F, options=list(dom="t"), rownames=F)
@@ -811,10 +797,12 @@ server <- function(input, output, session) {
   observeEvent(input$policiesBox1, {
     if(input$policiesBox1!="None" & is.list(policy_path)){
       inputChk <- is.null(input$pathwaysIn1)
+      input0Chk <- if(!inputChk) input$pathwaysIn1==0 else F
       #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
       #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
       #names(pathway_list) <- c("All", pathway_sub$Pathway)
-      output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]]))
+      #output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]]))
+      output$pathwaysBox <- renderUI(pickerInput("pathwaysIn1", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]], options=list(style="selectize-input"), choicesOpt=list(disabled=polic_activ[[input$policiesBox1]])))
       shinyjs::disable('pathwaysIn1')
       shinyjs::disable('policiesBox1')
       shinyjs::disable('totsBtns')
@@ -825,7 +813,9 @@ server <- function(input, output, session) {
       shinyjs::enable('policiesBox1')
       shinyjs::enable('totsBtns')
       #updateVarTable <- function(pathwaysIn1=NULL, policiesIn1, obsyear, totsBtns)
+      if(!inputChk & input0Chk){ #Sniping a special case where the observer doesn't trigger if you're on "All Instruments" to fix with reactive values.
       updateVarTable(input$pathwaysIn1, input$policiesBox1, unique(indic_inventory$year), input$totsBtns)
+      }
     }
   }, ignoreInit=T)
   
@@ -892,14 +882,14 @@ server <- function(input, output, session) {
     }
     for(i in 1:nrow(dt_out)){
       poprow <- dt_out[i,]
-      if(poprow$units=="boolean") {
+      if(isTRUE(poprow$units=="boolean")) {
         if(stat=="Total") poprow$units <- "N households"
         if(stat=="Mean") poprow$units <- "% of households"
       }
-      if(poprow$units=="kg" & poprow[[stat]] > 1000){
+      if(isTRUE(poprow$units=="kg") & isTRUE(poprow[[stat]] > 1000)){
         poprow[[stat]] <- poprow[[stat]]/1000
         poprow$units <- "Tonnes"
-      } else if(poprow[[stat]] > 1000000) {
+      } else if(isTRUE(poprow[[stat]] > 1000000)) {
         poprow$units <- paste(poprow$units, " (MM)")
         poprow[[stat]] <- poprow[[stat]]/1000000
       }
@@ -1022,6 +1012,8 @@ server <- function(input, output, session) {
         data_out <- data_out[data_out[[adm_level_in]]!="",]
         if(nrow(data_out) < n_row){
           output$plotsErr <- renderUI(HTML(sprintf("<i>Note: some observations removed due to missing %s information</i>", adm_level_in)))
+        } else {
+          output$plotsErr <- NULL
         }
         max_year <- max(data_out$year)
         min_year <- min(data_out$year)
@@ -1052,23 +1044,36 @@ server <- function(input, output, session) {
           currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " ", input$totsBtns), indicator_list$units[indicator_list$shortName==input$trendIn])
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
           timePlot <- timeSeriesPlot(data_table_out$data_table, input$trendIn, input$totsBtns)
+          if(any(is.na(df_max_year[[input$totsBtns]]))){
+            output$naVals <- renderUI(HTML("<i>Note: gray shaded areas do not have observations for the selected variable.</i>"))
+          } else {
+            output$naVals <- NULL
+          }
           output$currMap <- renderPlot(currMap)
           output$trendMap <- renderPlot(trendMap)
           output$timePlot <- renderPlotly(timePlot)
-          output$dlCurrMapOut <- renderUI(downloadButton('dlcurrMap', label="", icon=icon('file-arrow-down')))
-          output$dlcurrMap <- downloadHandler(
-            filename=function(){
-              paste0("cas-", max_year, "-", adm_level_in, "-", input$trendIn, ".csv")
-            },
-            content=function(file){
-              write.csv(df_max_year, file, row.names=F)
-            }
-          )
           
+          output$noTrend <- NULL
           #output$provPlot <- renderPlot(provPlot)
         } else {
-          showNotification("No trends to show for selected variable", type="warning")
+          df_max_year=data_out %>% filter(year==max_year)
+          names(df_max_year)[[3]] <- input$trendIn
+          curr_map <- get(paste0("khm_", adm_level_in))
+          xShp_currMap <- merge(curr_map, df_max_year, by=adm_level_in, all.x=T)
+          currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " ", input$totsBtns), indicator_list$units[indicator_list$shortName==input$trendIn])
+          output$currMap <- renderPlot(currMap)
+          output$noTrend <- renderUI(HTML("<i>Selected variable was found in only one survey year.</i>"))
+          #showNotification("No trends to show for selected variable", type="warning")
         }
+        output$dlCurrMapOut <- renderUI(downloadButton('dlcurrMap', label="", icon=icon('file-arrow-down')))
+        output$dlcurrMap <- downloadHandler(
+          filename=function(){
+            paste0("cas-", max_year, "-", adm_level_in, "-", input$trendIn, ".csv")
+          },
+          content=function(file){
+            write.csv(df_max_year, file, row.names=F)
+          }
+        )
       } else {
         showNotification("Error getting data", type="error")
       }
@@ -1390,7 +1395,9 @@ server <- function(input, output, session) {
         #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox2)
         #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
         #names(pathway_list) <- c("All", pathway_sub$Pathway)
-        output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]]))
+       #output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]]))
+        output$dataPathBox <- renderUI(pickerInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]], options=list(style="selectize-input"), choicesOpt=list(disabled=polic_activ[[input$policiesBox1]])))
+        
         if(!is.null(input$pathwaysIn2)){
           if(input$policiesBox2!="None"){
             if(is.list(pathway_link) & is.list(indicator_list)) {
@@ -1659,7 +1666,7 @@ server <- function(input, output, session) {
   
   
   wbDataFiles <- list.files("Extdata", pattern="^API.+[0-9]{4}\\.csv$")
-  colors <- c("primary", "success", "info")
+  colors <- c("primary", "success", "info", "info", "primary", "success")
   wbN <- 1
   vbs <- list()
   vbs2 <- list()
@@ -1683,7 +1690,7 @@ server <- function(input, output, session) {
                          value=p(wbText$recVal),
                          showcase=renderPlotly(sparkline(wbData, "year", "val", sprintf("%s (%s)", wbDNames$title, wbDNames$units))),
                          full_screen=T,
-                         theme=colors[[((x %% 3)+1)]])
+                         theme=colors[[((x %% 6)+1)]])
                
         )
       }

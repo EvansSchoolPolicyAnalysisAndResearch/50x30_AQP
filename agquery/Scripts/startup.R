@@ -116,22 +116,42 @@ if(is.list(policy_path)){
     temp_list <- temp_list[nzchar(names(temp_list))]
     return(temp_list)
   })
+  polic_activ <- lapply(short_Pathways, FUN=function(x){
+    policy_path_sub <- policy_path |> filter(goalName==x)
+    inst_names <- unique(policy_path_sub$Instrument) #Doing this the same way as above so that everything lines up
+    temp_list <- lapply(inst_names, FUN=function(y){
+      tempnames <- policy_path_sub$Implementation[policy_path_sub$Instrument==y]
+      tempvals <- policy_path_sub$pathwayID[policy_path_sub$Instrument==y]
+      return(sapply(tempvals, FUN=function(z){
+        nrow(pathway_link |> filter(pathwayID==z)) == 0
+      }))
+    })
+    names(temp_list) <- inst_names
+    temp_list <- temp_list[nzchar(names(temp_list))]
+    temp_list <- unlist(temp_list)
+    temp_list <- c(FALSE, temp_list) # first item
+    return(temp_list)
+  })
+  
   names(polic_Names) <- short_Pathways
+  names(polic_activ) <- short_Pathways
 }
 
 source_data <- tryCatch(readxl::read_xlsx("Update/evidence_list.xlsx"),
                         error=function(e){return(F)})
 
 if(is.list(source_data)){
-  names(source_data) <- c("Policy Goal", "Evidence") # ALT temp kludge till I can make this more robust
-  source_data$Evidence <- sapply(source_data$Evidence, FUN=function(x){
-    oldstring <- str_extract(x, "(http[^, \\n]+)",  group=1)
-    if(!is.na(oldstring)){
-    newstring <- sprintf("<a href=%s, target='_blank' rel='noreferrer noopener'>Link</a>", oldstring)
-    x <- gsub(oldstring, newstring, x)
-    }
-    return(x)
-  })
+  names(source_data) <- c("Policy Goal", "Citation", "Link") # ALT temp kludge till I can make this more robust
+  #Old
+  #source_data$Evidence <- sapply(source_data$Evidence, FUN=function(x){
+    #oldstring <- str_extract(x, "(http[^, \\[\\]\\n]+)",  group=1)
+    #if(!is.na(oldstring)){
+    #newstring <- sprintf("<a href='%s', target='_blank' rel='noreferrer noopener'>Link</a>", oldstring)
+    #x <- gsub(oldstring, newstring, x)
+    #}
+    #return(x)
+  #})
+  source_data$Link <- lapply(source_data$Link, FUN=function(x){sprintf("<a href='%s', target='_blank' rel='noreferrer noopener'>%s</a>", x,x)})
 }
 
 ext_data <- tryCatch(read.csv("Update/Secondary_Sources.csv"), 
@@ -142,7 +162,7 @@ if(is.list(ext_data)){
   if(any(!(colnm_ext %in% names(ext_data)))){
     ext_data <- F
   } else {
-    ext_data$Location <- lapply(ext_data$Location, FUN=function(x){sprintf("<a href=%s, target='_blank' rel='noreferrer noopener'>%s</a>", x,x)})
+    ext_data$Location <- lapply(ext_data$Location, FUN=function(x){sprintf("<a href='%s', target='_blank' rel='noreferrer noopener'>%s</a>", x,x)})
     names(ext_data) <- str_replace_all(names(ext_data), "\\.", " ")
   }
 }
