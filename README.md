@@ -1,6 +1,6 @@
 # Cambodia Agriculture Survey Data Explorer
 
-This is the repository for the CAS Data Explorer, produced as part of the 50x2030 survey initiative. The public release of this app is available at (https://evans-par.shinyapps.io/agquery/)[. 
+This is the repository for the CAS Data Explorer, produced as part of the 50x2030 survey initiative. The public release of this app is available at https://evans-par.shinyapps.io/agquery/. 
 
 Clone or download this repository in order to view or modify the underlying data and metadata. For first time setup:
 1. Download and install R and RStudio (R version 4.4 or higher is required).
