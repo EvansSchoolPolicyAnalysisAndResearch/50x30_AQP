@@ -27,7 +27,8 @@ monoColorMap <- function(xShp, fillVal, plotTitle, units){
           plot.title = element_text(face = "bold", hjust = 0.5, size = 18),
           legend.text=element_text(size=12, color="black"),
           legend.title=element_text(size=12, color="black"),
-          legend.key.height = unit(0.1, "npc"))
+          legend.key.height = unit(0.1, "npc"),
+          )
   return(plotOut)
 }
 

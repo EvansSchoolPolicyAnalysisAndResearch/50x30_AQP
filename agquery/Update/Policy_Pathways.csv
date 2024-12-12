@@ -1,39 +1,39 @@
 ﻿pathwayID,goalName,Policy.Goal,Pathway,Instrument,Implementation,Producer.unit.costs,Final.consumer.price,Final.prod.Q,Prod.Quality,Speed,Trade.or.Legal.Considerations,Overall Feasibility
-1,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Subsidy,Subsidized poultry feed,⬇,⬇,⬆,⬍,Fast,NA,Medium
-2,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Information,Information about less expensive sources of poultry feed,⬇,⬇,⬆,?,Slow,NA,Medium
-37,Poultry,Improve domestic poultry production & consumption,Reduce import competition,Quota,Quota on imported chicks,⬆,⬆,⬇,⬍,Medium,Regional & WTO,Low
-3,Poultry,Improve domestic poultry production & consumption,Reduce import competition ,Tariff,Tariffs on poultry imports,=,⬆,⬇,⬍,Medium,Regional & WTO,?
-4,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Information,Information about poultry vaccines,⬆,⬍,⬆,⬆,Slow,NA,High
-5,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Subsidy,Subsidized poultry vaccines,⬇,⬇,⬆,⬆,Slow,NA,NA
-6,Poultry,Improve domestic poultry production & consumption,Increasing demand through government purchases,Regulation,Government poultry purchases,=,⬆,⬆,⬍,Medium,NA,NA
-7,Poultry,Improve domestic poultry production & consumption,Support producer price received,Regulation,Government-imposed poultry price floors,=,⬆,⬇,⬍,Medium,NA,NA
-8,Poultry,Improve domestic poultry production & consumption,Price floor,Regulation,Information/Awareness about price floors,=,⬆,⬇,⬍,Fast,NA,NA
-9,Poultry,Improve domestic poultry production & consumption,Improve domestic chicken quality,Regulation,Implement weight and quality standards for chickens,=,⬆,⬍,⬆,Slow,NA,NA
-10,Poultry,Improve domestic poultry production & consumption,Improve domestic chicken quality,Information,Information about standards,=,⬆,⬍,⬆,Slow,NA,NA
-11,Poultry,Improve domestic poultry production & consumption,Increase demand through consumer education,Information,Marketing nutritional benefits of chicken,=,⬍,⬆,⬍,Slow,NA,NA
-12,Poultry,Improve domestic poultry production & consumption,Reduce prices paid by consumers,Subsidy,Tax credits to consumers who purchase domestic,=,⬇,⬆,⬍,Medium,NA,NA
-13,Poultry,Improve domestic poultry production & consumption,Improve supply of native chicken produced ,Information,Capacity building/training on improved native chicken production,=,⬍,⬆,⬍,Medium,NA,NA
-14,Poultry,Improve domestic poultry production & consumption,Improve supply by increased access to capital for scaling poultry production,Subsidy,Subsidize/fund access to micro-credit for the production of improved poultry breeds.,⬇,⬆,⬆,⬍,Fast,NA,NA
-15,Poultry,Improve domestic poultry production & consumption,Improve supply by improving hatchery and processing plants,Subsidy,Subsidized hatchery and processing plants,⬇,⬆,⬆,⬆,Fast,NA,NA
-16,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Subsidy,Subsidized feed,⬇,⬇,⬆,⬍,Medium,NA,NA
-17,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Information,Information about less expensive sources of feed,⬇,⬇,⬆,⬍,Slow,NA,NA
-18,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing livestock mortality,Information,Information about vaccines,⬆,⬍,⬆,⬆,Slow,NA,NA
-19,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing livestock mortality,Subsidy,Subsidized vaccines,=,⬍,⬍,⬆,Slow,NA,NA
-20,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer feed cost ,Information,Inform farmers about forage crops and target feeding ,=,⬇,⬆,⬆,Slow,NA,NA
-21,Livestock,Reduce imports of beef by increasing domestic production,Reduce competition with imported beef,Tariff,Tariffs on imports,=,⬆,⬇,⬍,Fast,NA,NA
-22,Livestock,Reduce imports of beef by increasing domestic production,Increase demand through government purchases,Regulation,Government beef purchases,=,⬆,⬆,⬍,Medium,NA,NA
-23,Livestock,Reduce imports of beef by increasing domestic production,Increase consumption of local/indigenous cattle breeds by building consumer awareness,Information,Marketing campaign,=,⬍,⬆,⬍,Medium,NA,NA
-24,Livestock,Reduce imports of beef by increasing domestic production,Increase establishment of pasture paddocks/rangeland,Subsidy,Subsidize purchases or conversions of land into pasture,=,⬆,⬆,⬍,Medium,NA,NA
-25,Livestock,Reduce imports of beef by increasing domestic production,Increase supply of cattle via increased use of artificial insemination,Information,Inform producers about the benefits of artificial insemination,=,⬆,⬆,⬆,Slow,NA,NA
-26,Livestock,Reduce imports of beef by increasing domestic production,Increase supply of cattle via subsidized calves or breeding material,Subsidy,Subsidize livestock breeding materials,=,⬍,⬆,⬆,Slow,NA,NA
-27,Livestock,Reduce imports of beef by increasing domestic production,Increase access to mechanization or tools to reduce non-food uses of cattle,Subsidy,Subsidized farm equipment,=,⬇,⬇,⬍,Slow,NA,NA
-28,Poultry,Improve domestic poultry production & consumption,Improve supply by increasing production efficiency,Information,Improve farmer access to training on poultry production,=,⬇,⬆,⬍,Slow,NA,NA
-29,Poultry,Improve domestic poultry production & consumption,Improve supply by increasing production efficiency,Information,Improve farmer access to information about good production practices through ICT and digital extension services,=,⬇,⬆,⬍,Fast,NA,NA
-30,Poultry,Improve domestic poultry production & consumption,Improve the quantity and quality of chickens produced,Subsidy,Subsidize or fund breeding programs for improving domestic chickens,=,⬇,⬆,⬆,Slow,NA,NA
-31,Poultry,Improve domestic poultry production & consumption,Improve the quantity and quality of chickens produced,Subsidy,Subsidize or fund the purchase of high-yielding exotic breeds,=,⬍,⬆,⬍,Medium,NA,NA
-32,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by increasing production efficiency through education,Information,Provide extension programs related to improving feeding practices and disease prevention,=,⬍,⬆,⬍,Slow,NA,NA
-33,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing mortality,Information,Provide training in health and biosecurity practices,=,⬍,⬆,⬆,Slow,NA,NA
-34,Livestock,Reduce imports of beef by increasing domestic production,Reduce producer costs,Subsidy,Subsidize the cost of forage grasses,=,⬇,⬆,⬍,Slow,NA,NA
-35,Livestock,Reduce imports of beef by increasing domestic production,Improve supply by reducing livestock mortality,Information,Information about biosecurity management practices,⬆,⬍,⬆,⬆,Slow,NA,NA
-36,Livestock,Reduce imports of beef by increasing domestic production,Increase intensification of beef cattle production and access to markets,Information,Information about intensification of beef production through improved crop-livestock systems ,⬆,⬆,⬆,⬍,Medium,NA,NA
-39,Cashews,Improve Cashew Producer Income,,,,,,,,,,
+1,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កាត់បន្ថយថ្លៃដើមចំណីរបស់អ្នកផលិត,ប្រាក់ឧបត្ថម្ភ,អាហារបសុបក្សីឧបត្ថម្ភធន,⬇,⬇,⬆,⬍,លឿន,NA,មធ្យម
+2,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កាត់បន្ថយថ្លៃដើមចំណីរបស់អ្នកផលិត,ព័ត៌មាន,ព័ត៌មានអំពីប្រភពដែលមានតម្លៃថោកនៃចំណីសត្វបក្សី,⬇,⬇,⬆,?,យឺត,NA,មធ្យម
+37,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កាត់បន្ថយការប្រកួតប្រជែងនាំចូល,កូតា,កូតាលើកូនមាន់នាំចូល,⬆,⬆,⬇,⬍,មធ្យម,តំបន់ និង WTO,ទាប
+3,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កាត់បន្ថយការប្រកួតប្រជែងនាំចូល,ពន្ធ,ពន្ធលើការនាំចូលមាន់,=,⬆,⬇,⬍,មធ្យម,តំបន់ និង WTO,?
+4,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយកាត់បន្ថយការស្លាប់របស់មាន់,ព័ត៌មាន,ព័ត៌មានអំពីវ៉ាក់សាំងបក្សី,⬆,⬍,⬆,⬆,យឺត,NA,ខ្ពស់។
+5,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយកាត់បន្ថយការស្លាប់របស់មាន់,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភធន វ៉ាក់សាំងបក្សី,⬇,⬇,⬆,⬆,យឺត,NA,NA
+6,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,តម្រូវការកើនឡើងតាមរយៈការទិញរបស់រដ្ឋាភិបាល,បទប្បញ្ញត្តិ,ការទិញមាន់របស់រដ្ឋាភិបាល,=,⬆,⬆,⬍,មធ្យម,NA,NA
+7,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,តម្លៃអ្នកផលិតគាំទ្របានទទួល,បទប្បញ្ញត្តិ,ជាន់​តម្លៃ​មាន់​ដែល​កំណត់​ដោយ​រដ្ឋាភិបាល,=,⬆,⬇,⬍,មធ្យម,NA,NA
+8,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,តម្លៃជាន់,បទប្បញ្ញត្តិ,ព័ត៌មាន/ការយល់ដឹងអំពីតម្លៃជាន់,=,⬆,⬇,⬍,លឿន,NA,NA
+9,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អគុណភាពមាន់ក្នុងស្រុក,បទប្បញ្ញត្តិ,អនុវត្តស្តង់ដារទម្ងន់ និងគុណភាពសម្រាប់មាន់,=,⬆,⬍,⬆,យឺត,NA,NA
+10,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អគុណភាពមាន់ក្នុងស្រុក,ព័ត៌មាន,ព័ត៌មានអំពីស្តង់ដារ,=,⬆,⬍,⬆,យឺត,NA,NA
+11,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,បង្កើនតម្រូវការតាមរយៈការអប់រំអ្នកប្រើប្រាស់,ព័ត៌មាន,ទីផ្សារអត្ថប្រយោជន៍អាហារូបត្ថម្ភរបស់សាច់មាន់,=,⬍,⬆,⬍,យឺត,NA,NA
+12,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កាត់បន្ថយតម្លៃដែលអតិថិជនបង់,ប្រាក់ឧបត្ថម្ភ,ឥណទានពន្ធដល់អ្នកប្រើប្រាស់ដែលទិញក្នុងស្រុក,=,⬇,⬆,⬍,មធ្យម,NA,NA
+13,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់សាច់មាន់ដែលផលិត,ព័ត៌មាន,ការកសាងសមត្ថភាព/ការបណ្តុះបណ្តាលលើការកែលម្អផលិតកម្មមាន់ក្នុងស្រុក,=,⬍,⬆,⬍,មធ្យម,NA,NA
+14,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយការបង្កើនលទ្ធភាពទទួលបានដើមទុនសម្រាប់ការធ្វើមាត្រដ្ឋានផលិតកម្មបសុបក្សី,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភធន/ផ្តល់មូលនិធិដល់ការទទួលបានឥណទានខ្នាតតូចសម្រាប់ការផលិតពូជបសុបក្សីដែលប្រសើរឡើង។,⬇,⬆,⬆,⬍,លឿន,NA,NA
+15,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយការកែលម្អកន្លែងភ្ញាស់ និងរោងចក្រកែច្នៃ,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភធនលើកន្លែងភ្ញាស់ និងរោងចក្រកែច្នៃ,⬇,⬆,⬆,⬆,លឿន,NA,NA
+16,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កាត់បន្ថយថ្លៃដើមចំណីរបស់អ្នកផលិត,ប្រាក់ឧបត្ថម្ភ,អាហារឧបត្ថម្ភ,⬇,⬇,⬆,⬍,មធ្យម,NA,NA
+17,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កាត់បន្ថយថ្លៃដើមចំណីរបស់អ្នកផលិត,ព័ត៌មាន,ព័ត៌មានអំពីប្រភពដែលមានតម្លៃថោកនៃចំណី,⬇,⬇,⬆,⬍,យឺត,NA,NA
+18,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយកាត់បន្ថយការស្លាប់របស់បសុសត្វ,ព័ត៌មាន,ព័ត៌មានអំពីវ៉ាក់សាំង,⬆,⬍,⬆,⬆,យឺត,NA,NA
+19,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយកាត់បន្ថយការស្លាប់របស់បសុសត្វ,ប្រាក់ឧបត្ថម្ភ,វ៉ាក់សាំងឧបត្ថម្ភ,=,⬍,⬍,⬆,យឺត,NA,NA
+20,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កាត់បន្ថយថ្លៃដើមចំណីរបស់អ្នកផលិត,ព័ត៌មាន,ជូនដំណឹងដល់កសិករអំពីដំណាំចំណី និងការចិញ្ចឹមគោលដៅ,=,⬇,⬆,⬆,យឺត,NA,NA
+21,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កាត់បន្ថយការប្រកួតប្រជែងជាមួយសាច់គោនាំចូល,ពន្ធ,ពន្ធលើការនាំចូល,=,⬆,⬇,⬍,លឿន,NA,NA
+22,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,បង្កើនតម្រូវការតាមរយៈការទិញរបស់រដ្ឋាភិបាល,បទប្បញ្ញត្តិ,ការទិញសាច់គោរបស់រដ្ឋាភិបាល,=,⬆,⬆,⬍,មធ្យម,NA,NA
+23,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,បង្កើនការប្រើប្រាស់ពូជគោក្នុងស្រុក/ជនជាតិដើមភាគតិច ដោយបង្កើតការយល់ដឹងអ្នកប្រើប្រាស់,ព័ត៌មាន,យុទ្ធនាការទីផ្សារ,=,⬍,⬆,⬍,មធ្យម,NA,NA
+24,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,បង្កើនការបង្កើតវាលស្មៅ/វាលស្មៅ,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភធនលើការទិញ ឬបំប្លែងដីទៅជាវាលស្មៅ,=,⬆,⬆,⬍,មធ្យម,NA,NA
+25,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,បង្កើន​ការ​ផ្គត់ផ្គង់​គោ​ក្របី​តាម​រយៈ​ការ​បង្កើន​ការ​ប្រើ​ប្រាស់​សិប្បនិម្មិត,ព័ត៌មាន,ជូនដំណឹងដល់អ្នកផលិតអំពីអត្ថប្រយោជន៍នៃការបណ្តុះសិប្បនិម្មិត,=,⬆,⬆,⬆,យឺត,NA,NA
+26,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,បង្កើនការផ្គត់ផ្គង់គោក្របី តាមរយៈជំនួយឧបត្ថម្ភកូនគោ ឬសម្ភារៈបង្កាត់ពូជ,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភធនសម្ភារៈចិញ្ចឹមសត្វ,=,⬍,⬆,⬆,យឺត,NA,NA
+27,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,បង្កើនលទ្ធភាពទទួលបានយន្តការ ឬឧបករណ៍ដើម្បីកាត់បន្ថយការប្រើប្រាស់គោក្របីដែលមិនមែនជាអាហារ,ប្រាក់ឧបត្ថម្ភ,ឧបករណ៍កសិកម្មឧបត្ថម្ភធន,=,⬇,⬇,⬍,យឺត,NA,NA
+28,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយការបង្កើនប្រសិទ្ធភាពផលិតកម្ម,ព័ត៌មាន,ធ្វើឱ្យប្រសើរឡើងនូវលទ្ធភាពរបស់កសិករក្នុងការបណ្តុះបណ្តាលលើការផលិតបសុបក្សី,=,⬇,⬆,⬍,យឺត,NA,NA
+29,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយការបង្កើនប្រសិទ្ធភាពផលិតកម្ម,ព័ត៌មាន,កែលម្អលទ្ធភាពទទួលបានព័ត៌មានរបស់កសិករអំពីការអនុវត្តផលិតកម្មល្អតាមរយៈ ICT និងសេវាកម្មពង្រីកឌីជីថល,=,⬇,⬆,⬍,លឿន,NA,NA
+30,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,បង្កើនបរិមាណ និងគុណភាពនៃមាន់ដែលផលិត,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភធន ឬផ្តល់មូលនិធិដល់កម្មវិធីបង្កាត់ពូជសម្រាប់កែលម្អមាន់ក្នុងស្រុក,=,⬇,⬆,⬆,យឺត,NA,NA
+31,បសុបក្សី,កែលម្អផលិតកម្ម និងការប្រើប្រាស់បសុបក្សីក្នុងស្រុក,បង្កើនបរិមាណ និងគុណភាពនៃមាន់ដែលផលិត,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភធន ឬផ្តល់មូលនិធិដល់ការទិញពូជកម្រ និងផ្តល់ទិន្នផលខ្ពស់។,=,⬍,⬆,⬍,មធ្យម,NA,NA
+32,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយការបង្កើនប្រសិទ្ធភាពផលិតកម្មតាមរយៈការអប់រំ,ព័ត៌មាន,ផ្តល់កម្មវិធីបន្ថែមទាក់ទងនឹងការកែលម្អការអនុវត្តការចិញ្ចឹម និងការការពារជំងឺ,=,⬍,⬆,⬍,យឺត,NA,NA
+33,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយកាត់បន្ថយការស្លាប់,ព័ត៌មាន,ផ្តល់ការបណ្តុះបណ្តាលលើការអនុវត្តសុខភាព និងសុវត្ថិភាពជីវសុវត្ថិភាព,=,⬍,⬆,⬆,យឺត,NA,NA
+34,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កាត់បន្ថយការចំណាយរបស់អ្នកផលិត,ប្រាក់ឧបត្ថម្ភ,ឧបត្ថម្ភថ្លៃដើមស្មៅចំណី,=,⬇,⬆,⬍,យឺត,NA,NA
+35,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,កែលម្អការផ្គត់ផ្គង់ដោយកាត់បន្ថយការស្លាប់របស់បសុសត្វ,ព័ត៌មាន,ព័ត៌មានអំពីការអនុវត្តការគ្រប់គ្រងជីវសុវត្ថិភាព,⬆,⬍,⬆,⬆,យឺត,NA,NA
+36,បសុសត្វ,កាត់បន្ថយការនាំចូលសាច់គោ ដោយបង្កើនផលិតកម្មក្នុងស្រុក,បង្កើន​ការ​ផលិត​គោ​ក្របី​ឱ្យ​កាន់​តែ​ខ្លាំង និង​ការ​ចូល​ទៅ​កាន់​ទីផ្សារ,ព័ត៌មាន,ព័ត៌មាន​អំពី​ការ​បង្កើន​ផលិតកម្ម​សាច់គោ​តាម​រយៈ​ប្រព័ន្ធ​ដំណាំ​-បសុសត្វ​ដែល​បាន​ធ្វើ​ឱ្យ​ប្រសើរ​ឡើង,⬆,⬆,⬆,⬍,មធ្យម,NA,NA
+39,គ្រាប់ស្វាយចន្ទី,បង្កើនប្រាក់ចំណូលរបស់អ្នកផលិតគ្រាប់ស្វាយចន្ទី,,,,,,,,,,

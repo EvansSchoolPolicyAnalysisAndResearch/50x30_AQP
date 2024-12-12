@@ -89,6 +89,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                       tabPanel("About AgQuery 50x30",
                                                fluidRow(column(1), column(8,
                                                                           HTML(paste('<div style="font-size: 0.9em; margin: 20 0 0 0;">',
+                                                                                     '<i>Note: This is a development version of the CAS Data Explorer that illustrates code-free Khmer language support. Download the spreadsheets using the links provided to learn more. There may be some differences in behavior and/or appearance from the main version of the app.</i><br>',
                                                                                      '<table><tr><td><h3>Purpose</h3>',
                                                                                      '<p>The Data Explorer supports progress tracking, reporting, and hypothesis testing to facilitate decision making related to the <a href="https://mfaic.gov.kh/files/uploads/1XK1LW4MCTK9/EN%20PENTAGONAL%20STRATEGY%20-%20PHASE%20I.pdf">Cambodian Government\'s 2023 Pentagonal Strategy</a>\'s goals, including modernization, increasing productivity in priority crops and domestic livestock, strengthening extension services, and increasing agricultural products processing industries, furthering implementation of the <a href="https://data.opendevelopmentcambodia.net/library_record/national-agricultural-development-policy-2022-2023">National Agricultural Development Policy</a> and <a href="https://faolex.fao.org/docs/pdf/cam219302.pdf">Cambodia Agro-Industrial Development Strategic Plan</a>, which aim to increase domestic commercial livestock production and the domestic agricultural products processing industries.</a></p></td></tr>',
                                                                                      '<tr><td align="center"><img src="Tikz_figure_2.png" width=450></img></td></tr>',
@@ -267,12 +268,12 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                                                                                          label='Download Table Data',
                                                                                                                          icon=icon('file-csv'))))),
                                                                          column(6,
-                                                                                fluidRow(plotOutput('currMap')), 
+                                                                                fluidRow(plotlyOutput('currMap')), 
                                                                                 fluidRow(column(10),column(2,     
                                                                                                            uiOutput('dlCurrMapOut')
                                                                                                            #downloadButton('dlcurrMap', label="", icon=icon('file-arrow-down'))
                                                                                 )),
-                                                                                fluidRow(plotOutput('trendMap'), 
+                                                                                fluidRow(plotlyOutput('trendMap'), 
                                                                                          #downloadButton('dltrendMap', label="", icon=icon('file-arrow-down'))
                                                                                 ),
                                                                                 #plotOutput('obsMap'),
@@ -334,14 +335,14 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                      column(6, uiOutput('corrHist')
                                                      )
                                                      ),
-                                                     fluidRow(column(6, plotOutput('indicatorMap') 
+                                                     fluidRow(column(6, plotlyOutput('indicatorMap') 
                                                                      #downloadButton("dlindicMap", label="", icon=icon("file-arrow-down"))
                                                      ), 
-                                                     column(6, plotOutput('corrMap') 
+                                                     column(6, plotlyOutput('corrMap') 
                                                             #downloadButton("dlcorrMap", label="", icon=icon("file-arrow-down"))
                                                      )
                                                      ),
-                                                     fluidRow(plotOutput('scatterPlot')),
+                                                     fluidRow(plotlyOutput('scatterPlot')),
                                                      fluidRow(uiOutput('plotInterp'))
                                     ),
                                     HTML('</div>')
@@ -1052,8 +1053,8 @@ server <- function(input, output, session) {
           currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " ", input$totsBtns), indicator_list$units[indicator_list$shortName==input$trendIn])
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
           timePlot <- timeSeriesPlot(data_table_out$data_table, input$trendIn, input$totsBtns)
-          output$currMap <- renderPlot(currMap)
-          output$trendMap <- renderPlot(trendMap)
+          output$currMap <- renderPlotly(currMap)
+          output$trendMap <- renderPlotly(trendMap)
           output$timePlot <- renderPlotly(timePlot)
           output$dlCurrMapOut <- renderUI(downloadButton('dlcurrMap', label="", icon=icon('file-arrow-down')))
           output$dlcurrMap <- downloadHandler(
@@ -1271,9 +1272,9 @@ server <- function(input, output, session) {
             }
           )
           
-          output$scatterPlot <- renderPlot(scatterPlot)
-          output$corrMap <- renderPlot(corrMap) 
-          output$indicatorMap <- renderPlot(indicatorMap)
+          output$scatterPlot <- renderPlotly(scatterPlot)
+          output$corrMap <- renderPlotly(corrMap) 
+          output$indicatorMap <- renderPlotly(indicatorMap)
           #output$plotInterp <- renderUI(HTML(res_out))
           
         }
@@ -1627,7 +1628,7 @@ server <- function(input, output, session) {
       }
       merged_tab$Total <- format(merged_tab$Total, big.mark=",")
       output$trendsTable2 <- DT::renderDT(merged_tab, rownames=F)
-      output$provPlot2 <- renderPlot(provPlot, height=600)
+      output$provPlot2 <- renderPlotly(provPlot, height=600)
     }
   })
   
