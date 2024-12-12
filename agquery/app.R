@@ -1396,7 +1396,7 @@ server <- function(input, output, session) {
         #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
         #names(pathway_list) <- c("All", pathway_sub$Pathway)
        #output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]]))
-        output$dataPathBox <- renderUI(pickerInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]], options=list(style="selectize-input"), choicesOpt=list(disabled=polic_activ[[input$policiesBox1]])))
+        output$dataPathBox <- renderUI(pickerInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]], options=list(style="selectize-input"), choicesOpt=list(disabled=polic_activ[[input$policiesBox2]])))
         
         if(!is.null(input$pathwaysIn2)){
           if(input$policiesBox2!="None"){
