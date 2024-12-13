@@ -92,9 +92,10 @@ if(is.list(groups_list)){
   }
 }
 
-policy_path <- tryCatch(read.csv("Update/Policy_Pathways.csv", header = TRUE),
-                        error=function(e){return(F)}) #Need to add name enforcement to prevent crashes on targeted styles
+policy_path <- tryCatch(readxl::read_xlsx("Update/Policy_Pathways.xlsx"),
+                        error=function(e){return(F)}) 
 if(is.list(policy_path)){
+  policy_path <- as.data.frame(policy_path) #Don't want a tibble here.
   pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
   pathway_names <- unique(policy_path$Policy.Goal)
   short_Pathways <- unique(policy_path$goalName)

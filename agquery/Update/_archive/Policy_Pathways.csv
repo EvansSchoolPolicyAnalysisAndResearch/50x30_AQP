@@ -1,9 +1,9 @@
 ﻿pathwayID,goalName,Policy.Goal,Pathway,Instrument,Implementation,Producer.unit.costs,Final.consumer.price,Final.prod.Q,Prod.Quality,Speed,Trade.or.Legal.Considerations,Overall Feasibility
-1,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Subsidy,Subsidized poultry feed,⬇,⬇,⬆,⬍,Fast,NA,NA
-2,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Information,Information about less expensive sources of poultry feed,⬇,⬇,⬆,⬍,Slow,NA,NA
-37,Poultry,Improve domestic poultry production & consumption,Reduce competition with imported inputs,Quota,Quota on imported chicks,⬆,⬆,⬇,⬍,Fast,Not permissible,None
-3,Poultry,Improve domestic poultry production & consumption,Reduce competition with imported poultry,Tariff,Tariffs on poultry imports,=,⬆,⬇,⬍,Fast,NA,NA
-4,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Information,Information about poultry vaccines,⬆,⬍,⬆,⬆,Slow,NA,NA
+1,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Subsidy,Subsidized poultry feed,⬇,⬇,⬆,⬍,Fast,NA,Medium
+2,Poultry,Improve domestic poultry production & consumption,Reduce Producer Feed Cost,Information,Information about less expensive sources of poultry feed,⬇,⬇,⬆,?,Slow,NA,Medium
+37,Poultry,Improve domestic poultry production & consumption,Reduce import competition,Quota,Quota on imported chicks,⬆,⬆,⬇,⬍,Medium,Regional & WTO,Low
+3,Poultry,Improve domestic poultry production & consumption,Reduce import competition ,Tariff,Tariffs on poultry imports,=,⬆,⬇,⬍,Medium,Regional & WTO,?
+4,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Information,Information about poultry vaccines,⬆,⬍,⬆,⬆,Slow,NA,High
 5,Poultry,Improve domestic poultry production & consumption,Improve supply by reducing chicken mortality,Subsidy,Subsidized poultry vaccines,⬇,⬇,⬆,⬆,Slow,NA,NA
 6,Poultry,Improve domestic poultry production & consumption,Increasing demand through government purchases,Regulation,Government poultry purchases,=,⬆,⬆,⬍,Medium,NA,NA
 7,Poultry,Improve domestic poultry production & consumption,Support producer price received,Regulation,Government-imposed poultry price floors,=,⬆,⬇,⬍,Medium,NA,NA

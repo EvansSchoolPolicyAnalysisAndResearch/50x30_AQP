@@ -166,7 +166,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                tabsetPanel(
                                                  tabPanel("Poultry", br(),
                                                            #Kludge, these tabs should get shifted to the server entirely.
-                                                          layout_columns(col_widths=4,
+                                                          layout_columns(col_widths=2,
                                                               uiOutput("PoultryBoxes"),
                                                             card(card_header("Household Poultry Ownership"),
                                                                    HTML("<img src='poultry_table.png'></img>"),
@@ -1465,10 +1465,11 @@ server <- function(input, output, session) {
     })
   
   output$downloadPathways <- downloadHandler(
-    filename = "Policy_Pathways.csv",
+    filename = "Policy_Pathways.xlsx",
     content = function(file) {
-      write.csv(policy_path,file,row.names = FALSE)
-    })
+      file.copy("Update/Policy_Pathways.xlsx")
+    },
+    contentType="application/vnd.ms-excel")
   
   # output$downloadRaw <- downloadHandler(
   #   filename = "processed_data.csv",
@@ -1502,10 +1503,11 @@ server <- function(input, output, session) {
   )
   
   output$relsDL1 <- downloadHandler(
-    filename="Policy_Pathways.csv",
+    filename="Policy_Pathways.xlsx",
     content=function(file){
-      file.copy("Update/Policy_Pathways.csv", file)
-    }
+      file.copy("Update/Policy_Pathways.xlsx", file)
+    },
+    contentType="application/vnd.ms-excel" 
   )
   
   output$relsDL2 <- downloadHandler(
@@ -1534,14 +1536,20 @@ server <- function(input, output, session) {
   
   #To do: compact this for better display.
   if(exists("pathwaysDT")){
+    formatCols <- vector()
+    for(i in 1:length(names(pathwaysDT))){
+      if(any(c("\U2B07","\U2B06", "\U2B0D", "=") %in% pathwaysDT[,i])){
+        formatCols <- c(formatCols, names(pathwaysDT)[[i]])
+      }
+    }
     path_tabs <- lapply(pathway_names, function(x){ 
-      pathwaysFilt <- pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`, -Instrument) %>% rename(Instrument=Implementation) #ALT: TEMP RENAME PENDING PERMANENT DECISION HERE
+      pathwaysFilt <- pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`) %>% rename(`Instrument Category`=Instrument) %>% rename(Instrument=Implementation) #ALT: TEMP RENAME PENDING PERMANENT DECISION HERE
       pathwaysDT_out <- datatable(pathwaysFilt,
                                   filter=list(position='top', clear=F),
                                   rownames=F,
                                   escape=F,
                                   options=list(columnDefs=list(list(className="dt-center", #targets=c('P','Q', 'Quality'))),
-                                                                    targets=c('Producer unit costs', 'Final consumer price', 'Final prod Q', 'Prod Quality')) #,
+                                                                    targets=formatCols) #,
                                                                #list(width='20%', targets=8)
                                   ),
                                   scrollX=T,
@@ -1549,7 +1557,7 @@ server <- function(input, output, session) {
                                   lengthMenu=c(2,5,10),
                                   searching=T, 
                                   autoWidth=T)) %>%
-        formatStyle(c('Producer unit costs', 'Final consumer price', 'Final prod Q', 'Prod Quality'), color=styleEqual(c("\U2B07","\U2B06", "\U2B0D", "="), c("#e03d3d","#32a852", "darkgrey", "darkgrey")), fontSize="250%")
+        formatStyle(formatCols, color=styleEqual(c("\U2B07","\U2B06", "\U2B0D", "="), c("#e03d3d","#32a852", "darkgrey", "darkgrey")), fontSize="250%")
       
       return(tabPanel(title=paste("Policy Goal: ", x),
                       fluidRow(column(10,renderDataTable(pathwaysDT_out)))
