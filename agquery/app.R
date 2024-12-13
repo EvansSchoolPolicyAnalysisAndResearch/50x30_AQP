@@ -166,7 +166,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                tabsetPanel(
                                                  tabPanel("Poultry", br(),
                                                            #Kludge, these tabs should get shifted to the server entirely.
-                                                          layout_columns(col_widths=2,
+                                                          layout_columns(col_widths=6,
                                                               uiOutput("PoultryBoxes"),
                                                             card(card_header("Household Poultry Ownership"),
                                                                    HTML("<img src='poultry_table.png'></img>"),
@@ -1538,7 +1538,8 @@ server <- function(input, output, session) {
   if(exists("pathwaysDT")){
     formatCols <- vector()
     for(i in 1:length(names(pathwaysDT))){
-      if(any(c("\U2B07","\U2B06", "\U2B0D", "=") %in% pathwaysDT[,i])){
+      item <- pathwaysDT[1,i] #Fast but potentially inaccurate, to fix.
+      if(any(c("\U2B07","\U2B06", "\U2B0D", "=") %in% item)){
         formatCols <- c(formatCols, names(pathwaysDT)[[i]])
       }
     }
