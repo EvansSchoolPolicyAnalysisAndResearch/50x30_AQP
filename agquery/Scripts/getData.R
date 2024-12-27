@@ -1,5 +1,5 @@
 wbDataPrep <- function(filename) {
-  read.csv(paste0("Extdata/",filename), skip=4) |> 
+  read.csv(paste0("Extdata/World Bank/",filename), skip=4) |> 
     pivot_longer(cols=starts_with("X"), 
                  names_to="year", 
                  values_to = "val", 
@@ -10,7 +10,7 @@ wbDataPrep <- function(filename) {
 }
 
 wbDataNames <- function(filename){
-  data_row <- read.csv(paste0("Extdata/",filename), skip=4)[1,]
+  data_row <- read.csv(paste0("Extdata/World Bank/",filename), skip=4)[1,]
   indicname <- data_row$Indicator.Name
   units <- gsub(".*\\((.*)\\).*", "\\1", indicname)
   title <- gsub("(.*)(\\(.*\\)).*", "\\1", indicname)

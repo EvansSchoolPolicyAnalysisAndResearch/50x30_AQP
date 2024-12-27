@@ -10,35 +10,61 @@ output:
 knitr::opts_chunk$set(echo=FALSE)
 ```
 
-
 ### Overview
 
-AgQuery 50x30 is designed to facilitate policy analysis, progress tracking, and reporting based on the Cambodia Agriculture Survey data. It is designed to be extensively user-modifiable so that commonly used graphics can be quickly regenerated from a new data release, reducing the time between collection and analysis. The next section will explain how to download your own copy in order to make best use of these features, and the following sections will provide an instructions on using and updating the content in each tab.
+The Cambodia Agriculture Survey Data Explorer is a utility for policy analysis, progress tracking, comparison, and reporting. It is designed to be extensively user-modifiable so that commonly used graphics can be quickly regenerated from a new data release, reducing the time between collection and analysis. A public version of the app is available [https://evans-par.shinyapps.io/agquery](here) and can be used to immediately access the data and produce visualizations. The next section will explain how to download your own copy in order to make best use of these features, and the following sections will provide an instructions on using and updating the content in each tab.
+
+This app is built using Posit's R Shiny framework. More information on Shiny can be found [https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/](here)
 
 ### Accessing the App: Online vs Offline Access
 
-\<tbd\>
+To take full advantage of the features of the app, it is necessary to either run your own copy locally or host your own instance using your own server framework or the shinyapps.io service. 
 
-##### Requirements for downloading and running a local copy
+#### Requirements for downloading and running a local copy
 
-\<tbd\>
+-   First time R users: download and install [R](https://cran.rstudio.com/) and [RStudio.](https://posit.co/download/rstudio-desktop/)
+-   Existing R users: ensure you are running R version 4.4.2 and download RStudio if needed.
+-   Download the latest release at the [Git repository](https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP).
+-   Follow the instructions in the repository readme to finish first time setup. After setup is complete, run the app on your computer by opening the R project and the app.R files in RStudio and pressing the "run app" button that appears in the top right-hand corner of the file pane.
+
+#### Requirements for Self-Hosting
+
+The app can be self-hosted on a server using Docker. Install Docker on your server, clone the directory from github, and build using the included Dockerfile.
+
+### Updating the App
+
+To make your own updates to the app. 
+
+#### Directory Layout
+
+|                 |                                                                                                           |
+|--------------------------------------------------------|----------------|
+| └── agquery/    |                                                                                                           |
+| ├── Data        | *Processed survey data*                                                                                   |
+| ├── Extdata     | *Externally sourced data, e.g. World Bank Development indicator CSV files*                                |
+| ├── Commodities | *User-defined folders for data/images related to particular agricultural commodities*                     |
+| └── World Bank  | *Datasets sourced from the World Bank for display in value boxes on the Economics tab*                    |
+| ├── renv        | *Project R package library*                                                                               |
+| ├── Scripts     | *Additional code required by the app, includes functions for processing data and creating charts*         |
+| ├── Spatial     | *Spatial information (rasters and shapefiles) for maps*                                                   |
+| ├── Update      | *Metadata for the survey data folder; update the files in here to change the policy goals and variables.* |
+| ├── User Guide  | *Files related to this guide*                                                                             |
+| └── www         | *Additional files used in web pages*                                                                      |
 
 ### Adding Your Own Data
 
 Additional data can be added to the app by placing CSV files with raw data in the Data subfolder. The following requirements must be met for data files to be usable by the app:
 
 -   The file name must be "Cambodia_CAS\_{YEAR}\_{UNIQUENAME}.csv. The unique name must be consistent across survey years.
--   The files must contain the columns hhid, province, and zone
+-   The files must contain the **ID variables** "hhid", "province", and "zone"
+-   Variables in the data files can be named with a combination of letters, numbers, and underscores. They should not include spaces or begin with numbers. Variable names are case sensitive: the names "Chickens" and "chickens" will be treated as different variables. Khmer script is permitted.
+-   All variables should be numeric; including string or categorical data will result in errors or estimates that are difficult to interpret. Consider adding them to the app as grouping variables instead.
 
-Two additional files, weights.csv and groups.csv, should follow the same file naming convention outlined above and are used to store the household-level weights and any grouping variables, respectively. The weights file is optional, and, if it is not included, each data file should include the column "weight" in addition to the other variables. If weights are not found, the numbers presented in the app will represent the unweighted (sample) totals and means.
+Two additional files, weights.csv and groups.csv, should follow the same file naming convention outlined above and are used to store the household-level weights and any categorical or grouping variables, respectively. Both files are optional; if they are not included, all data files should include weights and grouping criteria. If weights are not found, the numbers presented in the app will represent the unweighted (sample) totals and means.
 
-### Spreadsheet-Based Content Management
+### Adding New Variables, Creating Your Own Policy Goals, Setting Up Policy Pathways, and Determining Relevant Variables
 
-\<tbd\>
-
-##### Directory Layout
-
-\<tbd\>
+The app will register all variables included in the input data files (see Diagnostics), but it will only incorporate the variables that have been included in the Update folder spreadsheets to avoid presenting too many options simultaneously.
 
 ### Policy Context
 
@@ -100,6 +126,3 @@ This page provides links to associated sources of data and information that can 
 
 In addition to the instructions you are currently reading, this page provides the **App Diagnostics** tab, which can be used to troubleshoot if the app stops working after an update. The app will check that the data and supporting spreadsheets are present and correctly formatted with the expected column names. In addition, it will present all of the variables found in the data files and report whether the metadata needed to incorporate them into the app are present. For a variable to show up, it must at least be present in the indicators list and be assigned to a policy goal. Assignment to a pathway is optional. Note that this is not the case for the hhid, province, and zone variables, which are used to identify observations. They should be present in all of the data files with the exception of groups and weights, which need only the unique household id.
 
-### Key tips for making your own updates
-
-\<tbd\>

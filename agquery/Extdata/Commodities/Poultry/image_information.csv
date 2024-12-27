@@ -1,0 +1,4 @@
+image_name,title,source
+poultry_table,Poultry Ownership Rates,"CAS 2021, as reported by the FAO"
+poul imp val,Poultry Import Value,"Value in USD of imported poultry, as reported by multiple trade tracking datasets."
+poul imp vol,Poultry Import Volume,"Quantity in tons of imported poultry, as reported by multiple trade tracking datasets"
