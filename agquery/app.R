@@ -55,9 +55,10 @@ options(shiny.useragg = TRUE)
 #     background-color: #fff;
 
 
-ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
-                                      base_font = bslib::font_google("Open Sans"),
-                                      heading_font=bslib::font_google("Open Sans")), 
+ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF" #, #primary="#CA054D",
+                                      #base_font = bslib::font_google("Open Sans"),
+                                      #heading_font=bslib::font_google("Open Sans")
+                                      ), 
                 fluidRow(style="background-color:#cadafa;",
                          
                          column(2, align='center', HTML("<br><img src=moa_logo.png width='200'></img>")),
@@ -68,9 +69,10 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                 ),
                 fluidRow(style="background-color:#cadafa;", br()),
                 
-                navbarPage(title="", theme=bslib::bs_theme(version="5", preset='pulse',  #bg = "white", fg = "#3B528B", info="#474481", primary = "#440154FF",
-                                                           base_font = bslib::font_google("Open Sans"),
-                                                           heading_font=bslib::font_google("Open Sans")),
+                navbarPage(title="", theme=bslib::bs_theme(version="5", preset='pulse' #,  #bg = "white", fg = "#3B528B", info="#474481", primary = "#440154FF",
+                                                           #base_font = bslib::font_google("Open Sans"),
+                                                           #heading_font=bslib::font_google("Open Sans")
+                                                           ),
                            header=
                              tags$style(HTML(
                                '
@@ -163,46 +165,47 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                )
                                       ),
                                       tabPanel("Commodity Overviews",
-                                               tabsetPanel(
-                                                 tabPanel("Poultry", br(),
-                                                           #Kludge, these tabs should get shifted to the server entirely.
-                                                          layout_columns(col_widths=4,
-                                                              uiOutput("PoultryBoxes"),
-                                                            card(card_header("Household Poultry Ownership"),
-                                                                   HTML("<img src='poultry_table.png'></img>"),
-                                                               card_footer(HTML("<i>This is a static image sourced from <a href='https://openknowledge.fao.org/server/api/core/bitstreams/430a6002-8c28-4b36-97af-cb63b8b44279/content' target='_blank'>the FAO's National Gender Profile of Agriculture and Rural Livelihoods</a> report (p.27). Compare these values using the data relationships tab.</i>")
-                                                               )),
-                                                                         value_box(title="Animal Source Protein Supply",
-                                                                                   value=plotlyOutput("psupp_out"),
-                                                                                   full_screen=T),
-                                                                         value_box(title="Domestic vs Imported ASP Supply",
-                                                                                   value=plotlyOutput("domsupp_out"),
-                                                                                   full_screen=T),
-                                                                         value_box(title="Poultry Import Volume",
-                                                                                   value=plotlyOutput("poulImpVol"),
-                                                                                   full_screen=T),
-                                                                         value_box(title="Poultry Import Value",
-                                                                                   value=plotlyOutput("poulImpVal"),
-                                                                                   full_screen=T)
-                                                                        
-                                                                         )
-                                                          
-                                                 ),
-                                                 tabPanel("Cashews", br(),
-                                                          uiOutput("CropsBoxes"),
-                                                          layout_columns(col_widths=c(-1,5,5,-1),
-                                                                         
-                                                                         #value_box(title="Cashew Production",
-                                                                         #),
-                                                                         value_box(title="Cashew Export Volume",
-                                                                                   value=plotlyOutput("cashExpVol")
-                                                                         ),
-                                                                         value_box(title="Cashew Export Value",
-                                                                                   value=plotlyOutput("cashExpVal")
-                                                                         )
-                                                          )
-                                                 )
-                                               )
+                                               uiOutput("commodPanels")
+                                               # tabsetPanel(
+                                               #   tabPanel("Poultry", br(),
+                                               #             #Kludge, these tabs should get shifted to the server entirely.
+                                               #            layout_columns(col_widths=4,
+                                               #                uiOutput("PoultryBoxes"),
+                                               #              card(card_header("Household Poultry Ownership"),
+                                               #                     HTML("<img src='poultry_table.png'></img>"),
+                                               #                 card_footer(HTML("<i>This is a static image sourced from <a href='https://openknowledge.fao.org/server/api/core/bitstreams/430a6002-8c28-4b36-97af-cb63b8b44279/content' target='_blank'>the FAO's National Gender Profile of Agriculture and Rural Livelihoods</a> report (p.27). Compare these values using the data relationships tab.</i>")
+                                               #                 )),
+                                               #                           value_box(title="Animal Source Protein Supply",
+                                               #                                     value=plotlyOutput("psupp_out"),
+                                               #                                     full_screen=T),
+                                               #                           value_box(title="Domestic vs Imported ASP Supply",
+                                               #                                     value=plotlyOutput("domsupp_out"),
+                                               #                                     full_screen=T),
+                                               #                           value_box(title="Poultry Import Volume",
+                                               #                                     value=plotlyOutput("poulImpVol"),
+                                               #                                     full_screen=T),
+                                               #                           value_box(title="Poultry Import Value",
+                                               #                                     value=plotlyOutput("poulImpVal"),
+                                               #                                     full_screen=T)
+                                               #                          
+                                               #                           )
+                                               #            
+                                               #   ),
+                                               #   tabPanel("Cashews", br(),
+                                               #            uiOutput("CropsBoxes"),
+                                               #            layout_columns(col_widths=c(-1,5,5,-1),
+                                               #                           
+                                               #                           #value_box(title="Cashew Production",
+                                               #                           #),
+                                               #                           value_box(title="Cashew Export Volume",
+                                               #                                     value=plotlyOutput("cashExpVol")
+                                               #                           ),
+                                               #                           value_box(title="Cashew Export Value",
+                                               #                                     value=plotlyOutput("cashExpVal")
+                                               #                           )
+                                               #            )
+                                               #   )
+                                               # )
                                       ),
                                       tabPanel("Interactive Maps", br(),
                                                selectInput('mapsSelect', "Choose a layer", choices=c("Select Option", "Surface Water", "Irrigation", "Land Use", "Cashew Cultivation")),
@@ -456,11 +459,17 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
 
 server <- function(input, output, session) {
   ##Export/Import plots
-  imp_exp_data <- read.csv("Extdata/import_export_data.csv")
-  output$poulImpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="value", direction="imports"))
-  output$poulImpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="volume", direction="imports"))
-  output$cashExpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="volume", direction="exports"))
-  output$cashExpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="value", direction="exports"))
+  # imp_exp_data <- read.csv("Extdata/import_export_data.csv")
+  # #Somewhat of a bandaid here - this doesn't work esaily with drag-and-drop data.
+  # poulImpVal <- imp_exp_plot(imp_exp_data, product="poultry", units="value", direction="imports")
+  # poulImpVol <- imp_exp_plot(imp_exp_data, product="poultry", units="volume", direction="imports")
+  # cashExpVol <- imp_exp_plot(imp_exp_data, product="cashew", units="volume", direction="exports")
+  # cashExpVal <- imp_exp_plot(imp_exp_data, product="cashew", units="value", direction="exports")
+  # 
+  #output$poulImpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="value", direction="imports"))
+  #output$poulImpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="volume", direction="imports"))
+  #output$cashExpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="volume", direction="exports"))
+  #output$cashExpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="value", direction="exports"))
   
   ##Diagnostics
   if(exists("dataset_list")){
@@ -1396,7 +1405,7 @@ server <- function(input, output, session) {
         #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
         #names(pathway_list) <- c("All", pathway_sub$Pathway)
        #output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]]))
-        output$dataPathBox <- renderUI(pickerInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]], options=list(style="selectize-input"), choicesOpt=list(disabled=polic_activ[[input$policiesBox1]])))
+        output$dataPathBox <- renderUI(pickerInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]], options=list(style="selectize-input"), choicesOpt=list(disabled=polic_activ[[input$policiesBox2]])))
         
         if(!is.null(input$pathwaysIn2)){
           if(input$policiesBox2!="None"){
@@ -1665,7 +1674,7 @@ server <- function(input, output, session) {
   # ),
   
   
-  wbDataFiles <- list.files("Extdata", pattern="^API.+[0-9]{4}\\.csv$")
+  wbDataFiles <- list.files("Extdata/World Bank", pattern="^API.+[0-9]{4}\\.csv$")
   colors <- c("primary", "success", "info", "info", "primary", "success")
   wbN <- 1
   vbs <- list()
@@ -1698,38 +1707,79 @@ server <- function(input, output, session) {
   }
   if(length(vbs)>0){
     output$valueBoxes <- renderUI(layout_column_wrap(width=1/3, !!!vbs)) 
+  }
+  
+  
+ 
+  commodities <- list.dirs("Extdata/Commodities", full.names=F)
+  commodities <- commodities[nzchar(commodities)]
+  commodTabs <- lapply(commodities, FUN=function(commod){
+    imgVbs <- list()
+    tblVbs <- list()
+    image_list <- tryCatch(read.csv(sprintf("Extdata/Commodities/%s/image_information.csv", commod)), 
+                         error=function(e){
+                           return(F)
+                         })
+    if(is.list(image_list)){
+      if(nrow(image_list)>0){
+        addResourcePath(prefix=commod, directory=paste0("Extdata/Commodities/",commod))
+        imgVbs <- lapply(1:nrow(image_list), FUN=function(x){
+          img_name <- image_list$image_name[[x]]
+          #Very basic error handling here. 
+          img_path <- list.files(paste0("Extdata/Commodities/", commod), pattern=img_name, full.names=F)
+          if(length(img_path)!=1){
+            #Placeholder, doesn't work well with lapply
+            img_err <- "name collision or missing image"
+          } else {
+           img_ext <- str_detect(img_path, ".png|.jpg|.jpeg|.gif|.bmp")
+           if(!img_ext){
+             #Placeholder
+             img_err <- "not an image"
+           } else {
+          
+          img_title <- image_list$image_title[[x]]
+          img_caption <- image_list$source[[x]]
+          return(card(card_header(img_title),
+                      tags$img(src=paste(commod,img_path, sep="/")),
+                      card_footer(HTML(sprintf("<i>%s</i>", img_caption))),
+                 full_screen=T))
+           }
+            
+          }
+        })
+      }
     }
   
-  
-  casDataFiles <- list.files("Extdata", pattern="cas-")
-  
-  if(length(casDataFiles) > 0){
-    casDataFiles <- data.frame(casDataFiles)
-    names(casDataFiles) <- "SourceFile"
-    casDataFiles$shortName <- str_extract(casDataFiles$SourceFile, "([A-z_]+).csv", group=1) 
-    var_info <- indicator_list |> select(shortName, file, axisName)
-    casDataFiles <- merge(casDataFiles, var_info, by="shortName")
-    datafiles <- unique(casDataFiles$file) #for the names in the commodity tabs. 
-    for(dfile in datafiles){
-      casDataFilesSub <- casDataFiles |> filter(file==dfile)
-      vbsOut <- lapply(1:nrow(casDataFilesSub), FUN=function(x){
-        casFile <- casDataFilesSub$SourceFile[[x]]
-        casName <- casDataFilesSub$shortName[[x]]
-        if(!is.na(casName)){
-        casYear <- str_extract(casFile, "[0-9]{4}")
+                         
+  casDataFiles <- list.files(sprintf("Extdata/Commodities/%s", commod), pattern="cas-", full.names=T)
+  #Should eventually make this a function.
+    if(length(casDataFiles) > 0){
+      casDataFiles <- data.frame(casDataFiles)
+      names(casDataFiles) <- "SourceFile"
+      casDataFiles$shortName <- str_extract(casDataFiles$SourceFile, "([A-z_]+).csv", group=1) 
+      var_info <- indicator_list |> select(shortName, file, axisName)
+      casDataFiles <- merge(casDataFiles, var_info, by="shortName")
+      #datafiles <- unique(casDataFiles$file) #for the names in the commodity tabs. 
+      #for(dfile in datafiles){
+        #casDataFilesSub <- casDataFiles |> filter(file==dfile)
+        tblVbs <- lapply(1:nrow(casDataFiles), FUN=function(x){
+          casFile <- casDataFiles$SourceFile[[x]]
+          casName <- casDataFiles$shortName[[x]]
+          if(!is.na(casName)){
+          casYear <- str_extract(casFile, "[0-9]{4}")
         
-        casTab <- read.csv(paste0("Extdata/", casFile))
+          casTab <- read.csv(casFile)
         #Strip row names if they got loaded
-        if(names(casTab)[[1]]=="X") {
-          casTab <- casTab[,-1]
+          if(names(casTab)[[1]]=="X") {
+            casTab <- casTab[,-1]
+          }
+          names(casTab) <- str_replace_all(names(casTab), "[.]", " ")
+          casTabFlx <- flextable(casTab)
+          if(ncol(casTab>2)){
+            casTabFlx <- merge_v(casTabFlx, j=names(casTab)[[1]])
         }
-        names(casTab) <- str_replace_all(names(casTab), "[.]", " ")
-        casTabFlx <- flextable(casTab)
-        if(ncol(casTab>2)){
-          casTabFlx <- merge_v(casTabFlx, j=names(casTab)[[1]])
-        }
-        casTabTitle <- paste0(casDataFilesSub$axisName[[x]], ", ", casYear)
-        return(card(card_header(casTabTitle),
+          casTabTitle <- paste0(casDataFiles$axisName[[x]], ", ", casYear)
+          return(card(card_header(casTabTitle),
                     renderUI({
                       casTabFlx |>
                         autofit() |>
@@ -1740,37 +1790,21 @@ server <- function(input, output, session) {
         )
         }
       })
-      if(length(vbsOut) > 0) {
-      output[[paste0(dfile, "Boxes")]] <- renderUI(layout_columns(col_widths=floor(12/length(vbsOut)), !!!vbsOut))
-      }
+      
+    #}
     }
+  commodVbs <- c(imgVbs, tblVbs)
+  
+  if(length(commodVbs) > 0){
+    
+  return(tabPanel(title=commod,
+    renderUI(layout_columns(col_widths=12/2, !!!commodVbs))
+    ))
   }
-  
-
-  
-  #if(length(vbs2) > 0){
-  #  output$casBoxes <- renderUI(layout_columns(col_widths=c(4,4,4), !!!vbs2))
-  #}
-  
-  # 
-  # agvaladd <- wbDataPrep("API_NV.AGR.TOTL.ZS_DS2_en_csv_v2_4614.csv") |> filter(Country.Name=="Cambodia")
-  # agempl <- wbDataPrep("API_SL.AGR.EMPL.ZS_DS2_en_csv_v2_3276.csv") |> filter(Country.Name=="Cambodia")
-  # gnidata <- wbDataPrep("API_NY.GNP.PCAP.PP.CD_DS2_en_csv_v2_2384.csv") |> filter(Country.Name=="Cambodia")
-  # 
-  # gni_text <- wbTrend(gnidata)
-  # output$gniPlot <- renderPlotly(sparkline(gnidata, "year", "val", "GNI Per Capita ($US)"))
-  # output$gniVal <- renderText(gni_text$recVal)
-  # output$gniTrend <- renderUI(gni_text$trend)
-  # 
-  # agvaladd_text <- wbTrend(agvaladd)
-  # output$agValAdd <- renderText(agvaladd_text$recVal)
-  # output$agvaTrend <- renderUI(agvaladd_text$trend)
-  # output$agvaPlot <- renderPlotly(sparkline(agvaladd, "year","val", "Value Added (% of GDP)"))
-  # 
-  # agempl_text <- wbTrend(agempl)
-  # output$agEmp <- renderText(agempl_text$recVal)
-  # output$agEmpTrend <- renderUI(agempl_text$trend)
-  # output$agempPlot <- renderPlotly(sparkline(agempl, "year","val", "Employment in Agriculture\n(% of Workforce)"))
+  })
+  if(length(commodTabs) > 0){
+    output$commodPanels <- renderUI(do.call(tabsetPanel, commodTabs))
+  }
   
 }
 
