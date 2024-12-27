@@ -88,59 +88,9 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                     
                                     tabsetPanel(
                                       tabPanel("About AgQuery 50x30",
-                                               fluidRow(column(1), column(8,
-                                                                          HTML(paste('<div style="font-size: 0.9em; margin: 20 0 0 0;">',
-                                                                                     '<table><tr><td><h3>Purpose</h3>',
-                                                                                     '<p>The Data Explorer supports progress tracking, reporting, and hypothesis testing to facilitate decision making related to the <a href="https://mfaic.gov.kh/files/uploads/1XK1LW4MCTK9/EN%20PENTAGONAL%20STRATEGY%20-%20PHASE%20I.pdf">Cambodian Government\'s 2023 Pentagonal Strategy</a>\'s goals, including modernization, increasing productivity in priority crops and domestic livestock, strengthening extension services, and increasing agricultural products processing industries, furthering implementation of the <a href="https://data.opendevelopmentcambodia.net/library_record/national-agricultural-development-policy-2022-2023", target="_blank">National Agricultural Development Policy</a> and <a href="https://faolex.fao.org/docs/pdf/cam219302.pdf", target="_blank">Cambodia Agro-Industrial Development Strategic Plan</a>, which aim to increase domestic commercial livestock production and the domestic agricultural products processing industries.</a></p></td></tr>',
-                                                                                     '<tr><td align="center"><img src="Tikz_figure_2.png" width=450></img></td></tr>',
-                                                                                     '<tr><td><p>In collaboration with app maintainers, the users are able to view, analyze, and create figures related to household production of crops and livestock that can be used to understand trends in small-scale producer contributions to national supply and the economic conditions small-scale producers face. Variables in the survey are grouped according to policy themes for ease of navigation.</p>',
-                                                                                     '</td></tr>',
-                                                                                     '<tr><td>&nbsp;<td></tr>',
-                                                                                     '<tr><td><h3>Value Addition to the Data Analysis Process</h3><p>The 50x30 Cambodia Data Explorer bridges the gap between survey data collection and policy decisionmaking. It provides the opportunity to combine knowledge from scholarly research in agricultural policy with observed trends in variables collected in the field. These trends can inform progress toward established goals or aid in the formation of new programs. The results of those policies become visible in new data collection, which is added through updates.',
-                                                                                     '</p></td></tr>',
-                                                                                     '<tr><td>&nbsp;<td></tr>',
-                                                                                     '<tr><td align="center"><img src="logic-model.png", width=70%"></td></tr></table><br>',
-                                                                                     '<h3>Flexible and Open-Source</h3>',
-                                                                                     '<p>AgQuery distinguishes itself from other data analysis tools in the following ways:</p>',
-                                                                                     '<ul><li><b>Policy Context:</b> With policy expertise from EPAR and other stakeholders, this data explorer adds a new dimension to data visualization by taking into account Cambodia’s specific policy-context.',
-                                                                                     '<ul><li>It focuses on visualizing data according to the Cambodian Ministry of Agriculture’s domestic policy priorities, which can be updated to suit changing needs.</li>',
-                                                                                     '<li>Not only does our explorer align with the ministry, but it also provides specific policy pathways through which progress can be tracked and measured. </li></ul></li>',
-                                                                                     '<li><b>Open-source platform:</b>The code for developing the website is open-source. It is free of charge and publicly available to modify or reuse.</li>',
-                                                                                     '<li><b>Customizable Data:</b> Data can be easily modified, extended, or replaced as new surveys are released without requiring modifications to the code.</li></ul><br>',
-                                                                                     '<p>This version shows information related to the following policy priorities:</p>',
-                                                                                     '<ul>',
-                                                                                     paste(lapply(pathway_names, FUN=function(x){paste0("<li>",x, "</li>")}), collapse=" "),
-                                                                                     '</ul>',
-                                                                                     '<h3>Using the Cambodia Agricultural Survey Policy & Data Explorer</h3>', 
-                                                                                     '<ul style="list-style-type:none;">',
-                                                                                     '<li><h4>Policy Goals and Instruments</h4>',
-                                                                                     '<ul style="list-style-type:none;"><li>This tab provides a detailed overview of the policy priorities currently in the app. Policy instruments for achieving each goal are evaluated with respect to the effects on producer interaction with the market. The list can be modified by editing an Excel sheet.</li></ul></li>',
-                                                                                     '<li><h4>Variable Maps and Statistics</h4>',
-                                                                                     '<ul style="list-style-type:none;"><li>This tab shows summary statistics (weighted means or totals), year-over-year changes, and spatial distributions of variables related to the policy goals. Begin by selecting a policy goal, then optionally choose an instrument to show the most relevant variables for that instrument. Maps illustrate the province-level means as of the most recent survey and the change in means since the previous survey.</li></ul></li>',
-                                                                                     '<li><h4>Variable Correlations</h4>',
-                                                                                     '<ul style="list-style-type:none;"><li>This tab contains a heatmap showing levels of correlation across variables and the option to make histograms, maps, and scatter plots. Users can also download raw data for follow-up analyses.</li></ul></li>',
-                                                                                     '<li><h4>Secondary Data Sources</h4>',
-                                                                                     '<ul style="list-style-type:none;"><li>This tab contains a table of policy documents, literature citations, and additional sources of useful data, such as import/export statistics, exchange rates, and food balances.</li></ul></li>',
-                                                                                     '<li><h4>User Guide</h4>',
-                                                                                     '<ul style="list-style-type:none;"><li>This tab provides step-by-step instructions, tips, and frequently asked questions (FAQs) about the data explorer.</li></ul></li>',
-                                                                                     '</ul>',
-                                                                                     '<br>',
-                                                                                     '<h3>Code and Data Availability</h3>',
-                                                                                     '<ul><li>The Stata code used to process the data is publicly available at (Git Repository TBD).</li><li>The app source code and related files can be downloaded at <a href="https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP", target="_blank">https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP</a></li>',
-                                                                                     '<li>The raw data for the Cambodia Agricultural Survey survey are located at <a href="https://nada.nis.gov.kh/index.php/catalog/36", target="_blank">https://nada.nis.gov.kh/index.php/catalog/36</a>.</li></ul>',
-                                                                                     '<h3>Inquire</h3>',
-                                                                                     '<p>This tool is maintained by <i>responsible party</i> who has <i>contact info</i>.</p><br>',
-                                                                                     '<h3>Citation</h3>',
-                                                                                     '<p>If you use this app for scholarly research or modify it for alternative uses, please use this attribution: </p>',
-                                                                                     '<p> University of Washington, Evans Policy Analysis and Research (EPAR) (2024). Cambodia Agricultural Survey Policy & Data Explorer. v0.2. DOI: <a href="https://doi.org/10.6069/GPPQ-2X85", target="_blank">https://doi.org/10.6069/GPPQ-2X85</a>',
-                                                                                     '<br><br>',
-                                                                                     "<img src='evans2.jpg' width='30%' align='center'></img>",
-                                                                                     "<br>&nbsp;</div>"
-                                                                          )
-                                                                          
-                                                                          )
-                                               )
-                                               )
+                                               fluidRow(column(1), column(8, HTML("<div style='font-size:0.9em'>"),
+                                                                          includeHTML('Docs/landing_page.html'),
+                                                                          HTML("</div>")))
                                       ),
                                       
                                       tabPanel("Agricultural Sector Overview", br(),
@@ -434,7 +384,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                fluidRow(column(1),
                                                column(8, 
                                                HTML("<div style='font-size:0.9em'>"),
-                                               includeHTML('User Guide/user_guide.html'),
+                                               includeHTML('Docs/user_guide.html'),
                                                HTML("</div>")
                                                ))
                                       ),
