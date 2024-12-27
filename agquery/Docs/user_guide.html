@@ -3,21 +3,103 @@
 
 <div id="overview" class="section level3">
 <h3>Overview</h3>
-<p>AgQuery 50x30 is designed to facilitate policy analysis, progress
-tracking, and reporting based on the Cambodia Agriculture Survey data.
-It is designed to be extensively user-modifiable so that commonly used
-graphics can be quickly regenerated from a new data release, reducing
-the time between collection and analysis. The next section will explain
-how to download your own copy in order to make best use of these
-features, and the following sections will provide an instructions on
-using and updating the content in each tab.</p>
+<p>The Cambodia Agriculture Survey Data Explorer is a utility for policy
+analysis, progress tracking, comparison, and reporting. It is designed
+to be extensively user-modifiable so that commonly used graphics can be
+quickly regenerated from a new data release, reducing the time between
+collection and analysis. A public version of the app is available <a href="here">https://evans-par.shinyapps.io/agquery</a> and can be used
+to immediately access the data and produce visualizations. The next
+section will explain how to download your own copy in order to make best
+use of these features, and the following sections will provide an
+instructions on using and updating the content in each tab.</p>
+<p>This app is built using Posit’s R Shiny framework. More information
+on Shiny can be found <a href="here">https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/</a></p>
 </div>
 <div id="accessing-the-app-online-vs-offline-access" class="section level3">
 <h3>Accessing the App: Online vs Offline Access</h3>
-<p>&lt;tbd&gt;</p>
-<div id="requirements-for-downloading-and-running-a-local-copy" class="section level5">
-<h5>Requirements for downloading and running a local copy</h5>
-<p>&lt;tbd&gt;</p>
+<p>To take full advantage of the features of the app, it is necessary to
+either run your own copy locally or host your own instance using your
+own server framework or the shinyapps.io service.</p>
+<div id="requirements-for-downloading-and-running-a-local-copy" class="section level4">
+<h4>Requirements for downloading and running a local copy</h4>
+<ul>
+<li>First time R users: download and install <a href="https://cran.rstudio.com/">R</a> and <a href="https://posit.co/download/rstudio-desktop/">RStudio.</a></li>
+<li>Existing R users: ensure you are running R version 4.4.2 and
+download RStudio if needed.</li>
+<li>Download the latest release at the <a href="https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP">Git
+repository</a>.</li>
+<li>Follow the instructions in the repository readme to finish first
+time setup. After setup is complete, run the app on your computer by
+opening the R project and the app.R files in RStudio and pressing the
+“run app” button that appears in the top right-hand corner of the file
+pane.</li>
+</ul>
+</div>
+<div id="requirements-for-self-hosting" class="section level4">
+<h4>Requirements for Self-Hosting</h4>
+<p>The app can be self-hosted on a server using Docker. Install Docker
+on your server, clone the directory from github, and build using the
+included Dockerfile.</p>
+</div>
+</div>
+<div id="updating-the-app" class="section level3">
+<h3>Updating the App</h3>
+<p>To make your own updates to the app.</p>
+<div id="directory-layout" class="section level4">
+<h4>Directory Layout</h4>
+<table>
+<colgroup>
+<col width="31%" />
+<col width="68%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>└── agquery/</td>
+<td><em>Root folder</em></td>
+</tr>
+<tr class="even">
+<td>      ├── Data</td>
+<td><em>Processed survey data</em></td>
+</tr>
+<tr class="odd">
+<td>      ├── Extdata</td>
+<td><em>Externally sourced data, e.g. World Bank Development indicator
+CSV files</em></td>
+</tr>
+<tr class="even">
+<td>             ├── Commodities</td>
+<td><em>User-defined folders for data/images related to particular
+agricultural commodities</em></td>
+</tr>
+<tr class="odd">
+<td>             └── World Bank</td>
+<td><em>Datasets sourced from the World Bank for display in value boxes
+on the Economics tab</em></td>
+</tr>
+<tr class="even">
+<td>      ├── renv</td>
+<td><em>Project R package library</em></td>
+</tr>
+<tr class="odd">
+<td>      ├── Scripts</td>
+<td><em>Additional code required by the app, includes functions for
+processing data and creating charts</em></td>
+</tr>
+<tr class="even">
+<td>      ├── Spatial</td>
+<td><em>Spatial information (rasters and shapefiles) for maps</em></td>
+</tr>
+<tr class="odd">
+<td>      ├── Update</td>
+<td><em>Metadata for the survey data folder; update the files in here to
+change the policy goals and variables.</em></td>
+</tr>
+<tr class="even">
+<td>      └── www</td>
+<td><em>Additional files used in web pages</em></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div id="adding-your-own-data" class="section level3">
@@ -28,23 +110,32 @@ data files to be usable by the app:</p>
 <ul>
 <li>The file name must be “Cambodia_CAS_{YEAR}_{UNIQUENAME}.csv. The
 unique name must be consistent across survey years.</li>
-<li>The files must contain the columns hhid, province, and zone</li>
+<li>The files must contain the <strong>ID variables</strong> “hhid”,
+“province”, and “zone”</li>
+<li>Variables in the data files can be named with a combination of
+letters, numbers, and underscores. They should not include spaces or
+begin with numbers. Variable names are case sensitive: the names
+“Chickens” and “chickens” will be treated as different variables. Khmer
+script is permitted.</li>
+<li>All variables should be numeric; including string or categorical
+data will result in errors or estimates that are difficult to interpret.
+Consider adding them to the app as grouping variables instead.</li>
 </ul>
 <p>Two additional files, weights.csv and groups.csv, should follow the
 same file naming convention outlined above and are used to store the
-household-level weights and any grouping variables, respectively. The
-weights file is optional, and, if it is not included, each data file
-should include the column “weight” in addition to the other variables.
-If weights are not found, the numbers presented in the app will
-represent the unweighted (sample) totals and means.</p>
+household-level weights and any categorical or grouping variables,
+respectively. Both files are optional; if they are not included, all
+data files should include weights and grouping criteria. If weights are
+not found, the numbers presented in the app will represent the
+unweighted (sample) totals and means.</p>
 </div>
-<div id="spreadsheet-based-content-management" class="section level3">
-<h3>Spreadsheet-Based Content Management</h3>
-<p>&lt;tbd&gt;</p>
-<div id="directory-layout" class="section level5">
-<h5>Directory Layout</h5>
-<p>&lt;tbd&gt;</p>
-</div>
+<div id="adding-new-variables-creating-your-own-policy-goals-setting-up-policy-pathways-and-determining-relevant-variables" class="section level3">
+<h3>Adding New Variables, Creating Your Own Policy Goals, Setting Up
+Policy Pathways, and Determining Relevant Variables</h3>
+<p>The app will register all variables included in the input data files
+(see Diagnostics), but it will only incorporate the variables that have
+been included in the Update folder spreadsheets to avoid presenting too
+many options simultaneously.</p>
 </div>
 <div id="policy-context" class="section level3">
 <h3>Policy Context</h3>
@@ -222,8 +313,4 @@ Note that this is not the case for the hhid, province, and zone
 variables, which are used to identify observations. They should be
 present in all of the data files with the exception of groups and
 weights, which need only the unique household id.</p>
-</div>
-<div id="key-tips-for-making-your-own-updates" class="section level3">
-<h3>Key tips for making your own updates</h3>
-<p>&lt;tbd&gt;</p>
 </div>

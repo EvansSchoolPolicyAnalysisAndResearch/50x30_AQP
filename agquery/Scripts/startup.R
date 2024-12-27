@@ -173,5 +173,6 @@ khm_province <- st_read(paste0(root_dir, "Spatial/cam_prov_merge.shp"), quiet=T)
 khm_province$ADM1_EN[khm_province$ADM1_EN=="Oddar Meanchey"] <- "Otdar Meanchey" #Temp fix due to disagreement between 50x30 spelling and shapefile.
 #Implement fuzzy matching later?
 
+prov_lookup <- khm_province |> select(ADM1_EN, province) |> st_drop_geometry() #Temp fix for province names
 
 khm_zone <- st_read(paste0(root_dir, "Spatial/cam_prov_zones.shp"), quiet=T)
