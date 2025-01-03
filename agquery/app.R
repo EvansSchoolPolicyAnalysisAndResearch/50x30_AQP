@@ -724,6 +724,9 @@ server <- function(input, output, session) {
             paste0("cas-", max_year, "-", adm_level_in, "-", input$trendIn, ".csv")
           },
           content=function(file){
+            if(with(df_max_year, exists("province"))){
+              df_max_year <- merge(prov_lookup, df_max_year, by="province") |> select(-province) |> rename(province=province_name)
+            }
             write.csv(df_max_year, file, row.names=F)
           }
         )
@@ -827,6 +830,11 @@ server <- function(input, output, session) {
           indicTitle <- sprintf("Map of %s by %s", indicator_list$labelName[indicator_list$shortName == yvars], str_to_title(adm_level_in))
           indicUnits <- indicator_list$units[indicator_list$shortName==yvars]
           if(adm_level!="hhid"){
+            
+            if(adm_level=='province' & is.numeric(outdata[[adm_level]])){
+              outdata <- merge(outdata, prov_lookup, by="province")
+              outdata <- outdata |> select(-province) |> rename(province=province_name)
+            }
             corrTab <- outdata |> 
               ungroup() |> 
               select(any_of(c(adm_level, aggs_list, xvars))) |> 
@@ -841,23 +849,24 @@ server <- function(input, output, session) {
               mutate_at(yvars, ~signif(., 4)) |>
               na.omit()
             
+
             
             if(!any(aggs_list=="")){
-              names(corrTab) <- c(str_to_title(adm_level), groups_list$label[groups_list$varName==aggs_list], indicator_list$labelName[indicator_list$shortName==xvars]) #This won't work with multiple disagg vars; fix later.
+              names(corrTab) <- c(str_to_title(adm_level), groups_list$label[groups_list$varName==aggs_list], paste0(indicator_list$labelName[indicator_list$shortName==xvars], " (HH Avg)")) #This won't work with multiple disagg vars; fix later.
               corrTabFlx <- flextable(corrTab)
               corrTabFlx <- merge_v(corrTabFlx, j=str_to_title(adm_level)) |>
                 autofit() |>
                 htmltools_value() 
               
-              names(indicatorTab) <- c(str_to_title(adm_level), groups_list$label[groups_list$varName==aggs_list], indicator_list$labelName[indicator_list$shortName==yvars]) #This won't work with multiple disagg vars; fix later.
+              names(indicatorTab) <- c(str_to_title(adm_level), groups_list$label[groups_list$varName==aggs_list], paste0(indicator_list$labelName[indicator_list$shortName==yvars], " (HH Avg)")) #This won't work with multiple disagg vars; fix later.
               indicatorTabFlx <- flextable(indicatorTab)
               indicatorTabFlx <- merge_v(indicatorTabFlx, j=str_to_title(adm_level)) |>
                 autofit() |>
                 htmltools_value()
               #indicatorTab <- merge_v(indicatorTab, j=str_to_title(adm_level))
             } else {
-              names(corrTab) <- c(str_to_title(adm_level), indicator_list$labelName[indicator_list$shortName==xvars]) #This won't work with multiple disagg vars; fix later.
-              names(indicatorTab) <- c(str_to_title(adm_level), indicator_list$labelName[indicator_list$shortName==yvars]) #This won't work with multiple disagg vars; fix later.
+              names(corrTab) <- c(str_to_title(adm_level), paste0(indicator_list$labelName[indicator_list$shortName==xvars], " (HH Avg)")) #This won't work with multiple disagg vars; fix later.
+              names(indicatorTab) <- c(str_to_title(adm_level), paste0(indicator_list$labelName[indicator_list$shortName==yvars], " (HH Avg)")) #This won't work with multiple disagg vars; fix later.
               corrTabFlx <- flextable(corrTab) |>
                 autofit() |>
                 htmltools_value()

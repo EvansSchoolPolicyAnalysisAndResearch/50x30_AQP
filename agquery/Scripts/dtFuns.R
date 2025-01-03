@@ -1,6 +1,4 @@
 makeDataTable <- function(policiesIn, indicatorCategories, indicator_list, dataset_list){
-  if(input$policiesBox1!="None" & is.list(policy_path)){
-    policiesIn <- input$policiesBox1
     indics_out <- indicatorCategories |> filter(goalName==policiesIn) |> select(shortName) |> distinct() |> unlist()
     indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] |> unique() #TO DO: Include some cleaning code in the startup script 
     denoms <- getDenoms(indics_out, indicator_list)
@@ -28,7 +26,6 @@ makeDataTable <- function(policiesIn, indicatorCategories, indicator_list, datas
       }
     }
   }
-}
 
 filterFlagTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list){
   if(pathwayTarget!=0){
@@ -64,7 +61,7 @@ filterVarTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list, 
     dt_out[i,] <- poprow
   }
   dt_out <- dt_out |> filter(year==min(dt_out$year) | year==max(dt_out$year)) |>
-    pivot_wider(id_cols=c("shortName", "labelName","units"), names_from="year", values_from=stat, names_glue="{year} {.value}") |>
+    pivot_wider(id_cols=all_of(c("shortName", "labelName","units")), names_from="year", values_from=stat, names_glue="{year} {.value}") |>
     rename(Variable=labelName, Units=units)
   
   dt_out <- data.frame(dt_out)
