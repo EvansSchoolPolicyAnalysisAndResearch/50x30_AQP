@@ -47,13 +47,6 @@ thematic_shiny(
 )
 options(shiny.useragg = TRUE)
 
-# body {
-#   font-family: "Open Sans";
-#   font-size: 14px;
-#   line-height: 1.42857;
-#   color: #6275A2;
-#     background-color: #fff;
-
 
 ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
                                       base_font = bslib::font_google("Open Sans"),
@@ -83,9 +76,6 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                 '
                              )),
                            tabPanel("Policy Context", icon=icon("signs-post"),
-                                    #To do: move this to a separate file.
-                                    
-                                    
                                     tabsetPanel(
                                       tabPanel("About AgQuery 50x30",
                                                fluidRow(column(1), column(8, HTML("<div style='font-size:0.9em'>"),
@@ -96,63 +86,12 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                       tabPanel("Agricultural Sector Overview", br(),
                                                layout_columns(col_widths=c(4,8),
                                                               card(leafletOutput("areaMap")),
-                                                              uiOutput("valueBoxes")
+                                                              uiOutput("wbvalueBoxes")
                                                ),
-                                               layout_columns(col_widths=c(4,4,4),
-                                                              card(card_header("Drought Severity"),
-                                                                   HTML("<img src='droughtmap.png', width='70%'></img>"),
-                                                                   card_footer(HTML("<i>This is a static image; the live source can be accessed <a href='https://ipad.fas.usda.gov/cropexplorer/imageview.aspx?ftypeid=61&fattributeid=13&regionid=seasia' target='_blank'>here</a></i>."))
-                                                              ),
-                                                              card(card_header("Sector Employment by Gender"),
-                                                                   HTML("<img src='wage_gap.png'></img>"),
-                                                                   card_footer(HTML("<i>This is a static image sourced from <a href='https://openknowledge.fao.org/server/api/core/bitstreams/430a6002-8c28-4b36-97af-cb63b8b44279/content' target='_blank'>the FAO's National Gender Profile of Agriculture and Rural Livelihoods</a> report (p.7).</i>")
-                                                                   )
-                                                                   
-                                                              )
-                                                              
-                                               )
+                                                              uiOutput("overviewCards")
                                       ),
                                       tabPanel("Commodity Overviews",
-                                               tabsetPanel(
-                                                 tabPanel("Poultry", br(),
-                                                           #Kludge, these tabs should get shifted to the server entirely.
-                                                          layout_columns(col_widths=6,
-                                                              uiOutput("PoultryBoxes"),
-                                                            card(card_header("Household Poultry Ownership"),
-                                                                   HTML("<img src='poultry_table.png'></img>"),
-                                                               card_footer(HTML("<i>This is a static image sourced from <a href='https://openknowledge.fao.org/server/api/core/bitstreams/430a6002-8c28-4b36-97af-cb63b8b44279/content' target='_blank'>the FAO's National Gender Profile of Agriculture and Rural Livelihoods</a> report (p.27). Compare these values using the data relationships tab.</i>")
-                                                               )),
-                                                                         value_box(title="Animal Source Protein Supply",
-                                                                                   value=plotlyOutput("psupp_out"),
-                                                                                   full_screen=T),
-                                                                         value_box(title="Domestic vs Imported ASP Supply",
-                                                                                   value=plotlyOutput("domsupp_out"),
-                                                                                   full_screen=T),
-                                                                         value_box(title="Poultry Import Volume",
-                                                                                   value=plotlyOutput("poulImpVol"),
-                                                                                   full_screen=T),
-                                                                         value_box(title="Poultry Import Value",
-                                                                                   value=plotlyOutput("poulImpVal"),
-                                                                                   full_screen=T)
-                                                                        
-                                                                         )
-                                                          
-                                                 ),
-                                                 tabPanel("Cashews", br(),
-                                                          uiOutput("CropsBoxes"),
-                                                          layout_columns(col_widths=c(-1,5,5,-1),
-                                                                         
-                                                                         #value_box(title="Cashew Production",
-                                                                         #),
-                                                                         value_box(title="Cashew Export Volume",
-                                                                                   value=plotlyOutput("cashExpVol")
-                                                                         ),
-                                                                         value_box(title="Cashew Export Value",
-                                                                                   value=plotlyOutput("cashExpVal")
-                                                                         )
-                                                          )
-                                                 )
-                                               )
+                                               uiOutput("commodTabs")
                                       ),
                                       tabPanel("Interactive Maps", br(),
                                                selectInput('mapsSelect', "Choose a layer", choices=c("Select Option", "Surface Water", "Irrigation", "Land Use", "Cashew Cultivation")),
@@ -406,13 +345,15 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
 
 server <- function(input, output, session) {
   ##Export/Import plots
-  imp_exp_data <- read.csv("Extdata/import_export_data.csv")
-  output$poulImpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="value", direction="imports"))
-  output$poulImpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="volume", direction="imports"))
-  output$cashExpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="volume", direction="exports"))
-  output$cashExpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="value", direction="exports"))
+  #Superceded by the new setup but leaving this code here as a reminder to save the plot objects instead of images.
+  #imp_exp_data <- read.csv("Extdata/import_export_data.csv")
+  #output$poulImpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="value", direction="imports"))
+  #output$poulImpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="volume", direction="imports"))
+  #output$cashExpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="volume", direction="exports"))
+  #output$cashExpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="value", direction="exports"))
   
-  ##Diagnostics
+  ########## Diagnostics
+  #To do: add more specific errors to the startup.R code and add handling for columns with missing info.
   if(exists("dataset_list")){
     output$data_list_status <- renderUI(HTML("<p style='color: #5ac447'>Data are available.</p>"))
   } else {
@@ -508,47 +449,44 @@ server <- function(input, output, session) {
     
   }
   
+  #######
+  
+  
+  #### Additional UI elements
+  
+  if(is.list(source_data)){
+    output$evidence_tab <- renderDT(source_data, escape=F, rownames=F)
+  }
+  
+  #See startupVbs.R in Scripts
+  if(length(wbVbs)>0){
+    output$wbvalueBoxes <- renderUI(layout_column_wrap(width=1/3, !!!wbVbs)) 
+  }
+  
+  overviewCards <- c(extdataCasCards, extdataImgCards)
+  if(length(overviewCards) > 0){
+    output$overviewCards <- renderUI(layout_column_wrap(width=1/3, !!!overviewCards))
+  }
+  
+  #if(length(extdataImgCards)>0){
+  #  output$imgCards <- renderUI(extdataImgCards)
+  #}
+  
+  #if(length(extdataCasCards)>0){
+  #  output$casCards <- renderUI(extdataCasCards)
+  #}
+  
+  if(length(commod_tabs_out)>0){
+    output$commodTabs <- renderUI({do.call(tabsetPanel, commod_tabs_out)})
+  }
+  
+  
+  
   ### MAPPING 
   
   #To do: relocate to startup if we're making it permanent. Also functionalize this so it can be modified.
   
   
-  cashews <- rast("Spatial/cambodia_cashew_distribution.tif") 
-  cashews <- subst(cashews, 0, NA)
-  cashewpal <- colorBin("OrRd", values(cashews), bins=6, na.color="transparent")
-  surfwater <- rast("Spatial/jrc_global_surface_water_coarse.tif")
-  surfwater_pal <- colorNumeric("RdBu", domain=c(-100,100), na.color='transparent')
-  surfwater_leg <- colorNumeric("RdBu", reverse=T, domain=c(-100,100), na.color='transparent')
-  crop_areas <- rast("Spatial/lgrip30-khm-agg10.tif")
-  crop_areas <- subst(crop_areas, 2, 1)
-  crop_areas <- subst(crop_areas, 3, 2)
-  croparea_df <- data.frame(id=c(1,2), area=c("Irrigated", "Rainfed"))
-  levels(crop_areas) <- croparea_df 
-  croppal <- colorFactor(c( "darkgreen", "goldenrod"), domain=NULL, na.color="transparent")
-  luse_areas <- c("Developed",
-                  "Mangrove",
-                  "Other Plantation",
-                  "Water",
-                  "Shrub",
-                  "Rice",
-                  "Cropland",
-                  "Grassland",
-                  "Evergreen",
-                  "Deciduous",
-                  "Wetland",
-                  "Rubber",
-                  "Flooded Forest",
-                  "Semi-evergreen",
-                  "Village",
-                  "Other")
-  landuse_df <- data.frame(id=seq(1,16), luse_areas)
-  #luse_colors <- (c("hotpink","yellow","orange3","darkblue","lightgreen","lemonchiffon", 'sandybrown', 'bisque3', 'darkgreen', 'forestgreen', 'lightblue', 'springgreen1', 'darkolivegreen3', 'chartreuse3', 'purple', 'lightgray'))
-  luse_colors <- c('#FF69B4', '#FFFF00', '#CD8500', '#00008B', '#90EE90', '#FFFACD', '#F4A460', '#CDB79E', '#006400', '#228B22', '#ADD8E6', '#00FF7F', '#7ee6b2', '#66CD00', '#A020F0', '#D3D3D3')
-  luse_pal <- colorFactor(luse_colors, domain=NULL, na.color='transparent')
-  land_use <- rast("Spatial/Landcover2023_coarse.tif")
-  levels(land_use) <- landuse_df
-  
-  source_string <- "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=05f94eb8-5969-40fc-98e7-3b82d9d830e7"
   
   ##Static Maps
   output$areaMap <- renderLeaflet(leaflet() |>
@@ -565,30 +503,6 @@ server <- function(input, output, session) {
                                    scale_fill_gradient(name="Probability\n(Percent)", low="#FEE8C8", high="#E34A33", na.value="transparent")+
                                    geom_sf(data=khm_province,color="darkgray", fill=NA)+
                                    theme_map(font_size=12))
-  
-  #### FAO Food Balances
-  # protein supply
-  faofb <- read.csv("Extdata/faofb.csv")
-  psupp <- faofb |> filter(Element.Code==674)
-  psupp_plot <- ggplot(psupp, aes(x=Year, y=Value, group=Item, fill=Item))+
-    geom_area(color="white", alpha=0.6)+
-    theme_minimal()+
-    scale_x_continuous(breaks=scales::breaks_pretty())+
-    labs(x="", y="Protein supplied (g/capita/day)")
-  
-  ##imports/domestic supply
-  domsupp <- faofb |> filter(Element.Code!=674 & Element.Code!=5511)
-  domsupp$Element <- ifelse(domsupp$Element=="Import quantity", "Imports", "Domestic Supply")
-  domsupp_plot <- ggplot(domsupp, aes(x=Year, y=Value, group=Element, color=Element))+
-    geom_line()+
-    facet_wrap(vars(Item), scales="free_y")+
-    theme_minimal()+
-    scale_color_discrete(name="")+
-    scale_x_continuous(breaks=scales::breaks_pretty())+
-    labs(x="", y="Quantity (thousands of tons)")
-  
-  output$psupp_out <- renderPlotly(psupp_plot)
-  output$domsupp_out <- renderPlotly(domsupp_plot)
   
   
   observeEvent(input$mapsSelect, {
@@ -628,72 +542,7 @@ server <- function(input, output, session) {
     }
   })
   
-  corMat <- function(shortNames, labelNames, data_out){
-    cor_matrix <- cor(data_out, use="pairwise.complete.obs")
-    par(mar = c(5, 5, 4, 2) - 2)
-    #corrPlot <- corrplot.mixed(cor_matrix, order = 'AOE')
-    #output$corrPlot <- renderPlot(corrplot(cor_matrix, order = 'AOE',col=colorRampPalette(c("white","lightblue","red"))(100)))
-    #print(corrPlot) 
-    res <- match(rownames(cor_matrix), shortNames)
-    rownames(cor_matrix) <- labelNames[res]
-    res <- match(colnames(cor_matrix), shortNames)
-    colnames(cor_matrix) <- labelNames[res]
-    #print(cor_matrix)
-    p_matrix <- matrix(nrow = ncol(data_out), ncol = ncol(data_out))
-    for(i in seq_len(ncol(data_out))) {
-      for(j in seq_len(ncol(data_out))) {
-        test_result <- cor.test(data_out[, i], data_out[, j], method = "pearson")
-        p_matrix[i, j] <- test_result$p.value
-      }
-    }
-    #print(p_matrix)
-    p_matrix[upper.tri(p_matrix)] <- NA
-    hover_text <- matrix("", nrow = ncol(data_out), ncol = ncol(data_out))
-    for(i in 1:nrow(p_matrix)) {
-      for(j in 1:ncol(p_matrix)) {
-        if (!is.na(p_matrix[i, j])) {
-          cor_value <- cor_matrix[i, j]
-          p_value <- p_matrix[i, j]
-          # Construct the hover text
-          if (p_value>=0.00001) {
-            hover_text[i, j] <- paste0("P-value: ", format(p_value, digits = 3))
-          }
-          if (p_value<0.00001) {
-            hover_text[i, j] <- paste0("P-value: ", "<0.00001")
-            p_matrix[i,j] <- 0.00001
-          }
-        }
-      }
-    }
-    #print(hover_text)
-    #cor_matrix[upper.tri(cor_matrix)] <- NA
-    hover_text[upper.tri(hover_text)] <- NA
-    heatMap <- heatmaply_cor(cor_matrix,
-                             node_type = "scatter",
-                             point_size_mat = -log10(p_matrix),
-                             point_size_name = "-log10(p-value)",
-                             label_names=c("Row", "Column", "Correlation"),
-                             custom_hovertext = hover_text,
-                             Colv=NA, Rowv=NA, plot_method="ggplot") %>%
-      layout(title = "Correlation Heatmap", margin = list(t = 60), height=1000)
-    return(heatMap)
-  }
-  
-  
-  
-  
-  
-  cor.test.p <- function(x){
-    FUN <- function(x, y) cor.test(x, y)[["p.value"]]
-    z <- outer(
-      colnames(x), 
-      colnames(x), 
-      Vectorize(function(i,j) FUN(x[,i], x[,j]))
-    )
-    dimnames(z) <- list(colnames(x), colnames(x))
-    z
-  }
-  
+
   
   
   output$secsources <- renderDT(ext_data, escape=F, options=list(dom="t"), rownames=F)
@@ -737,7 +586,7 @@ server <- function(input, output, session) {
   updateBoxes <- function(indics){
     output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Y Variable</b>"), choices=indics)) #, size=length(indics) , selectize=F)) 
     output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select X Variable</b>'), choices=indics)) #, size=length(indics), selectize=F))
-    groups_sub <- groups_list %>% filter(level=="All" | level==input$policiesBox2)
+    groups_sub <- groups_list |> filter(level=="All" | level==input$policiesBox2)
     output$groupsBtn <- renderUI(radioButtons("groupsChk", HTML("<b>Selecting Grouping Variable</b>"), choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
   }
   
@@ -748,7 +597,7 @@ server <- function(input, output, session) {
     if(input$policiesBox1!="None" & is.list(policy_path)){
       inputChk <- is.null(input$pathwaysIn1)
       input0Chk <- if(!inputChk) input$pathwaysIn1==0 else F
-      #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox1)
+      #pathway_sub <- policy_path |> filter(goalName==input$policiesBox1)
       #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
       #names(pathway_list) <- c("All", pathway_sub$Pathway)
       #output$pathwaysBox <- renderUI(selectInput("pathwaysIn1", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox1]]))
@@ -779,144 +628,8 @@ server <- function(input, output, session) {
   
   #ALT NOTE TO ADD ERROR HANDLING HERE.
   output$msgText <- renderUI(HTML("<h4>Variable Summary Table</h4><br><p><i>This table presents household-level averages or national totals of all CAS respondents who participated in activities related to the policy goal.</i></p>"))
-  
-  makeDataTable <- function(policiesIn, indicatorCategories, indicator_list, dataset_list){
-    if(input$policiesBox1!="None" & is.list(policy_path)){
-      policiesIn <- input$policiesBox1
-      indics_out <- indicatorCategories %>% filter(goalName==policiesIn) %>% select(shortName) %>% distinct() %>% unlist()
-      indics_out <- indicator_list$shortName[which(str_to_lower(indicator_list$shortName) %in% str_to_lower(indics_out))] %>% unique() #TO DO: Include some cleaning code in the startup script 
-      denoms <- getDenoms(indics_out, indicator_list)
-      data_files <- getFiles(indicator_list, dataset_list, c(indics_out, denoms$denominator))
-      
-      if(nrow(data_files)==0){
-        showNotification("No data files related to the selected pathway were found", type="error")
-      } else {
-        data <- getData(files=data_files, xvars=indics_out, denoms=denoms, adm_level=NA, source_call="pathwaysIn1")
-        if(is.list(data)){
-          if(is.list(data$droppedVars)){
-            #output$droppedVars <- renderText(paste("The following variables were missing from the indicators_list spreadsheet or were all NA and were not processed:", paste(unique(dropped_vars), collapse=", ")))
-          }
-          
-          #Still need to making the naming less stupid here.
-          data_out <- data$outdata
-          flag_table <- data_out %>% pivot_wider(id_cols="shortName", names_from="year", values_from="Obs", names_glue="{year} N obs")
-          flag_table <- merge(indicator_list %>% select(shortName, labelName, flag_text), flag_table, by="shortName")
-          
-          data_table <- merge(data_out, indicator_list %>% select(shortName, labelName, units), by="shortName")
-          flag_table <- flag_table %>% rename(Variable=labelName, Notes=flag_text) %>% relocate(Notes, .after=last_col())
-          
-          return(list(data_table=data_table, flag_table=flag_table))
-          
-        }
-      }
-    }
-  }
-  
-  filterFlagTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list){
-    if(pathwayTarget!=0){
-      indics_out <- pathway_link %>% filter(pathwayID==pathwayTarget) %>% select(shortName) %>% distinct()
-      dt_out <- inner_join(dt_out, indics_out, by="shortName")
-    } 
-    return(dt_out)
-  }
-  
-  
-  filterVarTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list, stat){
-    if(pathwayTarget!=0){
-      indics_out <- pathway_link %>% filter(pathwayID==pathwayTarget) %>% select(shortName) %>% distinct()
-      dt_out <- inner_join(dt_out, indics_out, by="shortName")
-    } 
-    dt_out <- dt_out %>% select(shortName, labelName, year, units, matches(stat))
-    if(stat=="Total"){
-      dt_out <- dt_out %>% filter(units!="ratio") #Exclude ratios from totals because they're already counted in a different indicator.
-    }
-    for(i in 1:nrow(dt_out)){
-      poprow <- dt_out[i,]
-      if(isTRUE(poprow$units=="boolean")) {
-        if(stat=="Total") poprow$units <- "N households"
-        if(stat=="Mean") poprow$units <- "% of households"
-      }
-      if(isTRUE(poprow$units=="kg") & isTRUE(poprow[[stat]] > 1000)){
-        poprow[[stat]] <- poprow[[stat]]/1000
-        poprow$units <- "Tonnes"
-      } else if(isTRUE(poprow[[stat]] > 1000000)) {
-        poprow$units <- paste(poprow$units, " (MM)")
-        poprow[[stat]] <- poprow[[stat]]/1000000
-      }
-      dt_out[i,] <- poprow
-    }
-    dt_out <- dt_out %>% filter(year==min(dt_out$year) | year==max(dt_out$year)) %>%
-      pivot_wider(id_cols=c("shortName", "labelName","units"), names_from="year", values_from=stat, names_glue="{year} {.value}") %>%
-      rename(Variable=labelName, Units=units)
-    
-    dt_out <- data.frame(dt_out)
-    names(dt_out) <- str_replace_all(names(dt_out), "X", "")
-    names(dt_out) <- str_replace_all(names(dt_out), "[.]", " ")
-    dt_out$Trend <- signif((dt_out[,5]-dt_out[,4])/dt_out[,4], 4)
-    dt_out[,4:5] <- format(signif(dt_out[,4:5], 4), big.mark=',', justify="right", scientific=F, digits=4, nsmall=0, drop0trailing=T)
-    
-    return(dt_out)
-  }
-  
-  
-  #data_table <- data_table %>% select(shortName, labelName, year, units, matches(input$totsBtns))
-  
-  
-  
-  # I'll fix this later. 
-  
-  # reg_data <- sub_data %>% na.omit() %>% group_by(year) %>% summarize(mean=weighted.mean(!!sym(var), weight))
-  # reg_data$mean <- with(reg_data, log(mean+0.5*min(mean[mean>0])))
-  # if(length(unique(reg_data$year))>2){ #Future releases should change this to >2; currently here for testing
-  #   reg_res <- tryCatch(lm(mean~year, data=reg_data), error=function(e){return("")})
-  #   if(is.list(reg_res)){
-  #     pct_diff <- round((exp(reg_res$coefficients[[2]])-1),3)
-  #     if(!is.na(pct_diff)){
-  #       data_table[data_table$shortName==var, 7] <- pct_diff
-  #     }
-  #   }
-  # }
-  #}
-  #}
-  #
-  #if(all(is.na(data_table$`Long Term Trend`))){
-  #  data_table <- data_table %>% select(-`Long Term Trend`)
-  #pct_col <- 5 #because shortname gets dropped; this is dumb
-  #} else {
-  #  pct_cols <- c(5,6)
-  #}
-  
-  #trendVarList <- as.list(c("0", data_table$shortName))
-  #names(trendVarList) <- c("Select...", data_table$labelName)
-  #data_table <- data_table %>% rename(Variable=labelName)
-  
-  #data_table_out <<- data_table #Save this to the global environment to make it accessible to the download handler. 
-  #flag_table_out <<- flag_table 
-  #odd workaround because format isn't working with index selection
-  
-  
-  #data_table[,4:5] <- format(signif(data_table[,4:5], 4), big.mark=',', justify="right", scientific=F, digits=4, nsmall=0, drop0trailing=T)
-  # dt_names_adj <- names(data_table)[which(str_detect(names(data_table), input$totsBtns))] 
-  # for(dtname in dt_names_adj) {
-  #   data_table[[dtname]] <- format(data_table[[dtname]], big.mark=',', scientific=F, digits=4, nsmall=0, drop0trailing=T)
-  # }
-  # #output$trendsTable <- renderDataTable(data_table)
-  #return(list(data_table=data_table, flag_table=flag_table, pct_cols=pct_col))
-  #}
-  
-  #}
-  #}
-  #}
-  
-  #filterVarTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list){
-  #  if(pathwayTarget==0){
-  #    return(dt_out)
-  #  } else {
-  #  indics_out <- pathway_link %>% filter(pathwayID==pathwayTarget) %>% select(shortName) %>% distinct()
-  #  return(indics_out <- merge(indics_out, dt_out, by="shortName"))
-  #  }
-  #}
-  
+
+  #Leaving this in app.R because it requires translation
   updateVarTable <- function(pathwaysIn1=NULL, policiesIn1, obsyear, totsBtns){
     pathwaysIn <- if(is.null(pathwaysIn1)){
       "0"
@@ -925,13 +638,13 @@ server <- function(input, output, session) {
     }
     filtered_tab <- filterVarTable(data_table_out$data_table, pathway_link, pathwaysIn, indicator_list, totsBtns)
     output$trendsTable <- renderDataTable(
-      DT::datatable(filtered_tab %>% select(-shortName), 
-                    options=list(searching=F, pageLength=15, dom='tip'), rownames=F)  %>%
+      DT::datatable(filtered_tab |> select(-shortName), 
+                    options=list(searching=F, pageLength=15, dom='tip'), rownames=F)  |>
         formatPercentage(5) #Hard coded, to fix
     )
     output$flagsTable <- renderDataTable(
       DT::datatable(
-        filterFlagTable(data_table_out$flag_table, pathway_link, pathwaysIn, indicator_list) %>% select(-shortName), 
+        filterFlagTable(data_table_out$flag_table, pathway_link, pathwaysIn, indicator_list) |> select(-shortName), 
         options=list(searching=F, pageLength=15), rownames=F)
     )
     output$trendVarChoose <- renderUI({
@@ -956,7 +669,7 @@ server <- function(input, output, session) {
       tempdata <- getData(data_files, xvars=input$trendIn, denoms=denoms, adm_level=adm_level_in, source_call="trendmaps")
       
       if(is.list(tempdata)){ #To do: better error handling
-        data_out <- tempdata$outdata %>% select(all_of(c(adm_level_in, "year", input$totsBtns))) #Find a way to kill mapdata?
+        data_out <- tempdata$outdata |> select(all_of(c(adm_level_in, "year", input$totsBtns))) #Find a way to kill mapdata?
         n_row <- nrow(data_out) 
         data_out <- na.omit(data_out)
         data_out <- data_out[data_out[[adm_level_in]]!="",]
@@ -969,27 +682,17 @@ server <- function(input, output, session) {
         min_year <- min(data_out$year)
         
         if(min_year!=max_year){
-          df_min_year=data_out %>% filter(year==min_year)
-          df_max_year=data_out %>% filter(year==max_year)
-          diff <- data_out %>% pivot_wider(names_from=year, values_from=input$totsBtns)
+          df_min_year=data_out |> filter(year==min_year)
+          df_max_year=data_out |> filter(year==max_year)
+          diff <- data_out |> pivot_wider(names_from=year, values_from=input$totsBtns)
           diff[,4] <- diff[,3]-diff[,2]
           #Messy, to fix
           names(diff)[[4]] <- input$trendIn
           names(df_max_year)[[3]] <- input$trendIn
           names(data_out)[[3]] <- input$trendIn
-          #diff$province_num <- df_max_year$province_num
-          #Temp fix because province variable keeps changing
-          #if(is.numeric(df_max_year$province)){
           curr_map <- get(paste0("khm_", adm_level_in))
           xShp_currMap <- merge(curr_map, df_max_year, by=adm_level_in, all.x=T)
           xShp_trendMap <- merge(curr_map, diff, by=adm_level_in, all.x=T)
-          
-          #} else {
-          #  xShp_currMap <- merge(khm_shp, df_max_year, by.x="ADM1_EN", by.y="province", all.x=T) #changed y from province_num to province. Issue with the province_num not following alphabetical order meaning a numerical merge isn't good.
-          #  xShp_trendMap <- merge(khm_shp, diff, by.x="ADM1_EN", by.y="province", all.x=T)
-          #}
-          #dfMaxOut <<- df_max_year #Passing to global environment for dl handler. To fix.
-          #diffOut <<- diff 
           
           currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " ", input$totsBtns), indicator_list$units[indicator_list$shortName==input$trendIn])
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
@@ -1006,7 +709,7 @@ server <- function(input, output, session) {
           output$noTrend <- NULL
           #output$provPlot <- renderPlot(provPlot)
         } else {
-          df_max_year=data_out %>% filter(year==max_year)
+          df_max_year=data_out |> filter(year==max_year)
           names(df_max_year)[[3]] <- input$trendIn
           curr_map <- get(paste0("khm_", adm_level_in))
           xShp_currMap <- merge(curr_map, df_max_year, by=adm_level_in, all.x=T)
@@ -1035,7 +738,7 @@ server <- function(input, output, session) {
   observeEvent(input$submitBtn, {
     #updatePlots(maps=T)
     showNotification("Processing...")
-    data_files <- getFiles(indicator_list, dataset_list, c(input$indicsIn, input$corrsIn)) %>% filter(year==input$yearBtn) #To fix, probably roll year into getFiles function. 
+    data_files <- getFiles(indicator_list, dataset_list, c(input$indicsIn, input$corrsIn)) |> filter(year==input$yearBtn) #To fix, probably roll year into getFiles function. 
     aggs_list <- input$groupsChk #ALT Note: Right now this is an unnecessary step, but if we ever end up needing to have multiple disaggregation criteria, it's probably better to do it this way.
     denoms <- getDenoms(c(input$corrsIn, input$indicsIn), indicator_list)
     adm_level <- input$disAgg_admin
@@ -1052,7 +755,7 @@ server <- function(input, output, session) {
       #}
       mapdata <- all_data$mapdata
       outdata <- all_data$outdata 
-      outdata <- outdata %>% select(c(any_of(c(adm_level, aggs_list)), shortName, Mean)) %>% 
+      outdata <- outdata |> select(c(any_of(c(adm_level, aggs_list)), shortName, Mean)) |> 
         pivot_wider(names_from="shortName", values_from="Mean")
       outdata <- na.omit(outdata)
       if(nrow(outdata)==0){
@@ -1072,7 +775,7 @@ server <- function(input, output, session) {
           varslist <- c(xvars, yvars)
           bins <- ifelse(adm_level=="province", 6, 30)
           #heatmapdata <- getData()$tempheatmapdata
-          #outdata <- heatmapdata %>% select(all_of(c(xvars,yvars)))
+          #outdata <- heatmapdata |> select(all_of(c(xvars,yvars)))
           xlab <- indicator_list$labelName[indicator_list$shortName==xvars]
           ylab <- indicator_list$labelName[indicator_list$shortName==yvars]
           
@@ -1109,8 +812,8 @@ server <- function(input, output, session) {
           } else {
             aggs_lab = groups_list$shortName[groups_list$varName==aggs_list]
             if(!is.factor(outdata[[aggs_list]])){
-              flevels = groups_list[which(groups_list$varName==aggs_list),]$Levels %>% str_split(., ",") %>% unlist()
-              flabels = groups_list[which(groups_list$varName==aggs_list),]$Labels %>% str_split(., ",") %>% unlist()
+              flevels = groups_list[which(groups_list$varName==aggs_list),]$Levels |> str_split(., ",") |> unlist()
+              flabels = groups_list[which(groups_list$varName==aggs_list),]$Labels |> str_split(., ",") |> unlist()
               outdata[[aggs_list]] <- factor(outdata[[aggs_list]], levels=flevels, labels=flabels)
             }
             #makeHistGrps <- function(outdata, yvars, bins, aggs_list, indicAxis, titleLab, aggs_lab)
@@ -1222,7 +925,7 @@ server <- function(input, output, session) {
               paste0("cas-", input$yearBtn, "-", yvars, ".csv")
             }, 
             content=function(file){
-              write.csv(indicTab, file)
+              write.csv(indicatorTab, file)
             }
           )
           
@@ -1243,19 +946,19 @@ server <- function(input, output, session) {
       showNotification("Please select a policy priority first") 
     } else {
       if(is.list(pathway_link) & is.list(indicator_list)) {
-        indics_out <- getIndics(pathway_link %>% filter(pathwayID!=0), indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
+        indics_out <- getIndics(pathway_link |> filter(pathwayID!=0), indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
         indics_out <- unlist(indics_out)
         indics_out <- data.frame(shortName=indics_out)
         indics_out <- merge(indics_out, indicator_list, by="shortName")
-        data_files <- getFiles(indicator_list, dataset_list, indics_out$shortName) %>% filter(year==input$yearBtn)
-        #data_files_select <- indics_out %>% 
-        #  select(file) %>% 
-        #  distinct() %>%
+        data_files <- getFiles(indicator_list, dataset_list, indics_out$shortName) |> filter(year==input$yearBtn)
+        #data_files_select <- indics_out |> 
+        #  select(file) |> 
+        #  distinct() |>
         #  unlist() #Using tolower here helps filter out differences in capitalization 
         #survey_pref <- indics_out$survey[indics_out$year==input$yearBtn] # TO FIX; this line no longer does anything.
-        #data_files <- lapply(data_files_select, FUN=function(x){dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(x)))]}) %>% unique() %>% unlist()  #Drop duplicates if they're somehow in there.
-        #data_files <- dataset_list %>% select(which(str_to_lower(dataset_list) %in% str_to_lower(data_files_select)))
-        #data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] %>% as.data.frame()
+        #data_files <- lapply(data_files_select, FUN=function(x){dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(x)))]}) |> unique() |> unlist()  #Drop duplicates if they're somehow in there.
+        #data_files <- dataset_list |> select(which(str_to_lower(dataset_list) %in% str_to_lower(data_files_select)))
+        #data_files <- dataset_list[which(str_detect(str_to_lower(dataset_list), str_to_lower(data_files_select)))] |> as.data.frame()
         #data_files <- as.data.frame(data_files)
         #names(data_files) <- "file.name"
         #data_files$year <- str_extract(data_files$file.name, "[0-9]{4}") #Might be unnecessary 
@@ -1268,22 +971,22 @@ server <- function(input, output, session) {
           if(!exists("data_out")){
             data_out <- temp
           } else {
-            temp <- temp %>% select(all_of(c(names(temp)[which(!(names(temp) %in% names(data_out)))], "hhid"))) #Fix for redundant input.
+            temp <- temp |> select(all_of(c(names(temp)[which(!(names(temp) %in% names(data_out)))], "hhid"))) #Fix for redundant input.
             data_out <- merge(data_out, temp, by="hhid")
           }
         }
         #} 
-        #data_out <- data_out %>% mutate(indicatorCategory=tolower(indicatorCategory)) %>% subset(indicatorCategory==target_policy, select=all_of(indicator_list$shortName)) %>% na.omit()
+        #data_out <- data_out |> mutate(indicatorCategory=tolower(indicatorCategory)) |> subset(indicatorCategory==target_policy, select=all_of(indicator_list$shortName)) |> na.omit()
         if(exists("data_out")){
           indics <- as.list(indics_out$shortName)
           indic_shortNames <- unlist(indics, use.names=F)
-          data_out <- data_out %>% select(any_of(indic_shortNames)) #Won't throw an error if names are missing)
+          data_out <- data_out |> select(any_of(indic_shortNames)) #Won't throw an error if names are missing)
           if(ncol(data_out) < length(indic_shortNames)){
             indics_missing <- indics[which(!(indic_shortNames %in% names(data_out)))]
             showNotification(paste("Variable(s)", paste(indics_missing, collapse=", "), "not found in the dataset"), type="warning")
           }
           varnames <- data.frame(shortName=names(data_out))
-          varnames <- merge(varnames, indicator_list %>% select(shortName, labelName), by="shortName")
+          varnames <- merge(varnames, indicator_list |> select(shortName, labelName), by="shortName")
           #label_names <- indicator_list$labelName[which(indicator_list$shortName %in% names(data_out))]
           #ALT: Fix for bad input, specific to CAS variable coding (if someone exports labels instead of values); possible to remove if we return to dta input or with different data.
           missing_vars <- NULL
@@ -1292,7 +995,7 @@ server <- function(input, output, session) {
               missing_vars <- c(missing_vars, currVar)
             } else {
               if(!is.numeric(data_out[[currVar]])){
-                data_out <- data_out %>% mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
+                data_out <- data_out |> mutate_at(currVar, list(~ recode(., 'None'='0', 'No'='0', 'Yes'='1')))
                 data_out[[currVar]] <- as.numeric(data_out[[currVar]])
                 if(all(is.na(data_out[[currVar]])) | all(na.omit(data_out[[currVar]]==0))){
                   missing_vars <- c(missing_vars, currVar)
@@ -1301,7 +1004,7 @@ server <- function(input, output, session) {
             }
           }
           if(!is.null(missing_vars)){
-            data_out <- data_out %>% select(!matches(missing_vars))
+            data_out <- data_out |> select(!matches(missing_vars))
             showNotification(paste("Variable(s)", paste(missing_vars, collapse = ", "), "were non-numeric and were removed from the dataset"), type="warning")
           }
           output$heatMap <- renderPlotly(corMat(varnames$shortName, varnames$labelName, data_out))
@@ -1342,7 +1045,7 @@ server <- function(input, output, session) {
   observeEvent(input$policiesBox2, {
     if(input$policiesBox2!="None"){
       if(is.list(pathway_link) & is.list(indicator_list)) {
-        #pathway_sub <- policy_path %>% filter(goalName==input$policiesBox2)
+        #pathway_sub <- policy_path |> filter(goalName==input$policiesBox2)
         #pathway_list <- as.list(c(0, pathway_sub$pathwayID))
         #names(pathway_list) <- c("All", pathway_sub$Pathway)
        #output$dataPathBox <- renderUI(selectInput("pathwaysIn2", "Choose a pathway (optional)", choices=polic_Names[[input$policiesBox2]]))
@@ -1362,6 +1065,48 @@ server <- function(input, output, session) {
   })
   
   
+  #To do: compact this for better display.
+  if(exists("pathwaysDT")){
+    formatCols <- vector()
+    for(i in 1:length(names(pathwaysDT))){
+      items <- unique(pathwaysDT[,i]) 
+      if(any(c("\U2B07","\U2B06", "\U2B0D", "=") %in% items)){
+        formatCols <- c(formatCols, names(pathwaysDT)[[i]])
+      }
+    }
+    path_tabs <- lapply(pathway_names, function(x){ 
+      pathwaysFilt <- pathwaysDT[pathwaysDT$`Policy Goal`==x,] |> select(-`Policy Goal`) |> rename(`Instrument Category`=Instrument) |> rename(Instrument=Implementation) #ALT: TEMP RENAME PENDING PERMANENT DECISION HERE
+      pathwaysDT_out <- datatable(pathwaysFilt,
+                                  filter=list(position='top', clear=F),
+                                  rownames=F,
+                                  escape=F,
+                                  options=list(columnDefs=list(list(className="dt-center", #targets=c('P','Q', 'Quality'))),
+                                                                    targets=formatCols) #,
+                                                               #list(width='20%', targets=8)
+                                  ),
+                                  scrollX=T,
+                                  pageLength=10,
+                                  lengthMenu=c(2,5,10),
+                                  searching=T, 
+                                  autoWidth=T)) |>
+        formatStyle(formatCols, color=styleEqual(c("\U2B07","\U2B06", "\U2B0D", "="), c("#e03d3d","#32a852", "darkgrey", "darkgrey")), fontSize="250%")
+      
+      return(tabPanel(title=paste("Policy Goal: ", x),
+                      fluidRow(column(10,renderDT(pathwaysDT_out)))
+      ))
+      
+      
+    })
+    output$path_table <- renderUI({
+      do.call(tabsetPanel, path_tabs)
+    })
+  } else {
+    output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
+  }
+  
+  
+
+  
   output$downloadRawShort <- downloadHandler(
     filename="raw_data_export.csv",
     content=function(file){
@@ -1371,7 +1116,7 @@ server <- function(input, output, session) {
       }
       indics <- getIndics(pathway_link, indicator_list, indic_inventory, input$policiesBox2, input$pathwaysIn2, input$yearBtn)
       indics <- indics[c(indics==input$indicsIn, indics==input$corrsIn)]  #Kludge
-      data_files <- getFiles(indicator_list, dataset_list, indics) %>% filter(year==input$yearBtn)
+      data_files <- getFiles(indicator_list, dataset_list, indics) |> filter(year==input$yearBtn)
       denoms <- getDenoms(indics, indicator_list)
       rawData <- getData(data_files, yvars=input$indicsIn, xvars=input$corrsIn, denoms=denoms, adm_level=input$disAgg_admin, aggs_list=aggs_list, drop_0s=input$yChk)
       write.csv(rawData$outdata, file, row.names=F)
@@ -1484,76 +1229,20 @@ server <- function(input, output, session) {
     contentType="text/csv"
   )
   
-  #To do: compact this for better display.
-  if(exists("pathwaysDT")){
-    formatCols <- vector()
-    for(i in 1:length(names(pathwaysDT))){
-      item <- pathwaysDT[1,i] #Fast but potentially inaccurate, to fix.
-      if(any(c("\U2B07","\U2B06", "\U2B0D", "=") %in% item)){
-        formatCols <- c(formatCols, names(pathwaysDT)[[i]])
-      }
-    }
-    path_tabs <- lapply(pathway_names, function(x){ 
-      pathwaysFilt <- pathwaysDT[pathwaysDT$`Policy Goal`==x,] %>% select(-`Policy Goal`) %>% rename(`Instrument Category`=Instrument) %>% rename(Instrument=Implementation) #ALT: TEMP RENAME PENDING PERMANENT DECISION HERE
-      pathwaysDT_out <- datatable(pathwaysFilt,
-                                  filter=list(position='top', clear=F),
-                                  rownames=F,
-                                  escape=F,
-                                  options=list(columnDefs=list(list(className="dt-center", #targets=c('P','Q', 'Quality'))),
-                                                                    targets=formatCols) #,
-                                                               #list(width='20%', targets=8)
-                                  ),
-                                  scrollX=T,
-                                  pageLength=10,
-                                  lengthMenu=c(2,5,10),
-                                  searching=T, 
-                                  autoWidth=T)) %>%
-        formatStyle(formatCols, color=styleEqual(c("\U2B07","\U2B06", "\U2B0D", "="), c("#e03d3d","#32a852", "darkgrey", "darkgrey")), fontSize="250%")
-      
-      return(tabPanel(title=paste("Policy Goal: ", x),
-                      fluidRow(column(10,renderDataTable(pathwaysDT_out)))
-      ))
-      
-      
-    })
-    output$path_table <- renderUI({
-      do.call(tabsetPanel, path_tabs) %>% return()
-    })
-  } else {
-    output$path_tbl_err <- renderUI(verbatimTextOutput("Error: Pathways file not found or improperly formatted"))
-  }
   
   
-  if(is.list(source_data)){
-    output$evidence_tab <- renderDT(source_data, escape=F, rownames=F)
-  }
-  
-  
+  #Tab that holds this content is currently commented out.
   observeEvent(input$goBut, {
-    #Percent of ag holdings raising %animal%
-    #Percent of ls holdings raising %animal%
-    #Percent of FHH holdings raising %animal% + map
-    #Percent of holdings raising %animal% with vocational/technical training
-    #Percent of holdings raising %animal% with formal association
-    #Percent of holdings raising %animal% with informal association. 
-    
-    # data_files <- getFiles(indicator_list, dataset_list, c(input$indicsIn, input$corrsIn)) %>% filter(year==input$yearBtn) #To fix, probably roll year into getFiles function.
-    # aggs_list <- input$groupsChk #ALT Note: Right now this is an unnecessary step, but if we ever end up needing to have multiple disaggregation criteria, it's probably better to do it this way.
-    # denoms <- getDenoms(c(input$corrsIn, input$indicsIn), indicator_list)
-    # adm_level <- input$disAgg_admin
-    # all_data <- getData(data_files, xvars=input$corrsIn, yvars=input$indicsIn, denoms=denoms, adm_level=adm_level, aggs_list=aggs_list, source_call="explorer", drop_0s = input$yChk)
-    # 
-    #varIn <- paste0(input$powerBiVars, input$lstype)
     varIn <- input$powerBiVars
     plotStat <- input$totsBtns2
     popVar <- input$popVars
     adm_level <- input$admBtn2
     denoms <- getDenoms(varIn, indicator_list)
-    datafiles <- getFiles(indicator_list, dataset_list, c(varIn, popVar)) %>% filter(year==input$yearBtn2)
+    datafiles <- getFiles(indicator_list, dataset_list, c(varIn, popVar)) |> filter(year==input$yearBtn2)
     data_out <- getFiltData(files=datafiles, xvars=varIn, denoms=denoms, filter=input$popVars, adm_level=adm_level)
     if(any(is.list(data_out))){
       
-      vType <- indicator_list %>% filter(shortName==varIn) %>% select(units)
+      vType <- indicator_list |> filter(shortName==varIn) |> select(units)
       if(any(vType %in% "boolean")){
         vBoxVal <- renderText(paste0(signif(data_out$natdata$Mean[[1]],2)*100, "%", " of ", popVar)) #Should only have 1 value
         vBoxShow <- renderText(paste(format(data_out$natdata$Total[[1]], big.mark=","), "hhs total", varIn))
@@ -1566,10 +1255,10 @@ server <- function(input, output, session) {
         output$vBoxOut <- renderUI(value_box(title="National Summary", showcase=bsicons::bs_icon("house"), value=vBoxVal, p(vBoxShow))) #, p(vBoxName)))
       }
       if(max(data_out$outdata$Total) > 1000000000) {
-        data_out$outdata$Total <- data_out$outdata$Total/1000000000 %>% round(., digits=4)
+        data_out$outdata$Total <- data_out$outdata$Total/1000000000 |> round(., digits=4)
         bns <- T
       } else if(max(data_out$outdata$Total) > 1000000){
-        data_out$outdata$Total <- data_out$outdata$Total/1000000 %>% round(., digits=4)
+        data_out$outdata$Total <- data_out$outdata$Total/1000000 |> round(., digits=4)
         mns <- T
         bns <- F
       } else {
@@ -1579,10 +1268,10 @@ server <- function(input, output, session) {
       
       #xShp_currMap <- merge(khm_shp, data_out$mapdata, by="province", all.x=T)
       if(adm_level=="province"){
-        merged_tab <- merge(na.omit(data_out$outdata), khm_province, by="province", all.x=T) %>% select(all_of(c("ADM1_EN", "Mean", "Total", "Obs"))) %>% mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) %>% rename(Province=ADM1_EN)
+        merged_tab <- merge(na.omit(data_out$outdata), khm_province, by="province", all.x=T) |> select(all_of(c("ADM1_EN", "Mean", "Total", "Obs"))) |> mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) |> rename(Province=ADM1_EN)
         provPlot <- reportChart(merged_tab, "Province", plotStat, "", paste(varIn, "among", popVar))
       } else {
-        merged_tab <- merge(na.omit(data_out$outdata), khm_zones, by="zone", all.x=T) %>% select(all_of(c("zone", "Mean", "Total", "Obs"))) %>% mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) %>% rename(Zone=zone) #issue with zone being a reserved name?
+        merged_tab <- merge(na.omit(data_out$outdata), khm_zones, by="zone", all.x=T) |> select(all_of(c("zone", "Mean", "Total", "Obs"))) |> mutate(Mean=signif(Mean, 4), Total=signif(Total,4)) |> rename(Zone=zone) #issue with zone being a reserved name?
         provPlot <- reportChart(merged_tab, "Zone", plotStat, "", paste(varIn, "among", popVar))
       }
       
@@ -1596,140 +1285,6 @@ server <- function(input, output, session) {
       output$provPlot2 <- renderPlot(provPlot, height=600)
     }
   })
-  
-  # value_box(title="GNI",
-  #           value=textOutput("gniVal"),
-  #           htmlOutput("gniTrend"),
-  #           showcase=plotlyOutput("gniPlot"),
-  #           full_screen=T, 
-  #           theme="light",
-  #           showcase_layout="left center"
-  #           
-  # ),
-  # value_box(title="Agriculture Value Added",
-  #           value=textOutput("agValAdd"),
-  #           htmlOutput("agvaTrend"),
-  #           showcase=plotlyOutput("agvaPlot"),
-  #           full_screen=T,
-  #           theme = "light",
-  #           showcase_layout="left center"
-  # ),
-  # value_box(title="Agriculture Sector Employment",
-  #           value=textOutput("agEmp"),
-  #           htmlOutput("agEmpTrend"),
-  #           showcase=plotlyOutput("agempPlot"),
-  #           full_screen=T,
-  #           theme="light",
-  #           showcase_layout="left center"
-  # ),
-  
-  
-  wbDataFiles <- list.files("Extdata", pattern="^API.+[0-9]{4}\\.csv$")
-  colors <- c("primary", "success", "info", "info", "primary", "success")
-  wbN <- 1
-  vbs <- list()
-  vbs2 <- list()
-  if(length(wbDataFiles) > 0) {
-    vbs <- lapply(1:length(wbDataFiles), FUN=function(x) {
-      wbFile <- wbDataFiles[[x]]
-      wbData <- wbDataPrep(wbFile) |> filter(Country.Name=="Cambodia") #long term might need to add this filter to the function to reduce confusion; leaving it for now in case we want comparatives.
-      
-      if(nrow(wbData)==0){
-        # if(!exists("wbErrors")){
-        #   wbErrors <- paste("Error in", wbFile)
-        # } else {
-        #   wbErrors <- paste(wbErrors, wbFile, sep=", ")
-        # }
-        return(NULL)
-      } else {
-        wbDNames <- wbDataNames(wbFile)
-        wbText <- wbTrend(wbData, 5) # How many years to do the trend over?
-        return(value_box(title=wbDNames$title,
-                         HTML(sprintf('<a href="https://data.worldbank.org/indicator/%s?locations=KH" target="_blank", style="color: #ffffff">%s</a>', wbDNames$subtitle, wbDNames$subtitle)),
-                         value=p(wbText$recVal),
-                         showcase=renderPlotly(sparkline(wbData, "year", "val", sprintf("%s (%s)", wbDNames$title, wbDNames$units))),
-                         full_screen=T,
-                         theme=colors[[((x %% 6)+1)]])
-               
-        )
-      }
-    })
-  }
-  if(length(vbs)>0){
-    output$valueBoxes <- renderUI(layout_column_wrap(width=1/3, !!!vbs)) 
-    }
-  
-  
-  casDataFiles <- list.files("Extdata", pattern="cas-")
-  
-  if(length(casDataFiles) > 0){
-    casDataFiles <- data.frame(casDataFiles)
-    names(casDataFiles) <- "SourceFile"
-    casDataFiles$shortName <- str_extract(casDataFiles$SourceFile, "([A-z_]+).csv", group=1) 
-    var_info <- indicator_list |> select(shortName, file, axisName)
-    casDataFiles <- merge(casDataFiles, var_info, by="shortName")
-    datafiles <- unique(casDataFiles$file) #for the names in the commodity tabs. 
-    for(dfile in datafiles){
-      casDataFilesSub <- casDataFiles |> filter(file==dfile)
-      vbsOut <- lapply(1:nrow(casDataFilesSub), FUN=function(x){
-        casFile <- casDataFilesSub$SourceFile[[x]]
-        casName <- casDataFilesSub$shortName[[x]]
-        if(!is.na(casName)){
-        casYear <- str_extract(casFile, "[0-9]{4}")
-        
-        casTab <- read.csv(paste0("Extdata/", casFile))
-        #Strip row names if they got loaded
-        if(names(casTab)[[1]]=="X") {
-          casTab <- casTab[,-1]
-        }
-        names(casTab) <- str_replace_all(names(casTab), "[.]", " ")
-        casTabFlx <- flextable(casTab)
-        if(ncol(casTab>2)){
-          casTabFlx <- merge_v(casTabFlx, j=names(casTab)[[1]])
-        }
-        casTabTitle <- paste0(casDataFilesSub$axisName[[x]], ", ", casYear)
-        return(card(card_header(casTabTitle),
-                    renderUI({
-                      casTabFlx |>
-                        autofit() |>
-                        htmltools_value()
-                    }),
-                    card_footer(HTML("<i>Source: Cambodia Agriculture Survey</i>")),
-                    theme="light")
-        )
-        }
-      })
-      if(length(vbsOut) > 0) {
-      output[[paste0(dfile, "Boxes")]] <- renderUI(layout_columns(col_widths=floor(12/length(vbsOut)), !!!vbsOut))
-      }
-    }
-  }
-  
-
-  
-  #if(length(vbs2) > 0){
-  #  output$casBoxes <- renderUI(layout_columns(col_widths=c(4,4,4), !!!vbs2))
-  #}
-  
-  # 
-  # agvaladd <- wbDataPrep("API_NV.AGR.TOTL.ZS_DS2_en_csv_v2_4614.csv") |> filter(Country.Name=="Cambodia")
-  # agempl <- wbDataPrep("API_SL.AGR.EMPL.ZS_DS2_en_csv_v2_3276.csv") |> filter(Country.Name=="Cambodia")
-  # gnidata <- wbDataPrep("API_NY.GNP.PCAP.PP.CD_DS2_en_csv_v2_2384.csv") |> filter(Country.Name=="Cambodia")
-  # 
-  # gni_text <- wbTrend(gnidata)
-  # output$gniPlot <- renderPlotly(sparkline(gnidata, "year", "val", "GNI Per Capita ($US)"))
-  # output$gniVal <- renderText(gni_text$recVal)
-  # output$gniTrend <- renderUI(gni_text$trend)
-  # 
-  # agvaladd_text <- wbTrend(agvaladd)
-  # output$agValAdd <- renderText(agvaladd_text$recVal)
-  # output$agvaTrend <- renderUI(agvaladd_text$trend)
-  # output$agvaPlot <- renderPlotly(sparkline(agvaladd, "year","val", "Value Added (% of GDP)"))
-  # 
-  # agempl_text <- wbTrend(agempl)
-  # output$agEmp <- renderText(agempl_text$recVal)
-  # output$agEmpTrend <- renderUI(agempl_text$trend)
-  # output$agempPlot <- renderPlotly(sparkline(agempl, "year","val", "Employment in Agriculture\n(% of Workforce)"))
   
 }
 

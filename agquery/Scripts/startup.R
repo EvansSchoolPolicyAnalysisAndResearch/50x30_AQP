@@ -12,10 +12,10 @@ root_dir <- ""
 #                                 }) 
 # if(is.list(indicatorCategories)){
 #   if(("shortName" %in% names(indicatorCategories)) & ncol(indicatorCategories) > 1) {
-#     indicatorCategories <- indicatorCategories %>% 
-#       melt() %>% 
-#       filter(value==1) %>% 
-#       select(-value) %>% 
+#     indicatorCategories <- indicatorCategories |> 
+#       melt() |> 
+#       filter(value==1) |> 
+#       select(-value) |> 
 #       rename(goalName=variable)
 #     goalNames <- str_to_title(unique(indicatorCategories$goalName))
 #   } else {
@@ -26,7 +26,7 @@ root_dir <- ""
 #Dropping the indicator categories spreadsheet for efficiency
 
 dataset_list <- list.files("Data", pattern="*.csv")
-years <- sapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) %>% unique() %>% na.omit()
+years <- sapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) |> unique() |> na.omit()
 for(year in years){
   names <- lapply(dataset_list[which(str_detect(dataset_list, year))], function(x){
     dat <- read.csv(paste0("Data/",x), nrows=1)
@@ -37,7 +37,7 @@ for(year in years){
   names <- do.call("rbind", names)
   names$year <- year
   names <- distinct(names)
-  #names <- unlist(names) %>% unique()
+  #names <- unlist(names) |> unique()
   if(!exists("indic_inventory")){
     indic_inventory <- names
   } else {
@@ -68,7 +68,7 @@ if(is.list(indicator_list)){
   }
 }
 
-pathway_link <- tryCatch(read.csv("Update/Policy_Link.csv") %>% distinct(), #Remove duplicates (bad input protection)
+pathway_link <- tryCatch(read.csv("Update/Policy_Link.csv") |> distinct(), #Remove duplicates (bad input protection)
                          error=function(e){return(F)})
 if(is.list(pathway_link)){
   colnm_link <- c("pathwayID", "goalName","shortName")
@@ -76,7 +76,7 @@ if(is.list(pathway_link)){
     pathway_link <- F
   } else {
     goalNames <- str_to_title(unique(pathway_link$goalName))
-    indicatorCategories <- pathway_link %>% select(goalName, shortName) %>% distinct()
+    indicatorCategories <- pathway_link |> select(goalName, shortName) |> distinct()
   }
 }
 
@@ -92,17 +92,38 @@ if(is.list(groups_list)){
   }
 }
 
-policy_path <- tryCatch(readxl::read_xlsx("Update/Policy_Pathways.xlsx"),
+policy_path <- tryCatch(readxl::read_xlsx("Update/Policy_Pathways.xlsx") |> as.data.frame(), #Imported as a tibble, need to avoid that
                         error=function(e){return(F)}) 
 if(is.list(policy_path)){
-  policy_path <- as.data.frame(policy_path) #Don't want a tibble here.
-  pathwaysDT <- policy_path %>% select(-c(pathwayID, goalName))
+  colnm_path <- c("pathwayID", "goalName","Pathway","Instrument") #Minimum requirement for this to function
+  if(any(!(colnm_path %in% names(policy_path)))){
+    policy_path <- F
+  } else {
+  long_goalnames <- tryCatch(readxl::read_xlsx("Update/Pathway_Names.xlsx") |> as.data.frame(), 
+                             error=function(e){return(F)})
+  if(is.list(long_goalnames)){
+    colnm_goalnames <- c("goalName", "Policy.Goal")
+    if(!all(colnm_goalnames %in% names(long_goalnames))){
+      long_goalnames <- F
+    }
+  }
+  if(is.list(long_goalnames)){
+    long_goalnames <- long_goalnames |> select(all_of(colnm_goalnames)) #Remove extraneous info if it exists
+    policy_path <- dplyr::left_join(policy_path, long_goalnames, by="goalName") |> 
+      mutate(Policy.Goal=ifelse(is.na(Policy.Goal), goalName, Policy.Goal)) |> #Address empties/non-matches
+      filter(!is.na(goalName)) |> #Remove anything still not valid
+      relocate(Policy.Goal, .after=goalName) #Cosmetic, I think this gets dropped
+  } else {
+    policy_path <- policy_path |> mutate(Policy.Goal = goalName) |> filter(!is.na(goalName))
+  }
+  policy_path <- policy_path |> mutate(Instrument=ifelse(is.na(Instrument), "Other", Instrument))
+  pathwaysDT <- policy_path |> select(-c(pathwayID, goalName))
   pathway_names <- unique(policy_path$Policy.Goal)
   short_Pathways <- unique(policy_path$goalName)
   names(pathwaysDT) <- str_replace_all(names(pathwaysDT), "\\.", " ")
   
   polic_Names <- lapply(short_Pathways, FUN=function(x){
-    policy_path_sub <- policy_path %>% filter(goalName==x)
+    policy_path_sub <- policy_path |> filter(goalName==x)
     inst_names <- unique(policy_path_sub$Instrument)
    
     temp_list <- lapply(inst_names, FUN=function(y){
@@ -136,6 +157,7 @@ if(is.list(policy_path)){
   
   names(polic_Names) <- short_Pathways
   names(polic_activ) <- short_Pathways
+  }
 }
 
 source_data <- tryCatch(readxl::read_xlsx("Update/evidence_list.xlsx"),

@@ -10,6 +10,18 @@ output:
 knitr::opts_chunk$set(echo=FALSE)
 ```
 
+<!-- This allows us to style some of the tables in the doc while preserving the ability to use the visual editor -->
+```{css, echo=F}
+#tables table, #tables th, #tables td {
+border: 2px;
+border-style: groove;
+border-collapse: collapse;
+padding: 4px;
+}
+```
+
+
+
 ### Overview
 
 The Cambodia Agriculture Survey Data Explorer is a utility for policy analysis, progress tracking, comparison, and reporting. It is designed to be extensively user-modifiable so that commonly used graphics can be quickly regenerated from a new data release, reducing the time between collection and analysis. A public version of the app is available [https://evans-par.shinyapps.io/agquery](here) and can be used to immediately access the data and produce visualizations. The next section will explain how to download your own copy in order to make best use of these features, and the following sections will provide an instructions on using and updating the content in each tab.
@@ -23,16 +35,19 @@ To take full advantage of the features of the app, it is necessary to either run
 #### Requirements for downloading and running a local copy
 
 -   First time R users: download and install [R](https://cran.rstudio.com/) and [RStudio.](https://posit.co/download/rstudio-desktop/)
--   Existing R users: ensure you are running R version 4.4.2 and download RStudio if needed.
+-   Existing R users: ensure you are running R version 4.4 or higher and download RStudio if needed.
 -   Download the latest release at the [Git repository](https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP).
--   Follow the instructions in the repository readme to finish first time setup. After setup is complete, run the app on your computer by opening the R project and the app.R files in RStudio and pressing the "run app" button that appears in the top right-hand corner of the file pane.
+-   Follow the instructions in the [repository readme](https://github.com/EvansSchoolPolicyAnalysisAndResearch/50x30_AQP/blob/main/README.md) to finish first time setup. After setup is complete, run the app on your computer by opening the R project and the app.R files in RStudio and pressing the "run app" button that appears in the top right-hand corner of the file pane.
 
 #### Sharing your copy with others
 
 If you make modifications to the app and want others to see them, you can create an online version by signing up for an account at <https://www.shinyapps.io/>. Once you have an account, you can publish your version of the app by pressing the blue button next to "Run App" button. In the dialog box that appears, press "Add new account" to log in to your shinyapps.io account, then press "Publish". You may be prompted to install additional packages the first time you do this. Apps created with the free tier of the shinyapps account may be limited in the number of simultaneous users.
 
+<div align="center">
 ![](upload.png)
+
 ![](shinyapps_dialog.png)
+</div>
 
 #### Requirements for Self-Hosting
 
@@ -45,7 +60,7 @@ Follow the instructions below to make your own updates to the app. These steps r
 #### Directory Layout
 
 |  |  |
-|-----------------------|-------------------------------------------------|
+|--------------------------|----------------------------------------------|
 | └── agquery/ | *Root folder* |
 |       ├── Data | *Processed survey data* |
 |       ├── Extdata | *Externally sourced data, e.g. World Bank Development indicator CSV files* |
@@ -57,24 +72,107 @@ Follow the instructions below to make your own updates to the app. These steps r
 |       ├── Update | *Metadata for the survey data folder; update the files in here to change the policy goals and variables.* |
 |       └── www | *Additional files used in web pages* |
 
-### Adding Your Own Data
+#### Adding Your Own Data
 
 Additional data can be added to the app by placing CSV files with raw data in the Data subfolder. The following requirements must be met for data files to be usable by the app:
 
 -   The file name must be "Cambodia_CAS\_{YEAR}\_{UNIQUENAME}.csv. The unique name must be consistent across survey years.
--   The files must contain the **ID variables** "hhid", "province", and "zone"
+-   The files must contain the **ID variables** "hhid", "province", and "zone". Province can be numeric or string (preference is currently for numeric), while zone should be string.
 -   Variables in the data files can be named with a combination of letters, numbers, and underscores. They should not include spaces or begin with numbers. Variable names are case sensitive: the names "Chickens" and "chickens" will be treated as different variables. Khmer script is permitted.
 -   All variables should be numeric; including string or categorical data will result in errors or estimates that are difficult to interpret. Consider adding them to the app as grouping variables instead.
 
 Two additional files, weights.csv and groups.csv, should follow the same file naming convention outlined above and are used to store the household-level weights and any categorical or grouping variables, respectively. Both files are optional; if they are not included, all data files should include weights and grouping criteria. If weights are not found, the numbers presented in the app will represent the unweighted (sample) totals and means.
 
-### Adding New Variables, Creating Your Own Policy Goals, Setting Up Policy Pathways, and Determining Relevant Variables
+#### Important Definitions
 
-The app will register all variables included in the input data files (see Diagnostics), but it will only incorporate the variables that have been included in the Update folder spreadsheets to avoid presenting too many options simultaneously.
+In order to facilitate analysis and objective formulation related to existing or proposed policies, updating the app requires providing connections between the information collected in the survey and the policy environment within which the analyst is working. Thus, it is necessary to understand the following terms: - **Variable**s or **Indicator**s (the latter term being used mainly in the context of assessing progress toward a development objective) are discrete items measured by the survey, or constructed from a combination of survey-measured items. Examples include the number of chickens, total rice sale value, or livestock mortality rate. Variables are present in the raw data files (at the household level) and summarized to the province, zone, or national level by the app. They are described in the indicators.xlsx spreadsheet. - **Policy Goals** are the broad **outcomes** that a government entity is trying to produce. An ideal policy goal addresses a single topic; examples include improving incomes for cashew producers, increasing the number of poultry-producing households, or reducing postharvest losses of rice. - **Policy Pathways** are means of achieving a goal. A pathway represents a targeted intervention that could conceivably be addressed through a law or rule, or by a program created by an NGO. Examples include (with respect to increasing the number of poultry-producing households) reducing the cost of chicken feed or (with respect to improving cashew producer incomes) increasing access to nut processing equipment. Each **policy goal** could have many **policy pathways** associated with it. - **Instruments** and **Implementation** describe how the policy pathway is actually developed through rulemaking or legislation. An instrument is a generic category for an intervention, such as a subsidy, an information program or public awareness campaign, or a regulation. The implementation describes how the generic instrument is applied to a specific policy pathway, such as reducing feed cost by providing a subsidy for feed or increasing access to processing equipment via a public awareness campaign designed to inform producers about public processing facilities. Each **policy pathway** can be targeted using multiple instruments, and instruments can be implemented in multiple ways.
 
-### Policy Context
+In practice, variables are associated with multiple policy goals and pathways, and each pathway contains a subset of the variables responsive to the broader policy goal. Associating variables with pathways is optional, but it can help users navigating the app by providing a subset of highly relevant variables without having to dig through all of the available information. When assigning variables to goals or pathways, consider what someone would want to know when deciding whether to focus on a given goal or promoting a particular policy intervention. What variables tell them who their stakeholders are, or whether the intervention is successful?
 
-This page provides data and visualizations from both external sources and the CAS for understanding the agricultural and economic context in Cambodia. The Agricultural Sector Overview tab provides sector-wide information, while the Commodity Overviews provide information related to specific commodities. The colored **value boxes** provide statistics sourced from the World Bank's [Open Data repository](https://data.worldbank.org/). Additional indicators can be added by downloading the csv files from their respective pages and placed in the Extdata subfolder in the main app directory. New datasets will be discovered and included automatically.
+<div align="center">
+![Illustration of the relationships between policy goals, pathways, and variables as applied to a simple example using poultry.](policy_diagram.png)
+</div>
+
+#### Creating Policy Goals, Setting Up Policy Pathways, and Determining Relevant Variables
+
+##### Spreadsheet Summary
+
+The app will automatically register all variables included in the input data files (see the Diagnostics tab), but it will only present statistics on the variables that have been included in the spreadsheets saved in the **Update** folder to avoid presenting too much information at once. The tables below summarize each spreadsheet and the minimum requirements for including a new set of variables and policy goal. Each table below summarizes the columns in each spreadsheet. Required columns are in **bold** text. Some columns are not strictly necessary for the app but are strongly recommended for full functionality and are indicated in ***bold italic*** text.
+
+###### Indicators
+
+This spreadsheet is where the information related to variables is stored. Variables that are not listed here will not be included in the app, even if they are listed in the other spreadsheets.
+
+:::{#tables}
+| Column Name | Definition |
+|:----------------:|-----------------------------------|
+| **shortName** | The variable name as it appears in the column of the raw data file |
+| **category** | A general category for the indicator that can be used to group it in drop-down menus and other UI elements |
+| **labelName** | A longer, more descriptive name for drop-down menus |
+| axisName | A longer, more descriptive name for chart axes (may be the same as labelName) |
+| **file** | The name of the raw data {file} where the variable is located, following the convention Cambodia_CAS_{year}_{file} (not case sensitive) |
+| wins_limit | A Winsorization threshold, if desired |
+| units | The unit of measure. Note that the terms "ratio" (variables that are some proportion) and boolean (variable value can only be 0 or 1) get special treatment. |
+| denominator | For variables that are constructed as a ratio, the denominator variable used. Omitting this will give you averages across households rather than averages across whatever the observed unit is; for example, in the variable "percent chickens vaccinated," the denominator is the number of chickens owned by the household. If this item is included, the calculated average will be the national chicken vaccination rate. If omitted, the average chicken vaccination rate by household. |
+| flag | Set value to 1 if there is any additional information or issues to add (and include that information in flag_text), 0 otherwise |
+| flag_text | The description or additional issues to note; this information will be shown to users in the "Detailed Information" table. |
+| survey_question_{year} | The name of the survey question in the CAS instrument for the given year that generated the variable. |
+| ques_text | The text of the survey question. |
+:::
+
+Information in "survey_question_{year}" and "ques_text" is provided to users on the variable comparisons tab.
+
+###### Policy_Pathways
+
+This spreadsheet is used to construct the table on the "Policy Instruments by Goal" tab of the "Identifying Feasible Options" section. It is also used to set up the pathways that are used to filter the variables.
+
+:::{#tables}
+| Column Name | Definition |
+|:----------------:|-----------------------------------|
+| **pathwayID** | a number that uniquely identifies the Pathway (Sequential by row) |
+| **goalName** | a short name to refer to the Policy Goal, will be repeated for each Pathway within a goal |
+| ***Pathway*** | a descriptive definition of the Policy Pathway; optional, but necessary to have the option to filter the variable list to the pathway |
+| ***Instrument*** | The category (e.g. subsidy, information campaign, tariff, quota) of the implementation |
+| ***Implementation*** | A specific method for achieving the policy goal via the pathway (see definitions above) |
+| Producer unit costs | An assessment of how the instrument would change the cost of making the final product (⬆, ⬇, ⬍, or =) |
+| Final Prod Price | An assessment of how the instrument would affect the final product price received by the producer |
+| Final prod Q | An assessment of how the instrument would affect the quantity of products available for sale |
+| Prod Quality | An assessment of how the instrument would affect the average quality of the product. |
+| Speed | An assessment of relative implementation time (text) |
+| Feasibility | An assessment of easy or difficult the instrument will be to implement, given the realities of the legislative process and the anticipated levels of support or opposition from stakeholder groups |
+| Evidence | If available, a link to a research paper or report supporting the information presented in the previous columns |
+:::
+
+Additional columns may be added for additional ratings dimensions or to display more information in the table on the policy context tab.
+
+###### Pathway_Names
+
+An optional spreadsheet to display longer names on the tabs. If absent, the goalName shorthand will be used instead.
+
+:::{#tables}
+| Column Name | Definition |
+|:----------------:|-----------------------------------|
+| **goalName** | The name of the policy goal corresponding to the goalName column in the Policy_Pathways spreadsheet |
+| **Policy.Goal** | The longer description of the policy goal |
+:::
+
+###### Policy_Link
+
+This spreadsheet connects policy pathways to variables.
+
+:::{#tables}
+| Column Name | Definition |
+|:----------------:|-----------------------------------|
+| **pathwayID** | The ID number for the Policy Pathway in Policy_Pathways. Use 0 to connect to a goal without specifying a pathway |
+| **goalName** | The short name for the Policy Goal in Policy_Pathways |
+| **shortName** | The short name for the Variable in the **indicators** spreadsheet. |
+:::
+
+### Explanations by Tab
+
+#### Policy Context
+
+This page provides data and visualizations from both external sources and the CAS for understanding the agricultural and economic context in Cambodia. The Agricultural Sector Overview tab provides sector-wide information, while the Commodity Overviews provide information related to specific commodities. The colored **value boxes** provide statistics sourced from the World Bank's [Open Data repository](https://data.worldbank.org/). Additional indicators can be added by downloading the csv files from their respective pages and placed in the Extdata subfolder in the main app directory. New datasets will be discovered and included automatically. Links back to the original indicator are provided on the value boxes for validation.
 
 The commodities tab includes information of interest for specific crops or livestock species. The categories can be customized by editing the folders in the "Commodities" subfolder of the "Extdata" folder. The names of these folders will be used to determine the titles of each tab. Images downloaded from elsewhere can also be included; edit the "image_information.csv" file in each commodity directory to edit the titles and captions for the images.
 
@@ -131,3 +229,27 @@ This page provides links to associated sources of data and information that can 
 ### App Diagnostics
 
 In addition to the instructions you are currently reading, this page provides the **App Diagnostics** tab, which can be used to troubleshoot if the app stops working after an update. The app will check that the data and supporting spreadsheets are present and correctly formatted with the expected column names. In addition, it will present all of the variables found in the data files and report whether the metadata needed to incorporate them into the app are present. For a variable to show up, it must at least be present in the indicators list and be assigned to a policy goal. Assignment to a pathway is optional. Note that this is not the case for the hhid, province, and zone variables, which are used to identify observations. They should be present in all of the data files with the exception of groups and weights, which need only the unique household id.
+
+### Advanced Users: Saving and Organizing Your Analysis Products and External Data
+
+As mentioned in previous sections, one of the functions of the Overview tabs is to preserve analysis previously performed with the survey data in order to add context for subsequent analyses. We enable a wide variety of outputs to facilitate saving resources from other sources online.
+
+#### Exporting Data and Analysis Products from the App
+
+All tables and charts can be exported and re-used. Both the `ggplot` and `Plotly` packages are used to render plots. Charts in `ggplot` are simply rendered as images and can be exported by right-clicking on the chart and selecting "Save Image As...", while `Plotly` charts have the toolbar and can be downloaded by clicking the picture icon. The chart can then be downloaded to the "Extdata" folder. Charts can be downloaded by using the download button, which exports the content as a raw csv file. It is important to retain the automatic name of the csv file, as it contains information that is used by the app to automatically title and caption the table.
+
+#### External Data Sources
+
+The World Bank data bank data can be saved by downloading the CSV file from the indicator page and placing the unzipped data file in the "World Bank" subfolder of "Extdata." 
+
+Additional graphs or charts can be exported as images via screen capture or saving the resource to the folder, then captioned using the "image_info" csv file in the folder. Markdown formatting for links is supported, so you can generate a hyperlink like [this](http://www.google.com) by typing `[this](http://www.google.com)`.
+
+Charts created from other sources of data in R can either be saved as an image using the `ggsave()` command for ggplots or exported as a an HTML file by using the package `htmlwidgets` (already part of this projects library) by using the `savewidget` command on a plot object (see the "Misc" folder for examples). There are two good reasons to save a plot as an HTML file instead of an image: no tinkering with image resolution or scale is needed for the plot to render well, and it preserves the additional functionality provided by the `Plotly` package. A comparison of methods is currently visible on the Poultry commodity tab.
+
+#### Using the "Agricultural Sector Overview" and "Commodity" tabs
+
+The "Agricultural Sector Overview" tab looks in the "Overview" and "World Bank" subfolders of "Extdata" for relevant objects. Each commodity tab is generated from the subfolders in the "Commodities" subfolder, with the tab names being drawn from the folder names.
+
+#### Image, plot, and table organization
+
+Right now, the app defaults to putting tables first and figures second. Figures are arranged in the order they appear in the image_info csv file, with unlisted images/charts being loaded last. 
