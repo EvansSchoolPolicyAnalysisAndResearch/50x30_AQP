@@ -1,39 +1,4 @@
-wbDataPrep <- function(filename) {
-  read.csv(paste0("Extdata/",filename), skip=4) |> 
-    pivot_longer(cols=starts_with("X"), 
-                 names_to="year", 
-                 values_to = "val", 
-                 names_prefix="X", 
-                 values_drop_na=T) |> 
-    mutate(year = as.numeric(year)) |> 
-    filter((Country.Name=="Cambodia" | Country.Name=="Viet Nam" | Country.Name=="Thailand") & year>2000)
-}
 
-wbDataNames <- function(filename){
-  data_row <- read.csv(paste0("Extdata/",filename), skip=4)[1,]
-  indicname <- data_row$Indicator.Name
-  units <- gsub(".*\\((.*)\\).*", "\\1", indicname)
-  title <- gsub("(.*)(\\(.*\\)).*", "\\1", indicname)
-  subtitle <- data_row$Indicator.Code
-  return(list(units=units, title=title, subtitle=subtitle))
-}
-
-wbTrend <- function(wbData, depth){
-  indicName <- wbData$Indicator.Name[[1]]
-  recVal <- wbData |> filter(year==max(wbData$year))
-  recVal <- recVal$val[[1]]
-  oldVal <- wbData |> filter(year==max(wbData$year)-depth)
-  oldVal <- oldVal$val[[1]]
-  interp <- (recVal - oldVal)/oldVal/depth
-  dir <- if(interp>0) "Up" else "Down"
-  trend <- sprintf("%s %.1f%% per year since %i", dir, interp*100, max(wbData$year-depth))
-  if(str_detect(indicName, "%")){
-    recValOut <- paste0(signif(recVal,2),"%")
-  } else {
-    recValOut <- format(recVal,big.mark=",")
-  }
-  return(list(recVal=recValOut, trend=trend))
-}
 
 getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear, cats=F){
   if(pathway!="0"){ 
@@ -145,7 +110,7 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
         weights <- tryCatch(read.csv(sprintf("Data/%s_weights.csv",survey)),
                             error=function(e){
                               showNotification("Weights file missing; unweighted averages will be shown", type="warning")
-                              df$weight <- 1
+                              df_survey$weight <- 1
                             })
         if(exists("weights")){
           mergeNames <- names(df_survey)[which(names(df_survey) %in% names(weights))] #Slightly more flexible

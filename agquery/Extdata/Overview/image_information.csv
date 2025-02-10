@@ -1,0 +1,3 @@
+image_name,title,source
+droughtmap,Drought Severity Map,This is a static image; the live source can be accessed [here](https://ipad.fas.usda.gov/cropexplorer/imageview.aspx?ftypeid=61&fattributeid=13&regionid=seasia)
+wage_gap,Sector Employment by Gender,This is a static image sourced from the [FAO's National Gender Profile of Agriculture and Rural Livelihoods report](https://openknowledge.fao.org/server/api/core/bitstreams/430a6002-8c28-4b36-97af-cb63b8b44279/content) (p.7).

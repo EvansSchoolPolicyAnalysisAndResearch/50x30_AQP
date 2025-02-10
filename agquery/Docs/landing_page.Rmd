@@ -12,6 +12,8 @@ knitr::opts_chunk$set(echo = F, fig.align="center")
 
 ### Purpose
 
+កំណែជាភាសាខ្មែរនៃកម្មវិធីនេះមាននៅ <https://evans-par.shinyapps.io/agquery-khm>
+
 The Data Explorer supports progress tracking, reporting, and hypothesis testing to facilitate decision making related to the [Cambodian Government's 2023 Pentagonal Strategy](https://mfaic.gov.kh/files/uploads/1XK1LW4MCTK9/EN%20PENTAGONAL%20STRATEGY%20-%20PHASE%20I.pdf)'s goals, including modernization, increasing productivity in priority crops and domestic livestock, strengthening extension services, and increasing agricultural products processing industries, furthering implementation of the [National Agricultural Development Policy](https://data.opendevelopmentcambodia.net/library_record/national-agricultural-development-policy-2022-2023) and [Cambodia Agro-Industrial Development Strategic Plan](https://faolex.fao.org/docs/pdf/cam219302.pdf), which aim to increase domestic commercial livestock production and the domestic agricultural products processing industries.
 
 <div align="center">
@@ -75,7 +77,7 @@ AgQuery distinguishes itself from other data analysis tools in the following way
 
 ### Inquire
 
-This tool is maintained by *responsible party* who has *contact info*.
+This tool is currently maintained by the Evans Policy Analysis and Research group at the University of Washington. Please reach out via the GitHub repository with questions or bug reports.
 
 ### Citation
 
