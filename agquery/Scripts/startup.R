@@ -26,8 +26,8 @@ root_dir <- ""
 #Dropping the indicator categories spreadsheet for efficiency
 
 dataset_list <- list.files("Data", pattern="*.csv")
-years <- sapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) |> unique() |> na.omit()
-for(year in years){
+year_list <- sapply(dataset_list, FUN=function(x){str_extract(x, "[0-9]{4}")}) |> unique() |> na.omit()
+for(year in year_list){
   names <- lapply(dataset_list[which(str_detect(dataset_list, year))], function(x){
     dat <- read.csv(paste0("Data/",x), nrows=1)
     outdf <- data.frame(shortName=names(dat))
@@ -45,17 +45,19 @@ for(year in years){
   }
 }
 
+
+#AT: Temporarily(?) deprecating this until it becomes needed. Still need to include it for diagnostics.
 instrument_list <- tryCatch(readxl::read_xlsx("Update/instrument_list.xlsx"),
                             error=function(e){return(F)})
-if(is.list(instrument_list)){
-  colnm_instr <- c("survey","wave","country","year","yearlabel") #including only the essentials right now
-  if(any(!(colnm_instr %in% names(instrument_list)))){
-    instrument_list <- F
-  } else {
-    year_list <- as.list(instrument_list$year)
-    names(year_list) <- instrument_list$yearlabel
-  }
-}
+#if(is.list(instrument_list)){
+#  colnm_instr <- c("survey","wave","country","year","yearlabel") #including only the essentials right now
+#  if(any(!(colnm_instr %in% names(instrument_list)))){
+#    instrument_list <- F
+#  } else {
+#    year_list <- as.list(instrument_list$year)
+#    names(year_list) <- instrument_list$yearlabel
+#  }
+#}
 
 indicator_list <- tryCatch(readxl::read_xlsx("Update/indicators.xlsx"),
                            error=function(e){return(F)}

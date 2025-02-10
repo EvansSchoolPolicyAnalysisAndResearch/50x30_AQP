@@ -1,5 +1,7 @@
 options(shiny.error=browser,
         shiny.autoload.r=F) #For debugging 
+suppressWarnings(
+  suppressMessages({
 library(shiny)
 library(shinyBS)
 library(tidyr)
@@ -34,7 +36,7 @@ library(leaflet)
 library(terra)
 library(tidyterra)
 library(flextable)
-
+}))
 
 lapply(list.files("Scripts", full.names=T), FUN=source)
 options(dplyr.summarise.inform = FALSE)
@@ -55,7 +57,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                          
                          column(2, align='center', HTML("<br><img src=moa_logo.png width='200'></img>")),
                          column(3, fluidRow(HTML("&nbsp;<br><h4 style='text-align:center; font-weight:900;'>Cambodia Agriculture Survey<br>Policy & Data Explorer</h4>")),
-                                fluidRow(HTML("<p style='text-align:center;'>(Version 0.2-Beta)</p>"))),
+                                fluidRow(HTML("<p style='text-align:center;'>(Version 0.2.5-Beta)</p>"))),
                          column(2, align='center', HTML("<br><img src=cam_flag.png width='150'></img>")),
                          column(5)
                 ),
@@ -79,7 +81,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                     tabsetPanel(
                                       tabPanel("About AgQuery 50x30",
                                                fluidRow(column(1), column(8, HTML("<div style='font-size:0.9em'>"),
-                                                                          includeHTML('Docs/landing_page.html'),
+                                                                          includeHTML('Docs/landing_page_en.html'),
                                                                           HTML("</div>")))
                                       ),
                                       
@@ -158,19 +160,22 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                                                                                          icon=icon('file-csv'))))),
                                                                          column(6,
                                                                                 fluidRow(uiOutput('naVals'),
-                                                                                  plotOutput('currMap')), 
+                                                                                uiOutput('noTrend'), 
+                                                                                uiOutput("plotsErr")),
+                                                                                fluidRow(plotOutput('currMap')), 
+
                                                                                 fluidRow(column(10),column(2,     
                                                                                                            uiOutput('dlCurrMapOut')
                                                                                                            #downloadButton('dlcurrMap', label="", icon=icon('file-arrow-down'))
                                                                                 )),
                                                                                 fluidRow(plotOutput('trendMap'), 
-                                                                                         uiOutput('noTrend')
+                                                                                         
                                                                                          #downloadButton('dltrendMap', label="", icon=icon('file-arrow-down'))
                                                                                 ),
                                                                                 #plotOutput('obsMap'),
                                                                                 fluidRow(plotlyOutput('timePlot')),
                                                                                 #plotOutput('provPlot'),
-                                                                                fluidRow(uiOutput("plotsErr"))
+                                                                                fluidRow()
                                                                          )
                                                                 ),
                                                                 
@@ -194,7 +199,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                     fluidRow(column(5, selectInput('policiesBox2', "Select a policy goal", choices=c("None", goalNames)))),
                                     conditionalPanel(condition="input.policiesBox2!='None'",
                                                      fluidRow(column(8, uiOutput('dataPathBox'))),
-                                                     fluidRow(column(4, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(instrument_list$year), size='sm')),
+                                                     fluidRow(column(4, radioGroupButtons('yearBtn', label="Survey Year", choices=year_list, selected=max(year_list), size='sm')),
                                                               column(8, br(), actionButton('makeHeatMap',"Show Heatmap"))),
                                                      fluidRow(column(4, wellPanel(style="background-color: #ededed; border-color: #9c9c9c; padding=10;",
                                                                                   fluidRow(column(6, uiOutput('indicsBox')),
@@ -561,7 +566,7 @@ server <- function(input, output, session) {
                                                  #round(sd(na.omit(data[[input$indicsIn]])),2)
       )))
     } else {
-      ouput$indicsDesc <- renderUI(verbatimTextOutput("Survey details not found for selected indicator."))
+      output$indicsDesc <- renderUI(verbatimTextOutput("Survey details not found for selected indicator."))
     }
   })
   
@@ -573,7 +578,7 @@ server <- function(input, output, session) {
                                                 indicator_list[[paste0("survey_question_", input$yearBtn)]][indicator_list$shortName==input$corrsIn], 
                                                 indicator_list$ques_text[indicator_list$shortName==input$corrsIn])))
     } else {
-      ouput$corrsDesc <- renderUI(verbatimTextOutput("Survey details not found for selected indicator."))
+      output$corrsDesc <- renderUI(verbatimTextOutput("Survey details not found for selected indicator."))
     }
   })
   
@@ -586,10 +591,25 @@ server <- function(input, output, session) {
   updateBoxes <- function(indics){
     output$indicsBox <- renderUI(selectInput('indicsIn', HTML("<b>Select Y Variable</b>"), choices=indics)) #, size=length(indics) , selectize=F)) 
     output$corrsBox <- renderUI(selectInput('corrsIn', HTML('<b>Select X Variable</b>'), choices=indics)) #, size=length(indics), selectize=F))
-    groups_sub <- groups_list |> filter(level=="All" | level==input$policiesBox2)
-    output$groupsBtn <- renderUI(radioButtons("groupsChk", HTML("<b>Selecting Grouping Variable</b>"), choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
+    
   }
   
+  observeEvent(input$yearBtn, {
+    groups_sub <- groups_list |> filter(level=="All" | level==input$policiesBox2)
+    yeargroups <- tryCatch(read.csv(sprintf("Data/Cambodia_CAS_%s_groups.csv", input$yearBtn), nrows=1) |> names(), 
+                           error=function(e){return(NULL)})
+    if(!is.null(yeargroups)){
+      groups_sub = groups_sub |> filter(varName %in% yeargroups)
+      if(nrow(groups_sub)!=0){
+        output$groupsBtn <- renderUI(radioButtons("groupsChk", HTML("<b>Selecting Grouping Variable</b>"), choiceNames=c("None", groups_sub$label), choiceValues=c("", groups_sub$varName)))
+      } else {
+        output$groupsBtn <- renderUI(radioButtons("groupsChk", HTML("<b>Selecting Grouping Variable</b>"), choiceNames="None Available", choiceValues=""))
+      } 
+    } else {
+      output$groupsBtn <- renderUI(radioButtons("groupsChk", HTML("<b>Selecting Grouping Variable</b>"), choiceNames="No groups file found", choiceValues=""))
+    }
+    
+  })
   
   #data_table_out <- observe({makeDataTable(input$policiesBox1, indicatorCategories, indicator_list, dataset_list)})
   
@@ -659,10 +679,12 @@ server <- function(input, output, session) {
   
   observeEvent(ignoreInit=T, list(input$trendIn, input$admButtons1), { #probably a future efficiency update to do here.
     if(input$trendIn!="0"){
+      
       showNotification("Processing, please wait")
       #session$sendCustomMessage("disableButton", "start_proc")
       shinyjs::disable('trendIn')
       adm_level_in=input$admButtons1 #Adjustable
+      #We can speed this up by filtering out files where the variables are not present. To do later.
       
       denoms <- getDenoms(input$trendIn, indicator_list)
       data_files <- getFiles(indicator_list, dataset_list, input$trendIn) #AT: There's probably a simpler way to pack all of this into the getData function but that's a do later item. 
@@ -674,7 +696,7 @@ server <- function(input, output, session) {
         data_out <- na.omit(data_out)
         data_out <- data_out[data_out[[adm_level_in]]!="",]
         if(nrow(data_out) < n_row){
-          output$plotsErr <- renderUI(HTML(sprintf("<i>Note: some observations removed due to missing %s information</i>", adm_level_in)))
+          output$plotsErr <- renderUI(HTML(sprintf("<i>Note: some observations removed due to missing %s information</i><br>", adm_level_in)))
         } else {
           output$plotsErr <- NULL
         }
@@ -698,7 +720,7 @@ server <- function(input, output, session) {
           trendMap <- biColorMap(xShp_trendMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", min_year, " - ", max_year, " Trend"), indicator_list$units[indicator_list$shortName==input$trendIn])
           timePlot <- timeSeriesPlot(data_table_out$data_table, input$trendIn, input$totsBtns)
           if(any(is.na(df_max_year[[input$totsBtns]]))){
-            output$naVals <- renderUI(HTML("<i>Note: gray shaded areas do not have observations for the selected variable.</i>"))
+            output$naVals <- renderUI(HTML("<i>Note: gray shaded areas do not have observations for the selected variable.</i><br>"))
           } else {
             output$naVals <- NULL
           }
@@ -715,7 +737,7 @@ server <- function(input, output, session) {
           xShp_currMap <- merge(curr_map, df_max_year, by=adm_level_in, all.x=T)
           currMap <- monoColorMap(xShp_currMap, input$trendIn, paste0(indicator_list$labelName[indicator_list$shortName == input$trendIn], ", ", max_year, " ", input$totsBtns), indicator_list$units[indicator_list$shortName==input$trendIn])
           output$currMap <- renderPlot(currMap)
-          output$noTrend <- renderUI(HTML("<i>Selected variable was found in only one survey year.</i>"))
+          output$noTrend <- renderUI(HTML("<i>Selected variable was found in only one survey year.</i><br>"))
           #showNotification("No trends to show for selected variable", type="warning")
         }
         output$dlCurrMapOut <- renderUI(downloadButton('dlcurrMap', label="", icon=icon('file-arrow-down')))

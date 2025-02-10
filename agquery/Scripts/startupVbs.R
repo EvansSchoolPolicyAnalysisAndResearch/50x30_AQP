@@ -104,7 +104,7 @@ procImgs <- function(path){
   )
   if(nrow(img_info)>0) {
   parentDir <- str_extract(path, "/([A-z]+)$", group=1)
-  imgs <- data_frame(src=paste0(parentDir, "/", list.files(path, pattern=".png|.jpg|.tif|.gif|.bmp|.html")))
+  imgs <- data.frame(src=paste0(parentDir, "/", list.files(path, pattern=".png|.jpg|.tif|.gif|.bmp|.html")))
   addResourcePath(parentDir, path)
   imgs$image_name <- str_extract(imgs$src, "/([A-z_ ]+)\\.", group=1)
   img_info <- right_join(img_info, imgs, by="image_name")
