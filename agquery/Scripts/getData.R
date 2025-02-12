@@ -1,4 +1,4 @@
-
+not_all_na <- function(x) any(!is.na(x)) #Helper function
 
 getIndics <- function(pathway_link, indicator_list, indic_inventory, policy, pathway, obsyear, cats=F){
   if(pathway!="0"){ 
@@ -65,7 +65,7 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
       }
       rm(df_raw)
     }
-    
+    df_survey <- df_survey |> select(where(not_all_na))
     varslist_short <- names(df_survey)[which(names(df_survey) %in% c(xvars,yvars))]
     if(length(varslist_short)==0){
     #  showNotification(sprintf("The selected %s not found in %s", if(length(varslist)==1) "variable was" else "variables were", survey), type="error")
@@ -86,26 +86,26 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
       if(length(varslist_short)==0 & source_call!="trendmaps"){ 
         showNotification(sprintf("The selected variable(s) in %s did not contain non-NA and non-0 values.", survey), type="error")
     } else {
-      if(!is.null(denoms)){
-        #Filter to drop unneded rows first.
-        denoms <- denoms |> filter(shortName %in% varslist_short)
-        if(nrow(denoms)> 0){
-        denoms_keep <- vector()
-        for(i in 1:nrow(denoms)){
-          if(with(df_survey, exists(denoms$denominator[[i]]))){
-            denoms_keep <- c(denoms_keep, i)
-          }
-        }
-        if(length(denoms_keep)>0){
-          denoms <- denoms[denoms_keep,]
-        } else {
-          denoms <- NULL
-        }
-        } else {
-          denoms <- NULL
-        }
-      }
-      
+      # if(!is.null(denoms)){
+      #   #Filter to drop unneded rows first.
+      #   denoms <- denoms |> filter(shortName %in% varslist_short)
+      #   if(nrow(denoms)> 0){
+      #   denoms_keep <- vector()
+      #   for(i in 1:nrow(denoms)){
+      #     if(with(df_survey, exists(denoms$denominator[[i]]))){
+      #       denoms_keep <- c(denoms_keep, i)
+      #     }
+      #   }
+      #   if(length(denoms_keep)>0){
+      #     denoms <- denoms[denoms_keep,]
+      #   } else {
+      #     denoms <- NULL
+      #   }
+      #   } else {
+      #     denoms <- NULL
+      #   }
+      # }
+      # 
       if(!with(df_survey, exists("weight"))){
         weights <- tryCatch(read.csv(sprintf("Data/%s_weights.csv",survey)),
                             error=function(e){
@@ -145,7 +145,10 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
       }
       df_survey <- df_survey %>% mutate(year = as.numeric(str_extract(file, "2[0-9]{3}"))) %>% 
         #select(all_of(c("hhid", if(!is.na(adm_level)) adm_level, varslist_short, if(!is.null(denoms)) denoms$denominator, "weight", aggs_list))) #At some point we're going to need to figure out how to undo the hard coding of province for portability to other countries.
-        select(all_of(c(if(!is.na(adm_level)) adm_level, if(isTRUE(adm_level=="hhid")) "province", if(!is.null(denoms)) denoms$denominator, varslist_short)), any_of(c("weight", aggs_list))) #To fix.
+        select(all_of(c(if(!is.na(adm_level)) adm_level, 
+                        if(isTRUE(adm_level=="hhid")) "province",
+                        varslist_short)), 
+               any_of(c("weight", aggs_list, if(!is.null(denoms)) denoms$denominator))) #To fix.
       #TO DO: ERROR HANDLING IF DENOM IS MISSING
       if(drop_0s==T){
         df_survey <- df_survey %>% filter(!!sym(yvars)!=0)
@@ -192,6 +195,7 @@ getData <- function(files, xvars, yvars=NULL, denoms=NULL, adm_level="hhid", agg
     rm(df_survey)
   }
   if(exists("df", mode="list")){
+    varslist_short <- names(df)[which(names(df) %in% c(xvars,yvars))] #This will be dropped if the last survey is missing the variable so we need to recreate it. Might want to clean up the names.
     if(!nrow(df)==0){  
       #Doing this down here to avoid messing up household data export, although hhdata might or might not have denoms at this point. 
       for(currVar in varslist_short){

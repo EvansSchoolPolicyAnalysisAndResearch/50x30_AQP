@@ -45,24 +45,27 @@ filterVarTable <- function(dt_out, pathway_link, pathwayTarget, indicator_list, 
   if(stat=="Total"){
     dt_out <- dt_out |> filter(units!="ratio") #Exclude ratios from totals because they're already counted in a different indicator.
   }
-  for(i in 1:nrow(dt_out)){
-    poprow <- dt_out[i,]
-    if(isTRUE(poprow$units=="boolean")) {
+  
+  for(shortName in unique(dt_out$shortName)){
+    poprow <- dt_out[dt_out$shortName==shortName,]
+    if(isTRUE(any(poprow$units=="boolean"))) {
       if(stat=="Total") poprow$units <- "N households"
       if(stat=="Mean") poprow$units <- "% of households"
     }
-    if(isTRUE(poprow$units=="kg") & isTRUE(poprow[[stat]] > 1000)){
+    if(isTRUE(all(poprow$units=="kg")) & isTRUE(any(poprow[[stat]] > 1000))){
       poprow[[stat]] <- poprow[[stat]]/1000
       poprow$units <- "Tonnes"
-    } else if(isTRUE(poprow[[stat]] > 1000000)) {
+    } else if(isTRUE(any(poprow[[stat]] > 1000000))) {
       poprow$units <- paste(poprow$units, " (MM)")
       poprow[[stat]] <- poprow[[stat]]/1000000
     }
-    dt_out[i,] <- poprow
+    dt_out[dt_out$shortName==shortName,] <- poprow
   }
+  
   dt_out <- dt_out |> filter(year==min(dt_out$year) | year==max(dt_out$year)) |>
     pivot_wider(id_cols=all_of(c("shortName", "labelName","units")), names_from="year", values_from=stat, names_glue="{year} {.value}") |>
     rename(Variable=labelName, Units=units)
+  
   
   dt_out <- data.frame(dt_out)
   names(dt_out) <- str_replace_all(names(dt_out), "X", "")
