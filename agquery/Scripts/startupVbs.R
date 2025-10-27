@@ -53,7 +53,11 @@ procCasTabs <- function(path){
     casDataFiles <- data.frame(casDataFiles)
     names(casDataFiles) <- "SourceFile"
     casDataFiles$shortName <- str_extract(casDataFiles$SourceFile, "([A-z_]+).csv", group=1) 
-    var_info <- indicator_list |> select(shortName, file, axisName)
+    if (exists("indicator_list") && is.data.frame(indicator_list)) {
+      var_info <- indicator_list |> dplyr::select(shortName, file, axisName)
+    } else {
+      var_info <- data.frame(shortName = character(), file = character(), axisName = character())
+    }
     casDataFiles <- left_join(casDataFiles, var_info, by="shortName")
     tabCards <- lapply(1:nrow(casDataFiles), FUN=function(y){
       casFile <- casDataFiles$SourceFile[[y]]

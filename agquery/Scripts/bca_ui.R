@@ -213,7 +213,7 @@ bca_ui <- function() {
                     # OPEN ECONOMIES TAB 
                     ##############################################################################
                     tabPanel("Open Economies",
-                             h3("Open Economies Configuration"),
+                             h3("Configuration"),
                              
                              tabsetPanel(id = "empirical_tabs",
                                          
@@ -391,7 +391,7 @@ bca_ui <- function() {
                                                   
                                                   conditionalPanel(
                                                     condition = "output.show_empirical_results",
-                                                    h3("Open Economy Simulation Results"),
+                                                    h3("Simulation Results"),
                                                     uiOutput("empirical_results_tabs_ui"),
                                                     hr(),
                                                     div(align="center",
