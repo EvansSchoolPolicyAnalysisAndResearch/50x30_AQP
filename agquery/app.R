@@ -1,5 +1,5 @@
-options(shiny.error=browser,
-        shiny.autoload.r=F) #For debugging 
+#options(shiny.error=browser,
+#        shiny.autoload.r=F) #For debugging 
 suppressWarnings(
   suppressMessages({
 library(shiny)
