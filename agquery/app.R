@@ -41,6 +41,11 @@ library(flextable)
 lapply(list.files("Scripts", full.names=T), FUN=source)
 options(dplyr.summarise.inform = FALSE)
 
+# Source BCA app components
+source("Scripts/bca_funs.R")
+source("Scripts/bca_ui.R")
+source("Scripts/bca_server.R")
+
 
 thematic_shiny(
   font = "auto",
@@ -50,7 +55,8 @@ thematic_shiny(
 options(shiny.useragg = TRUE)
 
 
-ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
+ui <- fluidPage(useShinyjs(),
+                theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
                                       base_font = bslib::font_google("Open Sans"),
                                       heading_font=bslib::font_google("Open Sans")), 
                 fluidRow(style="background-color:#cadafa;",
@@ -314,11 +320,18 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                            
                            
                            tabPanel("Additional Sources for Evaluating Options", icon=icon("database"),
-                                    HTML('<div style="font-size: 0.9em">'),
-                                    fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the "),
-                                             downloadLink("secSourcesDL", "associated spreadsheet."), HTML("</p>")),
-                                    fluidRow(DTOutput('secsources')),
-                                    HTML('</div>')
+                                    tabsetPanel(
+                                      tabPanel("Sources",
+                                               HTML('<div style="font-size: 0.9em">'),
+                                               fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the "),
+                                                        downloadLink("secSourcesDL", "associated spreadsheet."), HTML("</p>")),
+                                               fluidRow(DTOutput('secsources')),
+                                               HTML('</div>')
+                                      ),
+                                      tabPanel("Benefit-Cost Analysis",
+                                               bca_ui()
+                                      )
+                                    )
                            ),
                            
                            
@@ -356,7 +369,7 @@ server <- function(input, output, session) {
   #output$poulImpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="volume", direction="imports"))
   #output$cashExpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="volume", direction="exports"))
   #output$cashExpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="value", direction="exports"))
-  
+  bca_server(input, output, session)
   ########## Diagnostics
   #To do: add more specific errors to the startup.R code and add handling for columns with missing info.
   if(exists("dataset_list")){
