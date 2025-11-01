@@ -34,6 +34,9 @@ bca_server <- function(input, output, session) {
       Supply_Elasticity = numeric(),
       Demand_Elasticity = numeric(),
       Income_Elasticity = numeric(),
+      Pop_Growth = numeric(),
+      Income_Growth = numeric(),
+      Production_Growth = numeric(),
       Tax_Consumption = numeric(),
       Tax_Production = numeric(),
       stringsAsFactors = FALSE
@@ -78,6 +81,9 @@ bca_server <- function(input, output, session) {
       Supply_Elasticity = input$supply_price_elasticity_range[1] / 100,   # From closed economy
       Demand_Elasticity = input$demand_price_elasticity_range[1] / 100,  # From closed economy
       Income_Elasticity = input$income_elasticity_range[1] / 100,  # From closed economy
+      Pop_Growth = input$pop_growth_range[1] / 100,  # From closed economy
+      Income_Growth = input$income_growth_range[1] / 100,  # From closed economy
+      Production_Growth = input$output_growth_range[1] / 100,  # From closed economy
       Tax_Consumption = 0,  # Default to 0
       Tax_Production = 0,   # Default to 0
       stringsAsFactors = FALSE
@@ -110,31 +116,37 @@ bca_server <- function(input, output, session) {
         scrollX = TRUE,
         pageLength = 10,
         dom = 't',
+        language = list(
+          emptyTable = "Please add data for at least one region/country using the 'Add Market' button above."
+        ),
         columnDefs = list(
           list(width = '120px', targets = 0),
-          list(width = '100px', targets = 1:9)
+          list(width = '100px', targets = 1:12)
         )
       ),
       rownames = FALSE,
       class = 'cell-border stripe',
       selection = 'none',
       colnames = c(
-        'Region/Country' = 'Region',
-        'Producer Q*' = 'Supply_Q',
-        'Consumer Q*' = 'Demand_C',
-        'Consumer P*' = 'Consumer_Price',
-        'Producer P*' = 'Producer_Price',
-        'Supply Elasticity' = 'Supply_Elasticity',
-        'Demand Elasticity' = 'Demand_Elasticity',
-        'Income Elasticity' = 'Income_Elasticity',
-        'Consumer Tax' = 'Tax_Consumption',
-        'Producer Tax' = 'Tax_Production'
+        'Market/Region/Country' = 'Region',
+        'Producer Quantity' = 'Supply_Q',
+        'Consumer Quantity' = 'Demand_C',
+        'Consumer Price' = 'Consumer_Price',
+        'Producer Price' = 'Producer_Price',
+        'Price Elasticity of Supply' = 'Supply_Elasticity',
+        'Price Elasticity of Demand' = 'Demand_Elasticity',
+        'Income Elasticity of Demand' = 'Income_Elasticity',
+        'Annual Population Growth Rate' = 'Pop_Growth',
+        'Annual Income Growth Rate' = 'Income_Growth',
+        'Annual Production Growth Rate' = 'Production_Growth',
+        'Consumer Tax Rate' = 'Tax_Consumption',
+        'Producer Tax Rate' = 'Tax_Production'
       )
     ) %>%
       formatRound(columns = c(2, 3), digits = 0) %>%
       formatRound(columns = c(4, 5), digits = 2) %>%
       formatRound(columns = c(6, 7, 8), digits = 2) %>%
-      formatPercentage(columns = c(9, 10), digits = 2)
+      formatPercentage(columns = c(9, 10, 11, 12, 13), digits = 2)
   }, server = TRUE)  # Changed to TRUE for proper editing
   
   # Handle cell edits for market data
@@ -165,7 +177,10 @@ bca_server <- function(input, output, session) {
       options = list(
         scrollX = TRUE,
         pageLength = 10,
-        dom = 't'
+        dom = 't',
+        language = list(
+          emptyTable = "Please add data for at least one region/country using the 'Add Market' button in the Markets tab."
+        )
       ),
       rownames = FALSE,
       class = 'cell-border stripe',
@@ -193,6 +208,14 @@ bca_server <- function(input, output, session) {
   # EMPIRICAL DATA TAB - NAVIGATION BUTTONS
   #-----------------------------------------------------------------------------
   
+  observeEvent(input$general_next, {
+    updateTabsetPanel(session, "empirical_tabs", selected = "Markets")
+  })
+  
+  observeEvent(input$market_prev, {
+    updateTabsetPanel(session, "empirical_tabs", selected = "General")
+  })
+  
   observeEvent(input$market_next, {
     updateTabsetPanel(session, "empirical_tabs", selected = "R&D and Adoption")
   })
@@ -207,7 +230,7 @@ bca_server <- function(input, output, session) {
   
   observeEvent(input$spillover_prev, {
     updateTabsetPanel(session, "empirical_tabs", selected = "R&D and Adoption")
-  })
+  })  
   
   # Spillover next button now runs simulation and stores it
   observeEvent(input$spillover_next, {
@@ -228,10 +251,10 @@ bca_server <- function(input, output, session) {
         p_production = market_data$df$Producer_Price,
         e_consumption = market_data$df$Demand_Elasticity,
         e_production = market_data$df$Supply_Elasticity,
-        pop_growth_rate = rep(0, n_regions),
+        pop_growth_rate = market_data$df$Pop_Growth,
         income_elasticity = market_data$df$Income_Elasticity,
-        income_growth_rate = rep(0, n_regions),
-        pi_production = rep(0, n_regions),
+        income_growth_rate = market_data$df$Income_Growth,
+        pi_production = market_data$df$Production_Growth,
         prob_success = rep(input$emp_prob_success / 100, n_regions),
         research_spillover = spillover_data$df$Spillover_theta,
         taxes_consumption = market_data$df$Tax_Consumption,
@@ -354,8 +377,8 @@ bca_server <- function(input, output, session) {
                div(style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;",
                    h4(paste("Simulation:", sim_name), style="margin: 0;"),
                    div(style="margin-top: 10px;",
-                       downloadButton(paste0("download_emp_html_", sim_id), "Download Report (HTML)", class = "btn-info"),
-                       actionButton(paste0("delete_emp_sim_", sim_id), HTML("&times; Delete"), class = "btn-danger", 
+                       downloadButton(paste0("download_emp_html_", sim_id), "Download Report (HTML)", class = "btn-primary btn-lg"),
+                       actionButton(paste0("delete_emp_sim_", sim_id), HTML("&times; Delete"), class = "btn-secondary btn-lg", 
                                     style="margin-left: 10px;")
                    )
                )
@@ -366,48 +389,79 @@ bca_server <- function(input, output, session) {
       
       # PARAMETERS SECTION
       fluidRow(
-        column(6,
+        column(12,
                h4("Model Parameters"),
-               wellPanel(
-                 style = "background-color: #f8f9fa;",
-                 tags$pre(style = "white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px;",
-                          paste(
-                            "General Parameters",
-                            sprintf("Initial Year: %d", sim_inputs$emp_year),
-                            sprintf("Number of Markets: %d", sim_data$n_regions),
-                            sprintf("Number of Periods: %d", length(sim_data$time_vector)),
-                            sprintf("Quantity Unit: %s", q_label),
-                            sprintf("Price Unit: %s", p_label),
-                            "",
-                            "R&D Parameters",
-                            sprintf("Probability of Success: %.1f%%", sim_inputs$emp_prob_success),
-                            sprintf("Cost Saving: %.1f%%", sim_data$cost_saving * 100),
-                            sprintf("Adoption Ceiling: %.1f%%", sim_data$adoption_ceiling * 100),
-                            sprintf("Adoption Shape: %s", sim_data$adoption_shape),
-                            sprintf("Research Cutoff Periods: %s", paste(sim_data$cutoffs, collapse = ", ")),
-                            "",
-                            "Financial Parameters",
-                            sprintf("NPV Discount Rate: %.1f%%", sim_data$discount_rate * 100),
-                            sep = "\n"
-                          )
+               card(
+                 card_body(
+                   fluidRow(
+                     column(6,
+                            tags$h5("General Parameters", class = "param-section-title", style = "margin-top: 0;"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 25px;",
+                                       tags$tr(tags$td("Initial Year:"), tags$td(sprintf("%d", sim_inputs$emp_year))),
+                                       tags$tr(tags$td("Number of Markets:"), tags$td(sprintf("%d", sim_data$n_regions))),
+                                       tags$tr(tags$td("Number of Periods:"), tags$td(sprintf("%d", length(sim_data$time_vector)))),
+                                       tags$tr(tags$td("Quantity Unit:"), tags$td(q_label)),
+                                       tags$tr(tags$td("Price Unit:"), tags$td(p_label)),
+                                       tags$tr(tags$td("NPV Discount Rate:"), tags$td(sprintf("%.1f%%", sim_data$discount_rate * 100)))
+                            )
+                     ),
+                     
+                     column(6,
+                            tags$h5("R&D Parameters", class = "param-section-title"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 0;",
+                                       tags$tr(tags$td("Probability of Success:"), tags$td(sprintf("%.1f%%", sim_inputs$emp_prob_success))),
+                                       tags$tr(tags$td("Cost Saving:"), tags$td(sprintf("%.1f%%", sim_data$cost_saving * 100))),
+                                       tags$tr(tags$td("Adoption Ceiling:"), tags$td(sprintf("%.1f%%", sim_data$adoption_ceiling * 100))),
+                                       tags$tr(tags$td("Adoption Shape:"), tags$td(tools::toTitleCase(sim_data$adoption_shape))),
+                                       tags$tr(tags$td("Research Cutoff Periods:"), tags$td(paste(sim_data$cutoffs, collapse = ", "))),
+                                       tags$tr(tags$td("Research Cost before Adoption:"), tags$td(sprintf("%.0f %s", sim_inputs$emp_research_cost_lag, p_label))),
+                                       tags$tr(tags$td("Research Cost during Adoption Growth:"), tags$td(sprintf("%.0f %s", sim_inputs$emp_research_cost_growth, p_label)))
+                            )
+                     )
+                   )
                  )
                )
-        ),
-        
-        column(6,
-               h4("Net Present Value Summary"),
-               wellPanel(
-                 style = "background-color: #f8f9fa;",
-                 tags$pre(style = "white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px;",
-                          paste(
-                            sprintf("Research:   %12.2f %s", totals[1], p_label),
-                            sprintf("Producers:  %12.2f %s", totals[2], p_label),
-                            sprintf("Consumers:  %12.2f %s", totals[3], p_label),
-                            sprintf("Government: %12.2f %s", totals[4], p_label),
-                            sprintf("─────────────────────────"),
-                            sprintf("Total:      %12.2f %s", total_all, p_label),
-                            sep = "\n"
-                          )
+        )
+      ),
+      
+      hr(),
+      
+      # MARKETS PARAMETERS TABLE
+      fluidRow(
+        style = "margin-bottom: 0px;",
+        column(12,
+               h4("Market Parameters", style = "margin-bottom: 10px;"),
+               card(
+                 card_body(
+                   style = "padding-bottom: 0px; margin-bottom: 0px;",
+                   div(style = "margin-bottom: 0px;",
+                       DTOutput(paste0("emp_market_config_table_", sim_id))
+                   )
+                 )
+               )
+        )
+      ),
+      
+      # NPV SUMMARY (reduced top margin)
+      fluidRow(
+        style = "margin-top: 0px;",
+        column(12,
+               h4("Net Present Value Summary", style = "margin-top: 15px; margin-bottom: 10px;"),
+               card(
+                 card_body(
+                   tags$table(class = "table table-sm table-borderless param-table", style = "width: 60%; margin: 0 auto;",
+                              tags$tr(tags$td("Sector"), tags$td(paste0("NPV (", p_label, ")"))),
+                              tags$tr(style = "border-top: 1px solid #dee2e6;",
+                                      tags$td("Research"), tags$td(sprintf("%.2f", totals[1]))
+                              ),
+                              tags$tr(tags$td("Producers"), tags$td(sprintf("%.2f", totals[2]))),
+                              tags$tr(tags$td("Consumers"), tags$td(sprintf("%.2f", totals[3]))),
+                              tags$tr(tags$td("Government"), tags$td(sprintf("%.2f", totals[4]))),
+                              tags$tr(style = "border-top: 1px solid #dee2e6;",
+                                      tags$td("Total"), 
+                                      tags$td(sprintf("%.2f", total_all))
+                              )
+                   )
                  )
                )
         )
@@ -416,7 +470,7 @@ bca_server <- function(input, output, session) {
       hr(),
       
       # NPV SURPLUS BAR CHART
-      h4("Net Present Value Summary"),
+      h4("NPV Surplus by Market"),
       fluidRow(
         column(12,
                plotlyOutput(paste0("emp_regional_surplus_plot_", sim_id), height = "400px")
@@ -426,7 +480,7 @@ bca_server <- function(input, output, session) {
       hr(),
       
       # DYNAMIC PLOTS
-      h4("Dynamic Outcomes"),
+      h4("Outcomes over Time"),
       fluidRow(
         column(12,
                plotlyOutput(paste0("emp_price_dynamics_plot_", sim_id), height = "400px")
@@ -446,13 +500,55 @@ bca_server <- function(input, output, session) {
       )
     )
   }
-  
   #-----------------------------------------------------------------------------
   # GENERATE EMPIRICAL PLOTS
   #-----------------------------------------------------------------------------
   generate_empirical_plots <- function(sim_id, sim_data, sim_inputs) {
     
     p_label <- names(p_units)[match(sim_inputs$emp_p_unit, p_units)]
+    
+    # Market configuration table with spillover
+    output[[paste0("emp_market_config_table_", sim_id)]] <- renderDT({
+      # Merge market data with spillover data
+      merged_df <- merge(sim_inputs$market_data, sim_inputs$spillover_data, by = "Region")
+      
+      datatable(
+        merged_df,
+        options = list(
+          scrollX = TRUE,
+          pageLength = 10,
+          dom = 't',
+          columnDefs = list(
+            list(width = '120px', targets = 0),
+            list(width = '90px', targets = 1:13)
+          )
+        ),
+        rownames = FALSE,
+        class = 'cell-border stripe compact',
+        selection = 'none',
+        colnames = c(
+          'Market/Region/Country' = 'Region',
+          'Producer Quantity' = 'Supply_Q',
+          'Consumer Quantity' = 'Demand_C',
+          'Consumer Price' = 'Consumer_Price',
+          'Producer Price' = 'Producer_Price',
+          'Price Elasticity of Supply' = 'Supply_Elasticity',
+          'Price Elasticity of Demand' = 'Demand_Elasticity',
+          'Income Elasticity of Demand' = 'Income_Elasticity',
+          'Annual Population Growth Rate' = 'Pop_Growth',
+          'Annual Income Growth Rate' = 'Income_Growth',
+          'Annual Production Growth Rate' = 'Production_Growth',
+          'Consumer Tax Rate' = 'Tax_Consumption',
+          'Producer Tax Rate' = 'Tax_Production',
+          'Research Spillover θ' = 'Spillover_theta'
+        )
+      ) %>%
+        formatRound(columns = c(2, 3), digits = 0) %>%
+        formatRound(columns = c(4, 5), digits = 2) %>%
+        formatRound(columns = c(6, 7, 8), digits = 2) %>%
+        formatPercentage(columns = c(9, 10, 11, 12, 13), digits = 2) %>%
+        formatRound(columns = c(14), digits = 2)
+    })
     
     # NPV Surplus by market
     output[[paste0("emp_regional_surplus_plot_", sim_id)]] <- renderPlotly({
@@ -551,6 +647,19 @@ bca_server <- function(input, output, session) {
   }
   
   #-----------------------------------------------------------------------------
+  # GENERATE EMPIRICAL PLOTS WHEN SIMULATIONS CHANGE
+  #-----------------------------------------------------------------------------
+  observe({
+    req(length(empirical_simulations$data) > 0)
+    
+    # Generate plots for all simulations
+    lapply(names(empirical_simulations$data), function(sim_id) {
+      sim <- empirical_simulations$data[[sim_id]]
+      generate_empirical_plots(sim_id, sim$data, sim$inputs)
+    })
+  })
+  
+  #-----------------------------------------------------------------------------
   # RENDER EMPIRICAL RESULTS TABS UI
   #-----------------------------------------------------------------------------
   output$empirical_results_tabs_ui <- renderUI({
@@ -559,9 +668,6 @@ bca_server <- function(input, output, session) {
     # Create list of tabs
     tab_list <- lapply(names(empirical_simulations$data), function(sim_id) {
       sim <- empirical_simulations$data[[sim_id]]
-      
-      # Generate plots for this simulation
-      generate_empirical_plots(sim_id, sim$data, sim$inputs)
       
       # Create download handler
       output[[paste0("download_emp_html_", sim_id)]] <- downloadHandler(
@@ -674,9 +780,10 @@ bca_server <- function(input, output, session) {
           img_cumul <- base64enc::base64encode(tmp_cumul)
           unlink(tmp_cumul)
           
-          # Create market configuration table HTML
+          # Create market configuration table HTML with all parameters including spillover
           market_table_html <- ""
           for (i in 1:nrow(sim$inputs$market_data)) {
+            spillover_val <- sim$inputs$spillover_data$Spillover_theta[i]
             market_table_html <- paste0(market_table_html,
                                         "<tr>",
                                         "<td>", sim$inputs$market_data$Region[i], "</td>",
@@ -684,6 +791,15 @@ bca_server <- function(input, output, session) {
                                         "<td>", sprintf("%.0f", sim$inputs$market_data$Demand_C[i]), "</td>",
                                         "<td>", sprintf("%.2f", sim$inputs$market_data$Consumer_Price[i]), "</td>",
                                         "<td>", sprintf("%.2f", sim$inputs$market_data$Producer_Price[i]), "</td>",
+                                        "<td>", sprintf("%.2f", sim$inputs$market_data$Supply_Elasticity[i]), "</td>",
+                                        "<td>", sprintf("%.2f", sim$inputs$market_data$Demand_Elasticity[i]), "</td>",
+                                        "<td>", sprintf("%.2f", sim$inputs$market_data$Income_Elasticity[i]), "</td>",
+                                        "<td>", sprintf("%.2f%%", sim$inputs$market_data$Pop_Growth[i] * 100), "</td>",
+                                        "<td>", sprintf("%.2f%%", sim$inputs$market_data$Income_Growth[i] * 100), "</td>",
+                                        "<td>", sprintf("%.2f%%", sim$inputs$market_data$Production_Growth[i] * 100), "</td>",
+                                        "<td>", sprintf("%.2f%%", sim$inputs$market_data$Tax_Consumption[i] * 100), "</td>",
+                                        "<td>", sprintf("%.2f%%", sim$inputs$market_data$Tax_Production[i] * 100), "</td>",
+                                        "<td>", sprintf("%.2f", spillover_val), "</td>",
                                         "</tr>")
           }
           
@@ -768,14 +884,23 @@ NPV Discount Rate: ', sprintf("%.1f", sim$data$discount_rate * 100), '%
     </div>
     
     <div class="section">
-      <h2>Market Configuration</h2>
+      <h2>Market Parameters</h2>
       <table>
         <tr>
-          <th>Region</th>
+          <th>Market/Region</th>
           <th>Producer Q</th>
           <th>Consumer Q</th>
           <th>Consumer P</th>
           <th>Producer P</th>
+          <th>Supply Elast.</th>
+          <th>Demand Elast.</th>
+          <th>Income Elast.</th>
+          <th>Pop Growth</th>
+          <th>Income Growth</th>
+          <th>Prod Growth</th>
+          <th>Consumer Tax</th>
+          <th>Producer Tax</th>
+          <th>Spillover θ</th>
         </tr>
         ', market_table_html, '
       </table>
@@ -866,8 +991,8 @@ NPV Discount Rate: ', sprintf("%.1f", sim$data$discount_rate * 100), '%
                div(style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;",
                    h4(paste("Simulation:", sim_name), style="margin: 0;"),
                    div(style="margin-top: 10px;",
-                       downloadButton(paste0("download_html_", sim_id), "Download Report (HTML)", class = "btn-info"),
-                       actionButton(paste0("delete_sim_", sim_id), HTML("&times; Delete"), class = "btn-danger", 
+                       downloadButton(paste0("download_html_", sim_id), "Download Report (HTML)", class = "btn-primary btn-lg"),
+                       actionButton(paste0("delete_sim_", sim_id), HTML("&times; Delete"), class = "btn-secondary btn-lg", 
                                     style="margin-left: 10px;")
                    )
                )
@@ -877,67 +1002,63 @@ NPV Discount Rate: ', sprintf("%.1f", sim$data$discount_rate * 100), '%
       hr(),
       
       # PARAMETERS SECTION
+      # PARAMETERS SECTION
       fluidRow(
-        column(6,
+        column(12,
                h4("Model Parameters"),
-               wellPanel(
-                 style = "background-color: #f8f9fa;",
-                 tags$pre(style = "white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px;",
-                          paste(
-                            "General Parameters",
-                            sprintf("Initial Year: %d", sim_inputs$year),
-                            sprintf("Number of Periods: %d", length(sim_data$time_vector)),
-                            sprintf("Quantity Unit: %s", q_label),
-                            sprintf("Price Unit: %s", p_label),
-                            "",
-                            " Initial Equilibrium ",
-                            sprintf("Consumer Price (Pc0): %.3f %s", rp$Pc0[1], p_label),
-                            sprintf("Producer Price (Pp0): %.3f %s", rp$Pp0[1], p_label),
-                            sprintf("Consumer Quantity (Qc0): %.3f %s", rp$Qc0[1], q_label),
-                            sprintf("Producer Quantity (Qp0): %.3f %s", rp$Qp0[1], q_label),
-                            "",
-                            " Elasticities ",
-                            sprintf("Supply Price Elasticity: %.1f%%", sim_inputs$supply_price_elasticity_range[1]),
-                            sprintf("Demand Price Elasticity: %.1f%%", sim_inputs$demand_price_elasticity_range[1]),
-                            sprintf("Income Elasticity: %.1f%%", sim_inputs$income_elasticity_range[1]),
-                            "",
-                            " Growth Rates ",
-                            sprintf("Population Growth: %.2f%%", rp$Pop_Growth[1] * 100),
-                            sprintf("Income Growth: %.2f%%", rp$Income_Growth[1] * 100),
-                            sprintf("Production Growth: %.1f%%", sim_inputs$output_growth_range[1]),
-                            "",
-                            " R&D Parameters ",
-                            sprintf("Probability of Success: %.1f%%", rp$Prob_Success[1] * 100),
-                            sprintf("Research Spillover: %.3f", rp$Research_Spillover[1]),
-                            sprintf("Cost Saving: %.1f%%", sim_data$cost_saving * 100),
-                            sprintf("Adoption Ceiling: %.1f%%", sim_data$adoption_ceiling * 100),
-                            sprintf("Adoption Shape: %s", sim_data$adoption_shape),
-                            sprintf("Research Cutoff Periods: %s", paste(sim_data$cutoffs, collapse = ", ")),
-                            "",
-                            " Taxes and Discount Rate ",
-                            sprintf("Consumer Tax: %.2f%%", rp$Tax_Consumption[1] * 100),
-                            sprintf("Producer Tax: %.2f%%", rp$Tax_Production[1] * 100),
-                            sprintf("NPV Discount Rate: %.1f%%", sim_data$discount_rate * 100),
-                            sep = "\n"
-                          )
-                 )
-               )
-        ),
-        
-        column(6,
-               h4("Net Present Value Summary"),
-               wellPanel(
-                 style = "background-color: #f8f9fa;",
-                 tags$pre(style = "white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px;",
-                          paste(
-                            sprintf("Research:   %12.2f %s", totals[1], p_label),
-                            sprintf("Producers:  %12.2f %s", totals[2], p_label),
-                            sprintf("Consumers:  %12.2f %s", totals[3], p_label),
-                            sprintf("Government: %12.2f %s", totals[4], p_label),
-                            sprintf("─────────────────────────"),
-                            sprintf("Total:      %12.2f %s", total_all, p_label),
-                            sep = "\n"
-                          )
+               card(
+                 card_body(
+                   fluidRow(
+                     column(6,
+                            tags$h5("General Parameters", class = "param-section-title", style = "margin-top: 0;"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 25px;",
+                                       tags$tr(tags$td("Initial Year:"), tags$td(sprintf("%d", sim_inputs$year))),
+                                       tags$tr(tags$td("Number of Periods:"), tags$td(sprintf("%d", length(sim_data$time_vector)))),
+                                       tags$tr(tags$td("Quantity Unit:"), tags$td(q_label)),
+                                       tags$tr(tags$td("Price Unit:"), tags$td(p_label))
+                            ),
+                            
+                            tags$h5("Initial Equilibrium", class = "param-section-title"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 25px;",
+                                       tags$tr(tags$td("Consumer Price (Pc0):"), tags$td(sprintf("%.2f %s", rp$Pc0[1], p_label))),
+                                       tags$tr(tags$td("Producer Price (Pp0):"), tags$td(sprintf("%.2f %s", rp$Pp0[1], p_label))),
+                                       tags$tr(tags$td("Consumer Quantity (Qc0):"), tags$td(sprintf("%.0f %s", rp$Qc0[1], q_label))),
+                                       tags$tr(tags$td("Producer Quantity (Qp0):"), tags$td(sprintf("%.0f %s", rp$Qp0[1], q_label)))
+                            ),
+                            
+                            tags$h5("Elasticities", class = "param-section-title"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 0;",
+                                       tags$tr(tags$td("Supply Price Elasticity:"), tags$td(sprintf("%.1f%%", sim_inputs$supply_price_elasticity_range[1]))),
+                                       tags$tr(tags$td("Demand Price Elasticity:"), tags$td(sprintf("%.1f%%", sim_inputs$demand_price_elasticity_range[1]))),
+                                       tags$tr(tags$td("Income Elasticity:"), tags$td(sprintf("%.1f%%", sim_inputs$income_elasticity_range[1])))
+                            )
+                     ),
+                     
+                     column(6,
+                            tags$h5("Growth Rates", class = "param-section-title", style = "margin-top: 0;"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 25px;",
+                                       tags$tr(tags$td("Population Growth:"), tags$td(sprintf("%.2f%%", rp$Pop_Growth[1] * 100))),
+                                       tags$tr(tags$td("Income Growth:"), tags$td(sprintf("%.2f%%", rp$Income_Growth[1] * 100))),
+                                       tags$tr(tags$td("Production Growth:"), tags$td(sprintf("%.1f%%", sim_inputs$output_growth_range[1])))
+                            ),
+                            
+                            tags$h5("R&D Parameters", class = "param-section-title"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 25px;",
+                                       tags$tr(tags$td("Probability of Success:"), tags$td(sprintf("%.1f%%", rp$Prob_Success[1] * 100))),
+                                       tags$tr(tags$td("Cost Saving:"), tags$td(sprintf("%.1f%%", sim_data$cost_saving * 100))),
+                                       tags$tr(tags$td("Adoption Ceiling:"), tags$td(sprintf("%.1f%%", sim_data$adoption_ceiling * 100))),
+                                       tags$tr(tags$td("Adoption Shape:"), tags$td(tools::toTitleCase(sim_data$adoption_shape))),
+                                       tags$tr(tags$td("Research Cutoff Periods:"), tags$td(paste(sim_data$cutoffs, collapse = ", ")))
+                            ),
+                            
+                            tags$h5("Taxes and Discount Rate", class = "param-section-title"),
+                            tags$table(class = "table table-sm table-borderless param-table", style = "margin-bottom: 0;",
+                                       tags$tr(tags$td("Consumer Tax:"), tags$td(sprintf("%.2f%%", rp$Tax_Consumption[1] * 100))),
+                                       tags$tr(tags$td("Producer Tax:"), tags$td(sprintf("%.2f%%", rp$Tax_Production[1] * 100))),
+                                       tags$tr(tags$td("NPV Discount Rate:"), tags$td(sprintf("%.1f%%", sim_data$discount_rate * 100)))
+                            )
+                     )
+                   )
                  )
                )
         )
@@ -945,18 +1066,33 @@ NPV Discount Rate: ', sprintf("%.1f", sim$data$discount_rate * 100), '%
       
       hr(),
       
-      # NPV SURPLUS BAR CHART
-      h4("Net Present Value Summary"),
       fluidRow(
         column(12,
-               plotlyOutput(paste0("npv_surplus_plot_", sim_id), height = "400px")
+               h4("Net Present Value Summary"),
+               card(
+                 card_body(
+                   tags$table(class = "table table-sm table-borderless param-table", style = "width: 60%; margin: 0 auto;",
+                              tags$tr(tags$td("Sector"), tags$td(paste0("NPV (", p_label, ")"))),
+                              tags$tr(style = "border-top: 1px solid #dee2e6;",
+                                      tags$td("Research"), tags$td(sprintf("%.2f", totals[1]))
+                              ),
+                              tags$tr(tags$td("Producers"), tags$td(sprintf("%.2f", totals[2]))),
+                              tags$tr(tags$td("Consumers"), tags$td(sprintf("%.2f", totals[3]))),
+                              tags$tr(tags$td("Government"), tags$td(sprintf("%.2f", totals[4]))),
+                              tags$tr(style = "border-top: 1px solid #dee2e6;",
+                                      tags$tr(tags$td("Total"), 
+                                              tags$td(sprintf("%.2f", total_all)))
+                              )
+                   )
+                 )
+               )
         )
       ),
       
       hr(),
       
       # PLOTS
-      h4("Dynamic Outcomes"),
+      h4("Outcomes over Time"),
       fluidRow(
         column(12,
                plotlyOutput(paste0("price_dynamics_plot_", sim_id), height = "400px")

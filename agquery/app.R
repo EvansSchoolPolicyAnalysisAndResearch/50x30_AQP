@@ -328,7 +328,7 @@ ui <- fluidPage(useShinyjs(),
                                                fluidRow(DTOutput('secsources')),
                                                HTML('</div>')
                                       ),
-                                      tabPanel("Benefit-Cost Analysis",
+                                      tabPanel("Benefit-Cost Analysis Tool",
                                                bca_ui()
                                       )
                                     )
