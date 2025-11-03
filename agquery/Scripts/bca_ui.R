@@ -5,83 +5,12 @@ bca_ui <- function() {
   tagList(
     
     useShinyjs(),
-    tags$head(tags$style(HTML("
-    .container-fluid { height:auto !important; overflow-y:auto !important; }    .tab-content,.tab-pane { height:auto !important; overflow:visible !important; }
-    .inline-btns { margin-top:8px; display:flex; gap:8px; }
-    .inline-inputs .form-group { margin-bottom: 10px; display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 10px; }
-    .inline-inputs .form-group label { margin-bottom: 0; text-align: left; }
     
-    /* Parameter table alignment */
-    .param-table {
-      width: 100%;
-      table-layout: fixed;
-    }
-    .param-table td {
-      border: none !important;
-      padding: 3px 0 !important;
-    }
-    .param-table td:first-child {
-      width: 60%;
-      padding-right: 15px !important;
-    }
-    .param-table td:last-child {
-      width: 40%;
-      text-align: right;
-    }
-    
-    /* Section title with underline */
-    .param-section-title {
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #dee2e6;
-    }
-    
-    /* Prevent horizontal scrollbar in card */
-    .card-body {
-      overflow-x: hidden !important;
-    }
-    .dataTables_wrapper {
-      margin-bottom: 10px !important;
-      padding-bottom: 10px !important;
-    }
-    
-    .row + .row {
-      margin-top: 10px;
-    }
-    
-    table.dataTable.compact thead th,
-    table.dataTable.compact tbody td {
-      padding: 4px 8px;
-    }
-    
-    .dataTables_scrollBody {
-      margin-bottom: 0px !important;
-    }
-    
-        [title]:hover::after {
-      transition: opacity 0.1s ease-in !important;
-    }
-    
-    .tooltip {
-      transition: opacity 0.1s !important;
-    }
-  "))),
-    tags$script(HTML("
-    $(document).on('shiny:connected', function() {
-      // Single-click to edit for market_data_table
-      $(document).on('click', '#market_data_table tbody td', function() {
-        $(this).trigger('dblclick');
-      });
-      // Single-click to edit for spillover_table
-      $(document).on('click', '#spillover_table tbody td', function() {
-        $(this).trigger('dblclick');
-      });
-    });
-  ")),
     
     titlePanel("Benefit-Cost Analysis (BCA) Tool"),
     
-    div(style="padding:15px; border:1px solid #ddd; margin-bottom:20px;",
+    div(style="padding:15px; border:1px solid #ddd; margin-bottom:20px;
+        ",
         
         tabsetPanel(id = "main_tabs",
                     
