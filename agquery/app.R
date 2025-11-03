@@ -1,5 +1,5 @@
-options(shiny.error=browser,
-        shiny.autoload.r=F) #For debugging 
+#options(shiny.error=browser,
+#        shiny.autoload.r=F) #For debugging 
 suppressWarnings(
   suppressMessages({
 library(shiny)
@@ -50,7 +50,8 @@ thematic_shiny(
 options(shiny.useragg = TRUE)
 
 
-ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
+ui <- fluidPage(useShinyjs(),
+                theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF", info="#474481", primary = "#440154FF", #primary="#CA054D",
                                       base_font = bslib::font_google("Open Sans"),
                                       heading_font=bslib::font_google("Open Sans")), 
                 fluidRow(style="background-color:#cadafa;",
@@ -61,7 +62,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                          column(2, align='center', HTML("<br><img src=cam_flag.png width='150'></img>")),
                          column(5)
                 ),
-                fluidRow(style="background-color:#cadafa;", br()),
+                #fluidRow(style="background-color:#cadafa;", br()),
                 
                 navbarPage(title="", theme=bslib::bs_theme(version="5", preset='pulse',  #bg = "white", fg = "#3B528B", info="#474481", primary = "#440154FF",
                                                            base_font = bslib::font_google("Open Sans"),
@@ -75,6 +76,64 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                .radio-group-buttons {font-size: 1.0em}
                                .btn.btn-default.shiny-download-link {--bs-btn-line-height: 0.8; font-size:1.0em}
                                .btn.btn-default.action-button {--bs-btn-line-height: 1.0; font-size:1.0em}
+                              .inline-btns { margin-top:8px; display:flex; gap:8px; }
+    .inline-inputs .form-group { margin-bottom: 10px; display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 10px; }
+    .inline-inputs .form-group label { margin-bottom: 0; text-align: left; }
+    
+    /* Parameter table alignment */
+    .param-table {
+      width: 100%;
+      table-layout: fixed;
+    }
+    .param-table td {
+      border: none !important;
+      padding: 3px 0 !important;
+    }
+    .param-table td:first-child {
+      width: 60%;
+      padding-right: 15px !important;
+    }
+    .param-table td:last-child {
+      width: 40%;
+      text-align: right;
+    }
+    
+    /* Section title with underline */
+    .param-section-title {
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #dee2e6;
+    }
+    
+    /* Prevent horizontal scrollbar in card */
+    .card-body {
+      overflow-x: hidden !important;
+    }
+    .dataTables_wrapper {
+      margin-bottom: 10px !important;
+      padding-bottom: 10px !important;
+    }
+    
+    .row + .row {
+      margin-top: 10px;
+    }
+    
+    table.dataTable.compact thead th,
+    table.dataTable.compact tbody td {
+      padding: 4px 8px;
+    }
+    
+    .dataTables_scrollBody {
+      margin-bottom: 0px !important;
+    }
+    
+        [title]:hover::after {
+      transition: opacity 0.1s ease-in !important;
+    }
+    
+    .tooltip {
+      transition: opacity 0.1s !important;
+    }
                                 '
                              )),
                            tabPanel("Policy Context", icon=icon("signs-post"),
@@ -101,7 +160,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                       )
                                     )
                            ),
-                           tabPanel("Identifying Feasible Options: Stakeholders & Decision Criteria", icon=icon("landmark-dome"),
+                           tabPanel("Identify Options: Stakeholders & Decision Criteria", icon=icon("landmark-dome"),
                                     tabsetPanel(
                                       tabPanel("Policy Instruments by Goal",
                                                HTML('<div style="font-size: 0.9em; margin: 20 0 0 0;">'),
@@ -136,7 +195,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                                fluidRow(column(4, uiOutput("trendsErr"))),
                                                #fluidRow(column(4, selectInput('policiesBox1', "Select a policy goal", choices=c("None", goalNames)))),
                                                fluidRow(column(4, selectInput('policiesBox1', "Select a policy goal", choices=c("None", goalNames)))),
-                                               conditionalPanel(condition="input.policiesBox1!='None'", 
+                                                    conditionalPanel(condition="input.policiesBox1!='None'", 
                                                                 fluidRow(column(4, uiOutput('pathwaysBox'))),
                                                                 fluidRow(column(4, radioGroupButtons('totsBtns', label="Choose Statistic to Present", choices=c("Mean","Total"), size='sm'))),
                                                                 fluidRow(column(5, uiOutput('msgText')),
@@ -188,7 +247,7 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                                     )
                            ),
                            
-                           tabPanel("Interpreting Data Relationships", icon=icon("chart-line"),
+                           tabPanel("Interpret Data Relationships", icon=icon("chart-line"),
                                     HTML('<div style="font-size: 0.9em">'),
                                     fluidRow(HTML('<p><i>The variables summarized here may be extended and revised by suitably trained users by editing the source Excel files, including '),
                                              downloadLink('relsDL1', label='the pathways table,'),
@@ -313,16 +372,23 @@ ui <- fluidPage(theme=bslib::bs_theme(version="5", bg = "white", fg = "#3B528BFF
                            
                            
                            
-                           tabPanel("Additional Sources for Evaluating Options", icon=icon("database"),
-                                    HTML('<div style="font-size: 0.9em">'),
-                                    fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the "),
-                                             downloadLink("secSourcesDL", "associated spreadsheet."), HTML("</p>")),
-                                    fluidRow(DTOutput('secsources')),
-                                    HTML('</div>')
+                           tabPanel("Additional Sources for Evaluation", icon=icon("database"),
+                                      tabPanel("Sources",
+                                               HTML('<div style="font-size: 0.9em">'),
+                                               fluidRow(HTML("<p>This table shows additional sources of contextual information. Updates can be made by downloading the "),
+                                                        downloadLink("secSourcesDL", "associated spreadsheet."), HTML("</p>")),
+                                               fluidRow(DTOutput('secsources')),
+                                               HTML('</div>')
+                                      ),
+                            
+                           ),
+                           
+                           tabPanel("Benefit-Cost Analysis", icon=icon("scale-balanced"),
+                                    bca_ui()
                            ),
                            
                            
-                           tabPanel("User Guide and App Diagnostics", icon=icon("stethoscope"),
+                           tabPanel("User Guide and Diagnostics", icon=icon("stethoscope"),
                                     tabsetPanel(
                                       tabPanel("User Guide",
                                                fluidRow(column(1),
@@ -356,7 +422,7 @@ server <- function(input, output, session) {
   #output$poulImpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="poultry", units="volume", direction="imports"))
   #output$cashExpVol <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="volume", direction="exports"))
   #output$cashExpVal <- renderPlotly(imp_exp_plot(imp_exp_data, product="cashew", units="value", direction="exports"))
-  
+  bca_server(input, output, session)
   ########## Diagnostics
   #To do: add more specific errors to the startup.R code and add handling for columns with missing info.
   if(exists("dataset_list")){
@@ -1319,4 +1385,6 @@ server <- function(input, output, session) {
   
 }
 
-shinyApp(ui = ui, server = server)
+if (interactive() && !isTRUE(getOption("shiny.testmode"))) {
+  shinyApp(ui = ui, server = server)
+}
