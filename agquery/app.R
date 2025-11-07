@@ -1385,6 +1385,6 @@ server <- function(input, output, session) {
   
 }
 
-if (interactive() && !isTRUE(getOption("shiny.testmode"))) {
+
   shinyApp(ui = ui, server = server)
-}
+
